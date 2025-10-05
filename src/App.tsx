@@ -1,67 +1,65 @@
-import { useState, useEffect } from 'react';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
-type Page = 'login' | 'register' | 'dashboard';
+// Pages publiques
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
+// Layout principal
+import MainLayout from './pages/MainLayout';
+
+// Pages SFA CRM
+import ProfilePageNew from './pages/ProfilePageNew';
+
+// Pages anciennes (à garder pour compatibilité)
+import SessionsPage from './pages/SessionsPage';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('login');
-  const [user, setUser] = useState<unknown>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const loadUser = useAuthStore((state) => state.loadUser);
 
-  // Vérifier si l'utilisateur est déjà connecté au chargement
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      setCurrentPage('dashboard');
-    }
-  }, []);
+    loadUser();
+  }, [loadUser]);
 
-  const handleLoginSuccess = (accessToken: string, userData: unknown) => {
-    setToken(accessToken);
-    setUser(userData);
-    setCurrentPage('dashboard');
-  };
-
-  const handleRegisterSuccess = (accessToken: string, userData: unknown) => {
-    setToken(accessToken);
-    setUser(userData);
-    setCurrentPage('dashboard');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    setCurrentPage('login');
-  };
+  // Mock role - à remplacer par user?.role quand le backend sera prêt
 
   return (
-    <>
-      {currentPage === 'login' && (
-        <Login
-          onLoginSuccess={handleLoginSuccess}
-          onSwitchToRegister={() => setCurrentPage('register')}
-        />
-      )}
-      
-      {currentPage === 'register' && (
-        <Register
-          onRegisterSuccess={handleRegisterSuccess}
-          onSwitchToLogin={() => setCurrentPage('login')}
-        />
-      )}
-      
-      {currentPage === 'dashboard' && user && (
-        <Dashboard user={user} onLogout={handleLogout} />
-      )}
-    </>
+    <Router>
+      <Routes>
+        {/* Routes publiques */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Routes protégées avec Bottom Navigation */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index  />
+          <Route path="route" />
+          <Route path="visits"  />
+          <Route path="data"  />
+          <Route path="profile" element={<ProfilePageNew />} />
+          
+          {/* Pages anciennes */}
+          <Route path="sessions" element={<SessionsPage />} />
+        </Route>
+
+        {/* Redirection par défaut */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
