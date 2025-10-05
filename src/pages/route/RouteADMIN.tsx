@@ -18,7 +18,7 @@ export default function RouteADMIN() {
     ? pdvList 
     : pdvList.filter(pdv => pdv.status === selectedFilter);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
       case 'approved':
         return 'success';

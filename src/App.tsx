@@ -46,9 +46,6 @@ function App() {
           }
         >
           <Route index  />
-          <Route path="route" />
-          <Route path="visits"  />
-          <Route path="data"  />
           <Route path="profile" element={<ProfilePageNew />} />
           
           {/* Pages anciennes */}

@@ -35,13 +35,13 @@ export default function VisitsADMIN() {
     },
   ];
 
-  const handleApprove = (id: string, name: string) => {
+  const handleApprove = (_id: string, name: string) => {
     if (confirm(`Valider le PDV "${name}" ?`)) {
       alert('PDV validé avec succès! ✓');
     }
   };
 
-  const handleReject = (id: string, name: string) => {
+  const handleReject = (_id: string, name: string) => {
     if (!rejectionReason.trim()) {
       alert('Veuillez indiquer une raison de rejet');
       return;

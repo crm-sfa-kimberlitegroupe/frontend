@@ -22,7 +22,7 @@ export default function RouteREP() {
     estimatedTime: '3h 15min',
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
       case 'completed':
         return 'success';

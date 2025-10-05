@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 interface ButtonProps {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'outline';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   disabled?: boolean;
@@ -27,6 +27,7 @@ export default function Button({
     primary: 'bg-primary text-white hover:bg-sky-500 active:bg-sky-600',
     secondary: 'bg-secondary text-white hover:bg-green-600 active:bg-green-700',
     success: 'bg-success text-white hover:bg-green-600 active:bg-green-700',
+    warning: 'bg-warning text-white hover:bg-yellow-600 active:bg-yellow-700',
     danger: 'bg-danger text-white hover:bg-red-600 active:bg-red-700',
     outline: 'border-2 border-primary text-primary hover:bg-primary hover:text-white',
   };

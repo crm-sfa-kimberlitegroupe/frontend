@@ -5,7 +5,6 @@ import Badge from '../../components/ui/Badge';
 
 export default function VisitsREP() {
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
-  const [isCheckingIn, setIsCheckingIn] = useState(false);
 
   const visits = [
     { id: '1', pdvName: 'Supermarché Plateau', status: 'COMPLETED', scheduledTime: '08:00', checkInTime: '08:05', checkOutTime: '08:45' },
@@ -15,7 +14,7 @@ export default function VisitsREP() {
     { id: '5', pdvName: 'Superette Abobo', status: 'PLANNED', scheduledTime: '14:30' },
   ];
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
       case 'COMPLETED': return 'success';
       case 'IN_PROGRESS': return 'warning';
@@ -35,14 +34,6 @@ export default function VisitsREP() {
     }
   };
 
-  const handleCheckIn = () => {
-    setIsCheckingIn(true);
-    // Simulation géolocalisation
-    setTimeout(() => {
-      setIsCheckingIn(false);
-      alert('Check-in réussi! 📍');
-    }, 1500);
-  };
 
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">
@@ -97,7 +88,7 @@ export default function VisitsREP() {
                       {visit.checkInTime && <span>✓ Check-in: {visit.checkInTime}</span>}
                     </div>
                   </div>
-                  <Badge variant={getStatusColor(visit.status) as any} size="sm">
+                  <Badge variant={getStatusColor(visit.status)} size="sm">
                     {getStatusLabel(visit.status)}
                   </Badge>
                 </div>
