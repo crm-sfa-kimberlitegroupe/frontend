@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const API_URL = 'https://backendsfa.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
+
+// Debug: Afficher la configuration chargée
+console.log('🔧 Configuration AuthService:', {
+  apiUrl: API_URL,
+  environment: import.meta.env.MODE,
+  viteApiUrl: import.meta.env.VITE_API_URL
+});
 
 // Types
 export interface User {

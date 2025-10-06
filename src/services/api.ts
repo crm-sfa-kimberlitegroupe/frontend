@@ -1,5 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
 
+// Debug: Afficher la configuration chargée
+console.log('🔧 Configuration API:', {
+  apiUrl: API_URL,
+  environment: import.meta.env.MODE,
+  viteApiUrl: import.meta.env.VITE_API_URL,
+  allEnvVars: import.meta.env
+});
+
 export interface LoginData {
   email: string;
   password: string;
