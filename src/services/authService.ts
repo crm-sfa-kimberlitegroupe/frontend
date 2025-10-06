@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://backendsfa.onrender.com/api';
+const API_URL = 'https://backendsfa.onrender.com/api';
 
 // Types
 export interface User {
