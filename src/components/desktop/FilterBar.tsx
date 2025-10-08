@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Filter, X } from 'lucide-react';
 
 interface FilterBarProps {

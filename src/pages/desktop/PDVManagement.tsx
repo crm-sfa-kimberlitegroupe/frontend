@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Plus, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../components/desktop';
 import type { Column } from '../../components/desktop/DataTable';
 import Button from '../../components/ui/Button';

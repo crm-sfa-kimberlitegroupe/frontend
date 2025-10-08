@@ -29,9 +29,6 @@ import {
   ReportsPage
 } from './pages/desktop';
 
-// Pages anciennes (à garder pour compatibilité)
-import SessionsPage from './pages/SessionsPage';
-
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
 

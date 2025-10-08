@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Download, Calendar, Filter, TrendingUp } from 'lucide-react';
+import { FileText, Download, Calendar, TrendingUp } from 'lucide-react';
 import { PageHeader, FilterBar, ChartWrapper } from '../../components/desktop';
 import Button from '../../components/ui/Button';
 import {
@@ -283,9 +283,7 @@ export default function ReportsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
+                  label
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
@@ -295,6 +293,7 @@ export default function ReportsPage() {
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </ChartWrapper>

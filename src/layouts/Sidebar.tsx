@@ -2,12 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
-  MapPin, 
-  Map, 
-  Package, 
-  BarChart3,
-  ClipboardList,
-  TrendingUp,
   LogOut
 } from 'lucide-react';
 import type { UserRole } from '../types';

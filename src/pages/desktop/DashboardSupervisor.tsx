@@ -6,37 +6,37 @@ import {
   ChartWrapper,
   FilterBar,
 } from '../../components/desktop';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+// import {
+//   BarChart,
+//   Bar,
+//   LineChart,
+//   Line,
+//   PieChart,
+//   Pie,
+//   Cell,
+//   XAxis,
+//   YAxis,
+//   CartesianGrid,
+//   Tooltip,
+//   Legend,
+//   ResponsiveContainer,
+// } from 'recharts';
 import { useState } from 'react';
 
 // Mock data
-const performanceData = [
-  { name: 'Sem 1', couverture: 85, strikeRate: 72, objectif: 80 },
-  { name: 'Sem 2', couverture: 88, strikeRate: 75, objectif: 80 },
-  { name: 'Sem 3', couverture: 82, strikeRate: 70, objectif: 80 },
-  { name: 'Sem 4', couverture: 91, strikeRate: 78, objectif: 80 },
-];
+// const performanceData = [
+//   { name: 'Sem 1', couverture: 85, strikeRate: 72, objectif: 80 },
+//   { name: 'Sem 2', couverture: 88, strikeRate: 75, objectif: 80 },
+//   { name: 'Sem 3', couverture: 82, strikeRate: 70, objectif: 80 },
+//   { name: 'Sem 4', couverture: 91, strikeRate: 78, objectif: 80 },
+// ];
 
-const salesByTerritory = [
-  { name: 'Plateau', value: 45000, color: '#38BDF8' },
-  { name: 'Cocody', value: 38000, color: '#10B981' },
-  { name: 'Adjamé', value: 32000, color: '#F59E0B' },
-  { name: 'Yopougon', value: 28000, color: '#EF4444' },
-];
+// const salesByTerritory = [
+//   { name: 'Plateau', value: 45000, color: '#38BDF8' },
+//   { name: 'Cocody', value: 38000, color: '#10B981' },
+//   { name: 'Adjamé', value: 32000, color: '#F59E0B' },
+//   { name: 'Yopougon', value: 28000, color: '#EF4444' },
+// ];
 
 const topPerformers = [
   { rank: 1, name: 'Jean Kouassi', visites: 127, commandes: 89, ca: 45000 },

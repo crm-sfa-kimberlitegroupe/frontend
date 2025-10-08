@@ -19,7 +19,6 @@ export default function ProfilePageNew() {
   const [qrCode, setQrCode] = useState('');
   const [secret, setSecret] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [loading2FA, setLoading2FA] = useState(false);
   const [error2FA, setError2FA] = useState('');
   const [message2FA, setMessage2FA] = useState('');
@@ -101,8 +100,6 @@ export default function ProfilePageNew() {
               // Garder les valeurs par défaut en cas d'erreur
             }
           }
-          
-          setIs2FAEnabled(false); // TODO: Récupérer depuis l'API
         } catch (error) {
           console.error('Erreur lors du chargement des données:', error);
         } finally {
@@ -189,7 +186,6 @@ export default function ProfilePageNew() {
     try {
       const response = await authService.enable2FA(twoFactorCode);
       setMessage2FA(response.message);
-      setIs2FAEnabled(true);
       setQrCode('');
       setSecret('');
       setTwoFactorCode('');
@@ -200,32 +196,6 @@ export default function ProfilePageNew() {
         setError2FA(error.response?.data?.message || 'Code invalide');
       } else {
         setError2FA('Code invalide');
-      }
-    } finally {
-      setLoading2FA(false);
-    }
-  };
-
-  const handleDisable2FA = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir désactiver l\'authentification à deux facteurs ?')) {
-      return;
-    }
-
-    setError2FA('');
-    setMessage2FA('');
-    setLoading2FA(true);
-
-    try {
-      const response = await authService.disable2FA();
-      setMessage2FA(response.message);
-      setIs2FAEnabled(false);
-      setShow2FAModal(false);
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'response' in err) {
-        const error = err as { response?: { data?: { message?: string } } };
-        setError2FA(error.response?.data?.message || 'Erreur lors de la désactivation');
-      } else {
-        setError2FA('Erreur lors de la désactivation');
       }
     } finally {
       setLoading2FA(false);
