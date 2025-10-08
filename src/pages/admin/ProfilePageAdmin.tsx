@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { authService } from '../services/authService';
-import { usersService, type UserPerformance } from '../services/usersService';
-import type { UserRole } from '../types';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
+import { useAuthStore } from '../../store/authStore';
+import { authService } from '../../services/authService';
+import { usersService } from '../../services/usersService';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
 
-export default function ProfilePageNew() {
+export default function ProfilePageAdmin() {
   const { user, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -24,59 +23,29 @@ export default function ProfilePageNew() {
   const [error2FA, setError2FA] = useState('');
   const [message2FA, setMessage2FA] = useState('');
 
-  // Données du profil depuis la base de données
-  const userRole: UserRole = (user?.role as UserRole) || 'REP';
+  // Données du profil
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
     photo: user?.photo || null,
-    territory: user?.territory || '',
     employeeId: user?.employeeId || '',
     hireDate: user?.hireDate || '',
-    manager: user?.manager || '',
     isActive: user?.isActive ?? true,
   });
 
   const [settings, setSettings] = useState({
-    language: 'fr',
-    pushNotifications: true,
-    emailNotifications: false,
-    smsNotifications: true,
     darkMode: false,
-    autoSync: true,
-    geoLocation: true,
-    photoQuality: 'high',
+    emailNotifications: true,
   });
 
-  const [syncStatus] = useState({
-    isOnline: true,
-    lastSync: new Date(),
-    pendingItems: 3,
-    storageUsed: 45.2,
-  });
-
-  const [performanceKPIs, setPerformanceKPIs] = useState<UserPerformance>({
-    coverage: 0,
-    strikeRate: 0,
-    visitsThisMonth: 0,
-    salesThisMonth: 0,
-    perfectStoreScore: 0,
-    totalOutlets: 0,
-    visitedOutlets: 0,
-    ordersThisMonth: 0,
-    averageOrderValue: 0,
-  });
-
-  // Charger les données utilisateur au montage
+  // Charger les données utilisateur
   useEffect(() => {
     const loadUserData = async () => {
       if (user?.id) {
         try {
           setLoading(true);
-          
-          // Charger les données du profil
           const userData = await usersService.getById(user.id);
           setProfileData({
             firstName: userData.firstName,
@@ -84,25 +53,13 @@ export default function ProfilePageNew() {
             email: userData.email,
             phone: userData.phone || '',
             photo: userData.photo || null,
-            territory: userData.territory || '',
             employeeId: userData.employeeId || '',
             hireDate: userData.hireDate || '',
-            manager: userData.manager || '',
             isActive: userData.isActive,
           });
           
-          // Charger les performances (seulement pour REP et SUP)
-          if (userData.role === 'REP' || userData.role === 'SUP') {
-            try {
-              const performance = await usersService.getPerformance(user.id);
-              setPerformanceKPIs(performance);
-            } catch (perfError) {
-              console.error('Erreur lors du chargement des performances:', perfError);
-              // Garder les valeurs par défaut en cas d'erreur
-            }
-          }
-          
-          setIs2FAEnabled(false); // TODO: Récupérer depuis l'API
+          // TODO: Vérifier si 2FA est activé depuis l'API
+          setIs2FAEnabled(false);
         } catch (error) {
           console.error('Erreur lors du chargement des données:', error);
         } finally {
@@ -121,7 +78,6 @@ export default function ProfilePageNew() {
     
     try {
       setLoading(true);
-      // Mettre à jour via l'API
       await usersService.update(user.id, {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
@@ -137,11 +93,6 @@ export default function ProfilePageNew() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSync = () => {
-    alert('🔄 Synchronisation en cours...');
-    // TODO: Implémenter la synchronisation
   };
 
   const handleLogout = async () => {
@@ -232,7 +183,6 @@ export default function ProfilePageNew() {
     }
   };
 
-  // Afficher un indicateur de chargement
   if (loading) {
     return (
       <div className="pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
@@ -246,24 +196,9 @@ export default function ProfilePageNew() {
 
   return (
     <div className="pb-24 safe-area-inset-bottom bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 min-h-screen">
-      {/* Indicateur de connexion permanent */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${syncStatus.isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-xs font-medium text-gray-700">
-            {syncStatus.isOnline ? 'En ligne' : 'Hors ligne'}
-          </span>
-        </div>
-        {syncStatus.pendingItems > 0 && (
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
-            {syncStatus.pendingItems} en attente
-          </span>
-        )}
-      </div>
-
       {/* En-tête */}
-      <div className="bg-gradient-to-br from-primary via-blue-600 to-sky-500 px-4 pt-16 pb-16 relative overflow-hidden mt-10">
-        {/* Decorative elements - optimisés pour mobile */}
+      <div className="bg-gradient-to-br from-primary via-blue-600 to-sky-500 px-4 pt-16 pb-16 relative overflow-hidden">
+        {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
         
@@ -290,7 +225,7 @@ export default function ProfilePageNew() {
               </h1>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary" className="bg-white/25 backdrop-blur-sm text-white border border-white/30 shadow-sm">
-                  {userRole}
+                  ADMIN
                 </Badge>
                 {profileData.isActive && (
                   <Badge variant="success" className="bg-green-500/30 backdrop-blur-sm text-white border border-white/30 shadow-sm">
@@ -409,13 +344,6 @@ export default function ProfilePageNew() {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
               <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>📍</span>
-                <span>Territoire affecté</span>
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{profileData.territory}</span>
-            </div>
-            <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 flex items-center gap-2">
                 <span>🆔</span>
                 <span>Matricule</span>
               </span>
@@ -427,91 +355,20 @@ export default function ProfilePageNew() {
                 <span>Date d'embauche</span>
               </span>
               <span className="text-sm font-semibold text-gray-900">
-                {new Date(profileData.hireDate).toLocaleDateString('fr-FR')}
+                {profileData.hireDate ? new Date(profileData.hireDate).toLocaleDateString('fr-FR') : 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
               <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>👨‍💼</span>
-                <span>Manager/Superviseur</span>
+                <span>👔</span>
+                <span>Rôle</span>
               </span>
-              <span className="text-sm font-semibold text-gray-900">{profileData.manager}</span>
+              <span className="text-sm font-semibold text-gray-900">Administrateur</span>
             </div>
           </div>
         </Card>
 
-        {/* Section 3: Performances (si REP ou SUP) */}
-        {(userRole === 'REP' || userRole === 'SUP') && (
-          <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 bg-gradient-to-br from-white to-blue-50/30">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl flex items-center justify-center">
-                <span className="text-xl">📈</span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Mes performances</h2>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-center shadow-md hover:shadow-lg transition-all active:scale-95">
-                <div className="text-4xl font-black text-white mb-1 drop-shadow-md">
-                  {performanceKPIs.coverage}%
-                </div>
-                <p className="text-xs font-semibold text-white/90 mb-2">Taux de couverture</p>
-                <div className="w-full bg-white/30 rounded-full h-2.5 backdrop-blur-sm">
-                  <div 
-                    className="bg-white h-2.5 rounded-full shadow-sm transition-all duration-500" 
-                    style={{ width: `${performanceKPIs.coverage}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-500 to-sky-600 rounded-2xl p-4 text-center shadow-md hover:shadow-lg transition-all active:scale-95">
-                <div className="text-4xl font-black text-white mb-1 drop-shadow-md">
-                  {performanceKPIs.strikeRate}%
-                </div>
-                <p className="text-xs font-semibold text-white/90 mb-2">Strike Rate</p>
-                <div className="w-full bg-white/30 rounded-full h-2.5 backdrop-blur-sm">
-                  <div 
-                    className="bg-white h-2.5 rounded-full shadow-sm transition-all duration-500" 
-                    style={{ width: `${performanceKPIs.strikeRate}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">🏪</span>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Visites</p>
-                </div>
-                <p className="text-3xl font-black text-gray-900">{performanceKPIs.visitsThisMonth}</p>
-                <p className="text-xs text-gray-500 mt-1">Ce mois</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">💰</span>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">CA généré</p>
-                </div>
-                <p className="text-3xl font-black text-gray-900">
-                  {(performanceKPIs.salesThisMonth / 1000000).toFixed(1)}M
-                </p>
-                <p className="text-xs text-gray-500 mt-1">FCFA</p>
-              </div>
-            </div>
-
-            <div className="mt-4 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">⭐</span>
-                  <span className="text-sm font-semibold text-white">Perfect Store Score</span>
-                </div>
-                <span className="text-2xl font-black text-white drop-shadow-md">{performanceKPIs.perfectStoreScore}%</span>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Section 4: Paramètres */}
+        {/* Section 3: Paramètres */}
         <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl flex items-center justify-center">
@@ -541,139 +398,22 @@ export default function ProfilePageNew() {
                 </label>
                 <label className="flex items-center justify-between py-3 px-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                   <span className="text-sm text-gray-700 flex items-center gap-2">
-                    <span>🔄</span>
-                    <span>Synchronisation auto</span>
+                    <span>📧</span>
+                    <span>Notifications Email</span>
                   </span>
                   <input
                     type="checkbox"
-                    checked={settings.autoSync}
-                    onChange={(e) => setSettings({ ...settings, autoSync: e.target.checked })}
+                    checked={settings.emailNotifications}
+                    onChange={(e) => setSettings({ ...settings, emailNotifications: e.target.checked })}
                     className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary/20"
                   />
                 </label>
-                {userRole === 'REP' && (
-                  <label className="flex items-center justify-between py-3 px-3 bg-white rounded-lg opacity-60 cursor-not-allowed">
-                    <span className="text-sm text-gray-700 flex items-center gap-2">
-                      <span>📍</span>
-                      <span>Géolocalisation</span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={settings.geoLocation}
-                      onChange={(e) => setSettings({ ...settings, geoLocation: e.target.checked })}
-                      className="w-5 h-5 text-primary rounded"
-                      disabled
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span>📸</span>
-                <span>Qualité des photos</span>
-              </label>
-              <div className="space-y-2">
-                {[
-                  { value: 'high', label: 'Haute', desc: 'Meilleure qualité', icon: '⭐⭐⭐' },
-                  { value: 'medium', label: 'Moyenne', desc: 'Équilibrée', icon: '⭐⭐' },
-                  { value: 'low', label: 'Basse', desc: 'Économie de données', icon: '⭐' },
-                ].map((quality) => (
-                  <label key={quality.value} className="flex items-center gap-3 py-3 px-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                    <input
-                      type="radio"
-                      name="photoQuality"
-                      value={quality.value}
-                      checked={settings.photoQuality === quality.value}
-                      onChange={(e) => setSettings({ ...settings, photoQuality: e.target.value })}
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary/20"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{quality.label}</span>
-                        <span className="text-xs">{quality.icon}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">{quality.desc}</span>
-                    </div>
-                  </label>
-                ))}
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Section 5: Synchronisation (si REP) */}
-        {userRole === 'REP' && (
-          <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 bg-gradient-to-br from-white to-cyan-50/30">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-xl flex items-center justify-center">
-                <span className="text-xl">🔄</span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Synchronisation</h2>
-            </div>
-            
-            <div className="space-y-3 mb-5">
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>📡</span>
-                  <span>Statut connexion</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${syncStatus.isOnline ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500'}`} />
-                  <span className={`text-sm font-semibold ${syncStatus.isOnline ? 'text-green-600' : 'text-red-600'}`}>
-                    {syncStatus.isOnline ? 'En ligne' : 'Hors ligne'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>🕐</span>
-                  <span>Dernière sync</span>
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {syncStatus.lastSync.toLocaleTimeString('fr-FR')}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>⏳</span>
-                  <span>Données en attente</span>
-                </span>
-                <Badge variant="warning" className="font-bold">{syncStatus.pendingItems}</Badge>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>💾</span>
-                  <span>Stockage local</span>
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {syncStatus.storageUsed} MB
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Button variant="primary" size="lg" fullWidth onClick={handleSync} className="bg-primary text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all active:scale-95 py-4 font-semibold">
-                <span className="flex items-center justify-center gap-2">
-                  <span className="text-lg">🔄</span>
-                  <span>Synchroniser maintenant</span>
-                </span>
-              </Button>
-              <Button variant="outline" size="md" fullWidth className="bg-white border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors py-3 font-medium">
-                <span className="flex items-center justify-center gap-2">
-                  <span>🗑️</span>
-                  <span>Vider le cache</span>
-                </span>
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Section 6: Sécurité */}
+        {/* Section 4: Sécurité (avec 2FA OBLIGATOIRE) */}
         <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-xl flex items-center justify-center">
@@ -682,21 +422,72 @@ export default function ProfilePageNew() {
             <h2 className="text-lg font-bold text-gray-900">Sécurité</h2>
           </div>
           
-          <Button 
-            variant="outline" 
-            size="md" 
-            fullWidth
-            onClick={() => setShowPasswordModal(true)}
-            className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all py-4 font-semibold"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span>🔑</span>
-              <span>Changer le mot de passe</span>
-            </span>
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              variant="outline" 
+              size="md" 
+              fullWidth
+              onClick={() => setShowPasswordModal(true)}
+              className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all py-4 font-semibold"
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span>🔑</span>
+                <span>Changer le mot de passe</span>
+              </span>
+            </Button>
+            
+            {/* Authentification 2FA - OBLIGATOIRE pour ADMIN */}
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">⚠️</span>
+                <span className="text-sm font-bold text-amber-900">Authentification 2FA Obligatoire</span>
+              </div>
+              <p className="text-xs text-amber-700 mb-3">
+                En tant qu'administrateur, vous devez activer l'authentification à deux facteurs pour sécuriser votre compte.
+              </p>
+              
+              {is2FAEnabled ? (
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">✅</span>
+                      <span className="text-sm font-bold text-green-900">2FA Activé</span>
+                    </div>
+                    <Badge variant="success" size="sm" className="font-semibold">Actif</Badge>
+                  </div>
+                  <p className="text-xs text-green-700 mb-3">
+                    Votre compte est protégé par l'authentification à deux facteurs
+                  </p>
+                  <Button 
+                    variant="danger" 
+                    size="sm" 
+                    fullWidth
+                    onClick={handleDisable2FA}
+                    disabled={loading2FA}
+                    className="bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    {loading2FA ? '⏳ Désactivation...' : '🔓 Désactiver 2FA'}
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  size="md" 
+                  fullWidth
+                  onClick={() => setShow2FAModal(true)}
+                  className="bg-amber-600 text-white hover:bg-amber-700 transition-colors font-semibold"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <span>🔐</span>
+                    <span>Activer 2FA maintenant</span>
+                  </span>
+                </Button>
+              )}
+            </div>
+          </div>
         </Card>
 
-        {/* Section 7: Support & Légal */}
+        {/* Section 5: Support & Légal */}
         <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl flex items-center justify-center">
@@ -710,7 +501,7 @@ export default function ProfilePageNew() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-800 flex items-center gap-3">
                   <span className="text-xl">📖</span>
-                  <span>Tutoriels / Guide utilisateur</span>
+                  <span>Guide administrateur</span>
                 </span>
                 <span className="text-gray-400 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all font-bold">→</span>
               </div>
@@ -719,7 +510,7 @@ export default function ProfilePageNew() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-800 flex items-center gap-3">
                   <span className="text-xl">💬</span>
-                  <span>Contacter le support</span>
+                  <span>Contacter le support technique</span>
                 </span>
                 <span className="text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all font-bold">→</span>
               </div>
@@ -742,7 +533,7 @@ export default function ProfilePageNew() {
           </div>
         </Card>
 
-        {/* Section 8: Actions */}
+        {/* Section 6: Actions */}
         <div className="space-y-4 mb-6">
           <Button 
             variant="danger" 
@@ -880,7 +671,7 @@ export default function ProfilePageNew() {
             {!qrCode ? (
               <div>
                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  L'authentification à deux facteurs ajoute une couche de sécurité supplémentaire à votre compte.
+                  L'authentification à deux facteurs ajoute une couche de sécurité supplémentaire à votre compte administrateur.
                 </p>
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 mb-5 border border-blue-100">
                   <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">

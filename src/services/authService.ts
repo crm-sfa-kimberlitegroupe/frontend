@@ -15,6 +15,14 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  role: 'REP' | 'ADMIN' | 'SUP';
+  phone?: string;
+  photo?: string;
+  territory?: string;
+  employeeId?: string;
+  hireDate?: string;
+  manager?: string;
+  isActive: boolean;
 }
 
 export interface AuthResponse {

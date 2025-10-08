@@ -10,10 +10,23 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // Layout principal
-import MainLayout from './pages/MainLayout';
+import LayoutRouter from './layouts/LayoutRouter';
 
 // Pages SFA CRM
-import ProfilePageNew from './pages/ProfilePageNew';
+import ProfileRouter from './pages/ProfileRouter';
+import HomePage from './pages/HomePage';
+
+// Pages Desktop (ADMIN/SUP)
+import { 
+  UsersManagement,
+  PDVManagement,
+  RoutesManagement,
+  ProductsManagement,
+  TasksManagement,
+  PerformancePage,
+  TeamPage,
+  ReportsPage
+} from './pages/desktop';
 
 // Pages anciennes (à garder pour compatibilité)
 import SessionsPage from './pages/SessionsPage';
@@ -36,17 +49,34 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Routes protégées avec Bottom Navigation */}
+        {/* Routes protégées avec Layout dynamique */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <MainLayout />
+              <LayoutRouter />
             </ProtectedRoute>
           }
         >
-          <Route index  />
-          <Route path="profile" element={<ProfilePageNew />} />
+          {/* Page d'accueil (affiche le bon dashboard selon le rôle) */}
+          <Route index element={<HomePage />} />
+          
+          {/* Routes Desktop - ADMIN */}
+          <Route path="users" element={<UsersManagement />} />
+          <Route path="pdv" element={<PDVManagement />} />
+          <Route path="routes" element={<RoutesManagement />} />
+          <Route path="products" element={<ProductsManagement />} />
+          <Route path="tasks" element={<TasksManagement />} />
+          
+          {/* Routes Desktop - SUP */}
+          <Route path="performance" element={<PerformancePage />} />
+          <Route path="team" element={<TeamPage />} />
+          
+          {/* Routes communes ADMIN/SUP */}
+          <Route path="reports" element={<ReportsPage />} />
+          
+          {/* Routes communes */}
+          <Route path="profile" element={<ProfileRouter />} />
           
           {/* Pages anciennes */}
           <Route path="sessions" element={<SessionsPage />} />

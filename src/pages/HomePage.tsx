@@ -1,20 +1,21 @@
-import type { UserRole } from '../types';
+import { useAuthStore } from '../store/authStore';
 import HomeREP from './home/HomeREP';
-import HomeADMIN from './home/HomeADMIN';
-import HomeSUP from './home/HomeSUP';
+import UsersManagement from './desktop/UsersManagement';
+import DashboardSupervisor from './desktop/DashboardSupervisor';
 
-interface HomePageProps {
-  userRole: UserRole;
-}
+export default function HomePage() {
+  const user = useAuthStore((state) => state.user);
+  
+  // Si pas d'utilisateur, ne rien afficher (sera géré par ProtectedRoute)
+  if (!user) return null;
 
-export default function HomePage({ userRole }: HomePageProps) {
-  switch (userRole) {
+  switch (user.role) {
     case 'REP':
       return <HomeREP />;
     case 'ADMIN':
-      return <HomeADMIN />;
+      return <UsersManagement />;
     case 'SUP':
-      return <HomeSUP />;
+      return <DashboardSupervisor />;
     default:
       return <HomeREP />;
   }

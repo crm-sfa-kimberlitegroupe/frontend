@@ -1,0 +1,320 @@
+import { useState } from 'react';
+import { MapPin, Plus, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { PageHeader, DataTable, FilterBar } from '../../components/desktop';
+import type { Column } from '../../components/desktop/DataTable';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+
+interface PDV {
+  id: string;
+  name: string;
+  address: string;
+  channel: string;
+  segment: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  assignedTo?: string;
+  latitude?: number;
+  longitude?: number;
+  phone?: string;
+  createdAt: string;
+}
+
+// Mock data
+const mockPDVs: PDV[] = [
+  {
+    id: '1',
+    name: 'Supermarché Plateau',
+    address: '123 Avenue Houphouët-Boigny, Plateau',
+    channel: 'Supermarché',
+    segment: 'A',
+    status: 'APPROVED',
+    assignedTo: 'Jean Kouassi',
+    latitude: 5.3167,
+    longitude: -4.0167,
+    phone: '+225 01 23 45 67',
+    createdAt: '2025-10-01',
+  },
+  {
+    id: '2',
+    name: 'Boutique Cocody',
+    address: '45 Boulevard Latrille, Cocody',
+    channel: 'Boutique',
+    segment: 'B',
+    status: 'APPROVED',
+    assignedTo: 'Marie Diallo',
+    phone: '+225 07 89 01 23',
+    createdAt: '2025-10-02',
+  },
+  {
+    id: '3',
+    name: 'Kiosque Adjamé',
+    address: 'Marché Adjamé',
+    channel: 'Kiosque',
+    segment: 'C',
+    status: 'PENDING',
+    phone: '+225 05 67 89 01',
+    createdAt: '2025-10-05',
+  },
+  {
+    id: '4',
+    name: 'Épicerie Yopougon',
+    address: 'Quartier Niangon, Yopougon',
+    channel: 'Épicerie',
+    segment: 'B',
+    status: 'REJECTED',
+    createdAt: '2025-10-04',
+  },
+];
+
+const statusLabels = {
+  PENDING: 'En attente',
+  APPROVED: 'Approuvé',
+  REJECTED: 'Rejeté',
+};
+
+const statusColors = {
+  PENDING: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+} as const;
+
+export default function PDVManagement() {
+  const [pdvs] = useState<PDV[]>(mockPDVs);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [segmentFilter, setSegmentFilter] = useState<string>('all');
+
+  const filteredPDVs = pdvs.filter((pdv) => {
+    if (statusFilter !== 'all' && pdv.status !== statusFilter) return false;
+    if (channelFilter !== 'all' && pdv.channel !== channelFilter) return false;
+    if (segmentFilter !== 'all' && pdv.segment !== segmentFilter) return false;
+    return true;
+  });
+
+  const activeFiltersCount =
+    (statusFilter !== 'all' ? 1 : 0) +
+    (channelFilter !== 'all' ? 1 : 0) +
+    (segmentFilter !== 'all' ? 1 : 0);
+
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setChannelFilter('all');
+    setSegmentFilter('all');
+  };
+
+  const handleApprove = (pdvId: string) => {
+    console.log('Approve PDV:', pdvId);
+    // TODO: Implémenter l'approbation
+  };
+
+  const handleReject = (pdvId: string) => {
+    console.log('Reject PDV:', pdvId);
+    // TODO: Implémenter le rejet
+  };
+
+  const columns: Column<PDV>[] = [
+    {
+      key: 'name',
+      label: 'Point de Vente',
+      sortable: true,
+      render: (pdv) => (
+        <div>
+          <p className="font-medium text-gray-900">{pdv.name}</p>
+          <p className="text-sm text-gray-500">{pdv.address}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'channel',
+      label: 'Canal',
+      sortable: true,
+      render: (pdv) => (
+        <Badge variant="secondary">{pdv.channel}</Badge>
+      ),
+    },
+    {
+      key: 'segment',
+      label: 'Segment',
+      sortable: true,
+      render: (pdv) => (
+        <span className="font-semibold text-gray-700">{pdv.segment}</span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Statut',
+      sortable: true,
+      render: (pdv) => (
+        <Badge variant={statusColors[pdv.status]}>
+          {statusLabels[pdv.status]}
+        </Badge>
+      ),
+    },
+    {
+      key: 'assignedTo',
+      label: 'Assigné à',
+      sortable: true,
+      render: (pdv) => (
+        <span className="text-sm text-gray-600">
+          {pdv.assignedTo || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      sortable: false,
+      render: (pdv) => (
+        <div className="flex items-center gap-2">
+          {pdv.status === 'PENDING' && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleApprove(pdv.id);
+                }}
+                className="p-2 text-success hover:bg-green-50 rounded-lg transition-colors"
+                title="Approuver"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReject(pdv.id);
+                }}
+                className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
+                title="Rejeter"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Edit PDV:', pdv.id);
+            }}
+            className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
+            title="Modifier"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm('Supprimer ce PDV ?')) {
+                console.log('Delete PDV:', pdv.id);
+              }
+            }}
+            className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
+            title="Supprimer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  const pendingCount = pdvs.filter((p) => p.status === 'PENDING').length;
+
+  return (
+    <div>
+      <PageHeader
+        title="Gestion des Points de Vente"
+        description={`${pdvs.length} PDV au total • ${pendingCount} en attente de validation`}
+        actions={
+          <Button variant="primary" size="md">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau PDV
+          </Button>
+        }
+      />
+
+      {/* Alertes */}
+      {pendingCount > 0 && (
+        <div className="mb-6 p-4 bg-warning/10 border border-warning/20 rounded-lg flex items-center gap-3">
+          <Clock className="w-5 h-5 text-warning" />
+          <div className="flex-1">
+            <p className="font-medium text-gray-900">
+              {pendingCount} PDV en attente de validation
+            </p>
+            <p className="text-sm text-gray-600">
+              Ces points de vente ont été proposés par les vendeurs et nécessitent votre approbation.
+            </p>
+          </div>
+          <Button
+            variant="warning"
+            size="sm"
+            onClick={() => setStatusFilter('PENDING')}
+          >
+            Voir
+          </Button>
+        </div>
+      )}
+
+      <FilterBar
+        activeFiltersCount={activeFiltersCount}
+        onClear={handleClearFilters}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Statut
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="PENDING">En attente</option>
+            <option value="APPROVED">Approuvés</option>
+            <option value="REJECTED">Rejetés</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Canal
+          </label>
+          <select
+            value={channelFilter}
+            onChange={(e) => setChannelFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">Tous les canaux</option>
+            <option value="Supermarché">Supermarché</option>
+            <option value="Boutique">Boutique</option>
+            <option value="Kiosque">Kiosque</option>
+            <option value="Épicerie">Épicerie</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Segment
+          </label>
+          <select
+            value={segmentFilter}
+            onChange={(e) => setSegmentFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">Tous les segments</option>
+            <option value="A">Segment A</option>
+            <option value="B">Segment B</option>
+            <option value="C">Segment C</option>
+          </select>
+        </div>
+      </FilterBar>
+
+      <DataTable
+        data={filteredPDVs}
+        columns={columns}
+        searchable
+        searchPlaceholder="Rechercher un PDV..."
+        onRowClick={(pdv) => console.log('View PDV details:', pdv)}
+      />
+    </div>
+  );
+}
