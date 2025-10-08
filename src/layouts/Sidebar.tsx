@@ -27,54 +27,55 @@ const navItems: NavItem[] = [
     path: '/dashboard',
     roles: ['ADMIN', 'SUP'],
   },
-  {
-    label: 'Utilisateurs',
-    icon: Users,
-    path: '/dashboard/users',
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Points de Vente',
-    icon: MapPin,
-    path: '/dashboard/pdv',
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Routes',
-    icon: Map,
-    path: '/dashboard/routes',
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Produits',
-    icon: Package,
-    path: '/dashboard/products',
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Tâches',
-    icon: ClipboardList,
-    path: '/dashboard/tasks',
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Performances',
-    icon: TrendingUp,
-    path: '/dashboard/performance',
-    roles: ['SUP'],
-  },
+  // TEMPORAIREMENT DÉSACTIVÉ - En cours de développement
+  // {
+  //   label: 'Utilisateurs',
+  //   icon: Users,
+  //   path: '/dashboard/users',
+  //   roles: ['ADMIN'],
+  // },
+  // {
+  //   label: 'Points de Vente',
+  //   icon: MapPin,
+  //   path: '/dashboard/pdv',
+  //   roles: ['ADMIN'],
+  // },
+  // {
+  //   label: 'Routes',
+  //   icon: Map,
+  //   path: '/dashboard/routes',
+  //   roles: ['ADMIN'],
+  // },
+  // {
+  //   label: 'Produits',
+  //   icon: Package,
+  //   path: '/dashboard/products',
+  //   roles: ['ADMIN'],
+  // },
+  // {
+  //   label: 'Tâches',
+  //   icon: ClipboardList,
+  //   path: '/dashboard/tasks',
+  //   roles: ['ADMIN'],
+  // },
+  // {
+  //   label: 'Performances',
+  //   icon: TrendingUp,
+  //   path: '/dashboard/performance',
+  //   roles: ['SUP'],
+  // },
   {
     label: 'Équipe',
     icon: Users,
     path: '/dashboard/team',
     roles: ['SUP'],
   },
-  {
-    label: 'Rapports',
-    icon: BarChart3,
-    path: '/dashboard/reports',
-    roles: ['ADMIN', 'SUP'],
-  },
+  // {
+  //   label: 'Rapports',
+  //   icon: BarChart3,
+  //   path: '/dashboard/reports',
+  //   roles: ['ADMIN', 'SUP'],
+  // },
 ];
 
 interface SidebarProps {

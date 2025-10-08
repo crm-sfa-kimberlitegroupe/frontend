@@ -136,70 +136,28 @@ export default function DashboardSupervisor() {
         />
       </DashboardGrid>
 
-      {/* Charts */}
+      {/* Charts - TEMPORAIREMENT DÉSACTIVÉ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <ChartWrapper
           title="Performance Hebdomadaire"
-          subtitle="Couverture vs Strike Rate"
+          subtitle="Données en cours de chargement..."
         >
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="couverture"
-                stroke="#38BDF8"
-                strokeWidth={2}
-                name="Couverture (%)"
-              />
-              <Line
-                type="monotone"
-                dataKey="strikeRate"
-                stroke="#10B981"
-                strokeWidth={2}
-                name="Strike Rate (%)"
-              />
-              <Line
-                type="monotone"
-                dataKey="objectif"
-                stroke="#EF4444"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Objectif (%)"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-lg">
+            <div className="text-center text-gray-400">
+              <p className="text-sm">Données non disponibles</p>
+            </div>
+          </div>
         </ChartWrapper>
 
         <ChartWrapper
           title="Ventes par Territoire"
-          subtitle="Répartition du CA"
+          subtitle="Données en cours de chargement..."
         >
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={salesByTerritory}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {salesByTerritory.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-lg">
+            <div className="text-center text-gray-400">
+              <p className="text-sm">Données non disponibles</p>
+            </div>
+          </div>
         </ChartWrapper>
       </div>
 

@@ -15,6 +15,7 @@ import LayoutRouter from './layouts/LayoutRouter';
 // Pages SFA CRM
 import ProfileRouter from './pages/ProfileRouter';
 import HomePage from './pages/HomePage';
+import UnderConstruction from './pages/UnderConstruction';
 
 // Pages Desktop (ADMIN/SUP)
 import { 
@@ -61,25 +62,25 @@ function App() {
           {/* Page d'accueil (affiche le bon dashboard selon le rôle) */}
           <Route index element={<HomePage />} />
           
-          {/* Routes Desktop - ADMIN */}
-          <Route path="users" element={<UsersManagement />} />
-          <Route path="pdv" element={<PDVManagement />} />
-          <Route path="routes" element={<RoutesManagement />} />
-          <Route path="products" element={<ProductsManagement />} />
-          <Route path="tasks" element={<TasksManagement />} />
+          {/* Routes Desktop - ADMIN - TEMPORAIREMENT DÉSACTIVÉES */}
+          <Route path="users" element={<UnderConstruction />} />
+          <Route path="pdv" element={<UnderConstruction />} />
+          <Route path="routes" element={<UnderConstruction />} />
+          <Route path="products" element={<UnderConstruction />} />
+          <Route path="tasks" element={<UnderConstruction />} />
           
           {/* Routes Desktop - SUP */}
-          <Route path="performance" element={<PerformancePage />} />
+          <Route path="performance" element={<UnderConstruction />} />
           <Route path="team" element={<TeamPage />} />
           
-          {/* Routes communes ADMIN/SUP */}
-          <Route path="reports" element={<ReportsPage />} />
+          {/* Routes communes ADMIN/SUP - TEMPORAIREMENT DÉSACTIVÉES */}
+          <Route path="reports" element={<UnderConstruction />} />
           
           {/* Routes communes */}
           <Route path="profile" element={<ProfileRouter />} />
           
-          {/* Pages anciennes */}
-          <Route path="sessions" element={<SessionsPage />} />
+          {/* Pages anciennes - TEMPORAIREMENT DÉSACTIVÉES */}
+          <Route path="sessions" element={<UnderConstruction />} />
         </Route>
 
         {/* Redirection par défaut */}
