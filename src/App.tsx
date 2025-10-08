@@ -19,14 +19,9 @@ import UnderConstruction from './pages/UnderConstruction';
 
 // Pages Desktop (ADMIN/SUP)
 import { 
-  UsersManagement,
-  PDVManagement,
-  RoutesManagement,
-  ProductsManagement,
-  TasksManagement,
-  PerformancePage,
+
   TeamPage,
-  ReportsPage
+  
 } from './pages/desktop';
 
 function App() {
