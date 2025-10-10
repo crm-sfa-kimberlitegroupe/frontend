@@ -49,13 +49,6 @@ export default function ProfilePageNew() {
     photoQuality: 'high',
   });
 
-  const [syncStatus] = useState({
-    isOnline: true,
-    lastSync: new Date(),
-    pendingItems: 3,
-    storageUsed: 45.2,
-  });
-
   const [performanceKPIs, setPerformanceKPIs] = useState<UserPerformance>({
     coverage: 0,
     strikeRate: 0,
@@ -136,11 +129,6 @@ export default function ProfilePageNew() {
     }
   };
 
-  const handleSync = () => {
-    alert('🔄 Synchronisation en cours...');
-    // TODO: Implémenter la synchronisation
-  };
-
   const handleLogout = async () => {
     if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
       await logout();
@@ -205,367 +193,248 @@ export default function ProfilePageNew() {
   // Afficher un indicateur de chargement
   if (loading) {
     return (
-      <div className="pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du profil...</p>
+          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-slate-600">Chargement...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pb-24 safe-area-inset-bottom bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 min-h-screen">
-      {/* Indicateur de connexion permanent */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${syncStatus.isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-xs font-medium text-gray-700">
-            {syncStatus.isOnline ? 'En ligne' : 'Hors ligne'}
-          </span>
-        </div>
-        {syncStatus.pendingItems > 0 && (
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
-            {syncStatus.pendingItems} en attente
-          </span>
-        )}
-      </div>
-
-      {/* En-tête */}
-      <div className="bg-gradient-to-br from-primary via-blue-600 to-sky-500 px-4 pt-16 pb-16 relative overflow-hidden mt-10">
-        {/* Decorative elements - optimisés pour mobile */}
-        <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-4">
-            {/* Photo de profil */}
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* En-tête épuré */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex items-start gap-6">
+            {/* Photo de profil minimaliste */}
             <div className="relative group">
-              <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center text-5xl shadow-2xl ring-4 ring-white/30 transition-transform group-hover:scale-105">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-2xl font-semibold text-slate-600 border-2 border-slate-200">
                 {profileData.photo ? (
-                  <img src={profileData.photo} alt="Profile" className="w-full h-full rounded-2xl object-cover" />
+                  <img src={profileData.photo} alt="Profile" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  '👤'
+                  `${profileData.firstName[0]}${profileData.lastName[0]}`
                 )}
               </div>
-              <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg hover:bg-gray-50 transition-all hover:scale-110">
-                <span className="text-xl">📷</span>
+              <button className="absolute bottom-0 right-0 w-7 h-7 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs hover:bg-slate-800 transition-colors">
+                ✎
               </button>
             </div>
 
-            {/* Infos principales */}
-            <div className="flex-1 text-white">
-              <h1 className="text-2xl font-bold mb-2 drop-shadow-sm">
+            {/* Informations principales */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-semibold text-slate-900 mb-1">
                 {profileData.firstName} {profileData.lastName}
               </h1>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary" className="bg-white/25 backdrop-blur-sm text-white border border-white/30 shadow-sm">
-                  {userRole}
-                </Badge>
-                {profileData.isActive && (
-                  <Badge variant="success" className="bg-green-500/30 backdrop-blur-sm text-white border border-white/30 shadow-sm">
-                    ✓ Actif
-                  </Badge>
-                )}
+              <p className="text-sm text-slate-600 mb-3">{profileData.email}</p>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{userRole}</Badge>
+                {profileData.isActive && <Badge variant="success">Actif</Badge>}
               </div>
-              <p className="text-sm opacity-95 drop-shadow-sm">{profileData.email}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-12 relative z-20">
-        {/* Section 1: Informations personnelles */}
-        <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-xl flex items-center justify-center">
-                <span className="text-xl">👤</span>
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Informations personnelles */}
+        <Card className="border border-slate-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-base font-semibold text-slate-900">Informations personnelles</h2>
+              <button 
+                onClick={() => setIsEditing(isEditing === 'personal' ? null : 'personal')}
+                className="text-sm text-slate-600 hover:text-slate-900 font-medium"
+              >
+                {isEditing === 'personal' ? 'Annuler' : 'Modifier'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Prénom</label>
+                {isEditing === 'personal' ? (
+                  <input
+                    type="text"
+                    value={profileData.firstName}
+                    onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-900">{profileData.firstName}</p>
+                )}
               </div>
-              <h2 className="text-lg font-bold text-gray-900">Informations personnelles</h2>
-            </div>
-            <button 
-              onClick={() => setIsEditing(isEditing ? null : 'personal')}
-              className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-            >
-              <span>{isEditing === 'personal' ? '✕' : '✏️'}</span>
-              {isEditing === 'personal' ? 'Annuler' : 'Éditer'}
-            </button>
-          </div>
 
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Prénom</label>
-              {isEditing === 'personal' ? (
-                <input
-                  type="text"
-                  value={profileData.firstName}
-                  onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
-                  className="w-full border-2 border-primary/30 focus:border-primary rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              ) : (
-                <p className="text-sm font-medium text-gray-900">{profileData.firstName}</p>
-              )}
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Nom</label>
+                {isEditing === 'personal' ? (
+                  <input
+                    type="text"
+                    value={profileData.lastName}
+                    onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-900">{profileData.lastName}</p>
+                )}
+              </div>
 
-            <div className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Nom</label>
-              {isEditing === 'personal' ? (
-                <input
-                  type="text"
-                  value={profileData.lastName}
-                  onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
-                  className="w-full border-2 border-primary/30 focus:border-primary rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              ) : (
-                <p className="text-sm font-medium text-gray-900">{profileData.lastName}</p>
-              )}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Email</label>
+                <p className="text-sm text-slate-900">{profileData.email}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Téléphone</label>
+                {isEditing === 'personal' ? (
+                  <input
+                    type="tel"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-900">{profileData.phone}</p>
+                )}
+              </div>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</label>
-              {isEditing === 'personal' ? (
-                <input
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                  className="w-full border-2 border-primary/30 focus:border-primary rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              ) : (
-                <p className="text-sm font-medium text-gray-900">{profileData.email}</p>
-              )}
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Téléphone</label>
-              {isEditing === 'personal' ? (
-                <input
-                  type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  className="w-full border-2 border-primary/30 focus:border-primary rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              ) : (
-                <p className="text-sm font-medium text-gray-900">{profileData.phone}</p>
-              )}
-            </div>
-          </div>
-
-          {isEditing === 'personal' && (
-            <Button 
-              variant="primary" 
-              size="md" 
-              fullWidth 
-              className="mt-5 shadow-lg hover:shadow-xl transition-shadow"
-              onClick={handleSave}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <span>✓</span>
-                <span>Enregistrer les modifications</span>
-              </span>
-            </Button>
-          )}
-        </Card>
-
-        {/* Section 2: Informations professionnelles */}
-        <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500/10 to-sky-500/10 rounded-xl flex items-center justify-center">
-              <span className="text-xl">💼</span>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Informations professionnelles</h2>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>📍</span>
-                <span>Territoire affecté</span>
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{profileData.territory}</span>
-            </div>
-            <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>🆔</span>
-                <span>Matricule</span>
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{profileData.employeeId}</span>
-            </div>
-            <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>📅</span>
-                <span>Date d'embauche</span>
-              </span>
-              <span className="text-sm font-semibold text-gray-900">
-                {new Date(profileData.hireDate).toLocaleDateString('fr-FR')}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 flex items-center gap-2">
-                <span>👨‍💼</span>
-                <span>Manager/Superviseur</span>
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{profileData.manager}</span>
-            </div>
+            {isEditing === 'personal' && (
+              <div className="mt-6 flex gap-3">
+                <Button variant="outline" fullWidth onClick={() => setIsEditing(null)}>
+                  Annuler
+                </Button>
+                <Button variant="primary" fullWidth onClick={handleSave}>
+                  Enregistrer
+                </Button>
+              </div>
+            )}
           </div>
         </Card>
 
-        {/* Section 3: Performances (si REP ou SUP) */}
-        {(userRole === 'REP' || userRole === 'SUP') && (
-          <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 bg-gradient-to-br from-white to-blue-50/30">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl flex items-center justify-center">
-                <span className="text-xl">📈</span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Mes performances</h2>
-            </div>
+        {/* Informations professionnelles */}
+        <Card className="border border-slate-200">
+          <div className="p-6">
+            <h2 className="text-base font-semibold text-slate-900 mb-6">Informations professionnelles</h2>
             
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-center shadow-md hover:shadow-lg transition-all active:scale-95">
-                <div className="text-4xl font-black text-white mb-1 drop-shadow-md">
-                  {performanceKPIs.coverage}%
-                </div>
-                <p className="text-xs font-semibold text-white/90 mb-2">Taux de couverture</p>
-                <div className="w-full bg-white/30 rounded-full h-2.5 backdrop-blur-sm">
-                  <div 
-                    className="bg-white h-2.5 rounded-full shadow-sm transition-all duration-500" 
-                    style={{ width: `${performanceKPIs.coverage}%` }}
-                  />
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-600">Territoire</span>
+                <span className="text-sm font-medium text-slate-900">{profileData.territory}</span>
               </div>
-
-              <div className="bg-gradient-to-br from-blue-500 to-sky-600 rounded-2xl p-4 text-center shadow-md hover:shadow-lg transition-all active:scale-95">
-                <div className="text-4xl font-black text-white mb-1 drop-shadow-md">
-                  {performanceKPIs.strikeRate}%
-                </div>
-                <p className="text-xs font-semibold text-white/90 mb-2">Strike Rate</p>
-                <div className="w-full bg-white/30 rounded-full h-2.5 backdrop-blur-sm">
-                  <div 
-                    className="bg-white h-2.5 rounded-full shadow-sm transition-all duration-500" 
-                    style={{ width: `${performanceKPIs.strikeRate}%` }}
-                  />
-                </div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-600">Matricule</span>
+                <span className="text-sm font-medium text-slate-900">{profileData.employeeId}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-600">Date d'embauche</span>
+                <span className="text-sm font-medium text-slate-900">
+                  {new Date(profileData.hireDate).toLocaleDateString('fr-FR')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-slate-600">Manager</span>
+                <span className="text-sm font-medium text-slate-900">{profileData.manager}</span>
               </div>
             </div>
+          </div>
+        </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">🏪</span>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Visites</p>
+        {/* Performances (si REP ou SUP) */}
+        {(userRole === 'REP' || userRole === 'SUP') && (
+          <Card className="border border-slate-200">
+            <div className="p-6">
+              <h2 className="text-base font-semibold text-slate-900 mb-6">Performances</h2>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-slate-50 rounded-lg">
+                  <div className="text-2xl font-bold text-slate-900 mb-1">{performanceKPIs.coverage}%</div>
+                  <p className="text-xs text-slate-600">Couverture</p>
                 </div>
-                <p className="text-3xl font-black text-gray-900">{performanceKPIs.visitsThisMonth}</p>
-                <p className="text-xs text-gray-500 mt-1">Ce mois</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">💰</span>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">CA généré</p>
+                <div className="text-center p-4 bg-slate-50 rounded-lg">
+                  <div className="text-2xl font-bold text-slate-900 mb-1">{performanceKPIs.strikeRate}%</div>
+                  <p className="text-xs text-slate-600">Strike Rate</p>
                 </div>
-                <p className="text-3xl font-black text-gray-900">
-                  {(performanceKPIs.salesThisMonth / 1000000).toFixed(1)}M
-                </p>
-                <p className="text-xs text-gray-500 mt-1">FCFA</p>
+                <div className="text-center p-4 bg-slate-50 rounded-lg">
+                  <div className="text-2xl font-bold text-slate-900 mb-1">{performanceKPIs.visitsThisMonth}</div>
+                  <p className="text-xs text-slate-600">Visites</p>
+                </div>
+                <div className="text-center p-4 bg-slate-50 rounded-lg">
+                  <div className="text-2xl font-bold text-slate-900 mb-1">
+                    {(performanceKPIs.salesThisMonth / 1000000).toFixed(1)}M
+                  </div>
+                  <p className="text-xs text-slate-600">CA (FCFA)</p>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-4 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">⭐</span>
-                  <span className="text-sm font-semibold text-white">Perfect Store Score</span>
+              <div className="p-4 bg-slate-900 text-white rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Perfect Store Score</span>
+                  <span className="text-xl font-bold">{performanceKPIs.perfectStoreScore}%</span>
                 </div>
-                <span className="text-2xl font-black text-white drop-shadow-md">{performanceKPIs.perfectStoreScore}%</span>
               </div>
             </div>
           </Card>
         )}
 
-        {/* Section 4: Paramètres */}
-        <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl flex items-center justify-center">
-              <span className="text-xl">⚙️</span>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Paramètres</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span>⚡</span>
-                <span>Préférences</span>
-              </p>
-              <div className="space-y-2">
-                <label className="flex items-center justify-between py-3 px-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  <span className="text-sm text-gray-700 flex items-center gap-2">
-                    <span>🌙</span>
-                    <span>Mode sombre</span>
-                  </span>
+        {/* Paramètres */}
+        <Card className="border border-slate-200">
+          <div className="p-6">
+            <h2 className="text-base font-semibold text-slate-900 mb-6">Paramètres</h2>
+            
+            <div className="space-y-3">
+              <label className="flex items-center justify-between py-3 cursor-pointer group">
+                <span className="text-sm text-slate-700 group-hover:text-slate-900">Mode sombre</span>
+                <input
+                  type="checkbox"
+                  checked={settings.darkMode}
+                  onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })}
+                  className="w-4 h-4 text-slate-900 rounded focus:ring-2 focus:ring-slate-900"
+                />
+              </label>
+              
+              <label className="flex items-center justify-between py-3 cursor-pointer group">
+                <span className="text-sm text-slate-700 group-hover:text-slate-900">Synchronisation auto</span>
+                <input
+                  type="checkbox"
+                  checked={settings.autoSync}
+                  onChange={(e) => setSettings({ ...settings, autoSync: e.target.checked })}
+                  className="w-4 h-4 text-slate-900 rounded focus:ring-2 focus:ring-slate-900"
+                />
+              </label>
+
+              {userRole === 'REP' && (
+                <label className="flex items-center justify-between py-3 opacity-50 cursor-not-allowed">
+                  <span className="text-sm text-slate-700">Géolocalisation</span>
                   <input
                     type="checkbox"
-                    checked={settings.darkMode}
-                    onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })}
-                    className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary/20"
+                    checked={settings.geoLocation}
+                    disabled
+                    className="w-4 h-4 text-slate-900 rounded"
                   />
                 </label>
-                <label className="flex items-center justify-between py-3 px-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  <span className="text-sm text-gray-700 flex items-center gap-2">
-                    <span>🔄</span>
-                    <span>Synchronisation auto</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.autoSync}
-                    onChange={(e) => setSettings({ ...settings, autoSync: e.target.checked })}
-                    className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary/20"
-                  />
-                </label>
-                {userRole === 'REP' && (
-                  <label className="flex items-center justify-between py-3 px-3 bg-white rounded-lg opacity-60 cursor-not-allowed">
-                    <span className="text-sm text-gray-700 flex items-center gap-2">
-                      <span>📍</span>
-                      <span>Géolocalisation</span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={settings.geoLocation}
-                      onChange={(e) => setSettings({ ...settings, geoLocation: e.target.checked })}
-                      className="w-5 h-5 text-primary rounded"
-                      disabled
-                    />
-                  </label>
-                )}
-              </div>
+              )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span>📸</span>
-                <span>Qualité des photos</span>
-              </label>
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <label className="block text-sm font-medium text-slate-700 mb-3">Qualité des photos</label>
               <div className="space-y-2">
                 {[
-                  { value: 'high', label: 'Haute', desc: 'Meilleure qualité', icon: '⭐⭐⭐' },
-                  { value: 'medium', label: 'Moyenne', desc: 'Équilibrée', icon: '⭐⭐' },
-                  { value: 'low', label: 'Basse', desc: 'Économie de données', icon: '⭐' },
+                  { value: 'high', label: 'Haute qualité' },
+                  { value: 'medium', label: 'Moyenne' },
+                  { value: 'low', label: 'Économie de données' },
                 ].map((quality) => (
-                  <label key={quality.value} className="flex items-center gap-3 py-3 px-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                  <label key={quality.value} className="flex items-center gap-3 py-2 cursor-pointer">
                     <input
                       type="radio"
                       name="photoQuality"
                       value={quality.value}
                       checked={settings.photoQuality === quality.value}
                       onChange={(e) => setSettings({ ...settings, photoQuality: e.target.value })}
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-4 h-4 text-slate-900 focus:ring-2 focus:ring-slate-900"
                     />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{quality.label}</span>
-                        <span className="text-xs">{quality.icon}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">{quality.desc}</span>
-                    </div>
+                    <span className="text-sm text-slate-700">{quality.label}</span>
                   </label>
                 ))}
               </div>
@@ -573,237 +442,110 @@ export default function ProfilePageNew() {
           </div>
         </Card>
 
-        {/* Section 5: Synchronisation (si REP) */}
-        {userRole === 'REP' && (
-          <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 bg-gradient-to-br from-white to-cyan-50/30">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-xl flex items-center justify-center">
-                <span className="text-xl">🔄</span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Synchronisation</h2>
-            </div>
-            
-            <div className="space-y-3 mb-5">
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>📡</span>
-                  <span>Statut connexion</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${syncStatus.isOnline ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500'}`} />
-                  <span className={`text-sm font-semibold ${syncStatus.isOnline ? 'text-green-600' : 'text-red-600'}`}>
-                    {syncStatus.isOnline ? 'En ligne' : 'Hors ligne'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>🕐</span>
-                  <span>Dernière sync</span>
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {syncStatus.lastSync.toLocaleTimeString('fr-FR')}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>⏳</span>
-                  <span>Données en attente</span>
-                </span>
-                <Badge variant="warning" className="font-bold">{syncStatus.pendingItems}</Badge>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-white rounded-xl shadow-sm">
-                <span className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>💾</span>
-                  <span>Stockage local</span>
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {syncStatus.storageUsed} MB
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Button variant="primary" size="lg" fullWidth onClick={handleSync} className="bg-primary text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all active:scale-95 py-4 font-semibold">
-                <span className="flex items-center justify-center gap-2">
-                  <span className="text-lg">🔄</span>
-                  <span>Synchroniser maintenant</span>
-                </span>
-              </Button>
-              <Button variant="outline" size="md" fullWidth className="bg-white border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors py-3 font-medium">
-                <span className="flex items-center justify-center gap-2">
-                  <span>🗑️</span>
-                  <span>Vider le cache</span>
-                </span>
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Section 6: Sécurité */}
-        <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-xl flex items-center justify-center">
-              <span className="text-xl">🔒</span>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Sécurité</h2>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="md" 
-            fullWidth
-            onClick={() => setShowPasswordModal(true)}
-            className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all py-4 font-semibold"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span>🔑</span>
-              <span>Changer le mot de passe</span>
-            </span>
-          </Button>
-        </Card>
-
-        {/* Section 7: Support & Légal */}
-        <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl flex items-center justify-center">
-              <span className="text-xl">📚</span>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Support & Légal</h2>
-          </div>
-          
-          <div className="space-y-3">
-            <button className="w-full text-left px-4 py-4 bg-white border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 rounded-xl transition-all hover:shadow-md group">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800 flex items-center gap-3">
-                  <span className="text-xl">📖</span>
-                  <span>Tutoriels / Guide utilisateur</span>
-                </span>
-                <span className="text-gray-400 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all font-bold">→</span>
-              </div>
-            </button>
-            <button className="w-full text-left px-4 py-4 bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-xl transition-all hover:shadow-md group">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800 flex items-center gap-3">
-                  <span className="text-xl">💬</span>
-                  <span>Contacter le support</span>
-                </span>
-                <span className="text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all font-bold">→</span>
-              </div>
-            </button>
-            <button className="w-full text-left px-4 py-4 bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 rounded-xl transition-all hover:shadow-md group">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800 flex items-center gap-3">
-                  <span className="text-xl">📄</span>
-                  <span>CGU / Politique de confidentialité</span>
-                </span>
-                <span className="text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all font-bold">→</span>
-              </div>
-            </button>
-            <div className="px-4 py-3 bg-gray-50 rounded-xl">
-              <span className="text-xs font-medium text-gray-500 flex items-center gap-2">
-                <span>ℹ️</span>
-                <span>Version de l'application: <span className="font-bold text-gray-700">v1.2.3</span></span>
-              </span>
-            </div>
+        {/* Sécurité */}
+        <Card className="border border-slate-200">
+          <div className="p-6">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">Sécurité</h2>
+            <Button 
+              variant="outline" 
+              fullWidth
+              onClick={() => setShowPasswordModal(true)}
+            >
+              Changer le mot de passe
+            </Button>
           </div>
         </Card>
 
-        {/* Section 8: Actions */}
-        <div className="space-y-4 mb-6">
-          <Button 
-            variant="danger" 
-            size="lg" 
-            fullWidth
-            onClick={handleLogout}
-            className="border-2 border-red-500 bg-red-500 text-white hover:bg-red-600 hover:border-red-600 shadow-md hover:shadow-lg transition-all active:scale-95 font-bold py-4"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span className="text-xl">🚪</span>
-              <span>Déconnexion</span>
-            </span>
-          </Button>
+        {/* Support */}
+        <Card className="border border-slate-200">
+          <div className="p-6">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">Support & Aide</h2>
+            <div className="space-y-2">
+              <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
+                Guide utilisateur
+              </button>
+              <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
+                Contacter le support
+              </button>
+              <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
+                Politique de confidentialité
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-4 text-center">Version 1.2.3</p>
+          </div>
+        </Card>
 
+        {/* Actions */}
+        <div className="space-y-3">
+          <Button variant="primary" fullWidth onClick={handleLogout}>
+            Déconnexion
+          </Button>
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="w-full text-sm text-red-600 hover:text-red-700 font-medium hover:underline py-2 transition-colors"
+            className="w-full text-sm text-red-600 hover:text-red-700 py-2"
           >
-            ⚠️ Supprimer mon compte
+            Supprimer mon compte
           </button>
         </div>
       </div>
 
       {/* Modal changement mot de passe */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn" onClick={(e) => e.target === e.currentTarget && setShowPasswordModal(false)}>
-          <Card className="w-full max-w-md p-6 shadow-xl animate-slideUp">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <span className="text-2xl">🔑</span>
-                <span>Changer le mot de passe</span>
-              </h3>
-              <button 
-                onClick={() => setShowPasswordModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Mot de passe actuel
-                </label>
-                <input
-                  type="password"
-                  className="w-full border-2 border-gray-200 focus:border-primary rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="••••••••"
-                />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setShowPasswordModal(false)}>
+          <Card className="w-full max-w-md border border-slate-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Changer le mot de passe</h3>
+                <button 
+                  onClick={() => setShowPasswordModal(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nouveau mot de passe
-                </label>
-                <input
-                  type="password"
-                  className="w-full border-2 border-gray-200 focus:border-primary rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="••••••••"
-                />
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Mot de passe actuel
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Confirmer le mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Confirmer le nouveau mot de passe
-                </label>
-                <input
-                  type="password"
-                  className="w-full border-2 border-gray-200 focus:border-primary rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                fullWidth
-                onClick={() => setShowPasswordModal(false)}
-                className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors py-3 font-semibold"
-              >
-                Annuler
-              </Button>
-              <Button 
-                variant="primary" 
-                fullWidth
-                onClick={() => {
-                  alert('Mot de passe modifié avec succès!');
+              <div className="flex gap-3">
+                <Button variant="outline" fullWidth onClick={() => setShowPasswordModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="primary" fullWidth onClick={() => {
+                  alert('Mot de passe modifié');
                   setShowPasswordModal(false);
-                }}
-                className="bg-primary text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all py-3 font-semibold"
-              >
-                ✓ Confirmer
-              </Button>
+                }}>
+                  Confirmer
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
@@ -943,46 +685,38 @@ export default function ProfilePageNew() {
         </div>
       )}
 
-      {/* Modal suppression compte */}
+      {/* Modal suppression */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn" onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}>
-          <Card className="w-full max-w-md p-6 shadow-xl animate-slideUp">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <p className="text-5xl">⚠️</p>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}>
+          <Card className="w-full max-w-md border border-slate-200">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-red-600 text-xl">⚠</span>
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Supprimer le compte</h3>
+                <p className="text-sm text-slate-600">
+                  Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Supprimer le compte</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Cette action est <span className="font-bold text-red-600">irréversible</span>. Toutes vos données seront définitivement supprimées.
-              </p>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Tapez <span className="font-bold text-red-600">"SUPPRIMER"</span> pour confirmer
-              </label>
-              <input
-                type="text"
-                className="w-full border-2 border-red-200 focus:border-red-500 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
-                placeholder="SUPPRIMER"
-              />
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                fullWidth
-                onClick={() => setShowDeleteModal(false)}
-                className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors py-3 font-semibold"
-              >
-                Annuler
-              </Button>
-              <Button 
-                variant="danger" 
-                fullWidth
-                onClick={handleDeleteAccount}
-                className="bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg transition-all py-3 font-bold"
-              >
-                Confirmer la suppression
-              </Button>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tapez <span className="font-bold">SUPPRIMER</span> pour confirmer
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  placeholder="SUPPRIMER"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" fullWidth onClick={() => setShowDeleteModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="danger" fullWidth onClick={handleDeleteAccount}>
+                  Confirmer
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

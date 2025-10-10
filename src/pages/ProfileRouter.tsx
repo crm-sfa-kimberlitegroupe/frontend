@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/authStore';
 import ProfilePageAdmin from './admin/ProfilePageAdmin';
-import ProfilePageNew from './ProfilePageNew';
+import ProfilePageNew from './profile/ProfilePageNew';
 
 export default function ProfileRouter() {
   const user = useAuthStore((state) => state.user);

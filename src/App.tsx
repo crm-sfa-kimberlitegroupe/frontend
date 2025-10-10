@@ -19,9 +19,7 @@ import UnderConstruction from './pages/UnderConstruction';
 
 // Pages Desktop (ADMIN/SUP)
 import { 
-
-  TeamPage,
-  
+  TeamPage
 } from './pages/desktop';
 
 function App() {

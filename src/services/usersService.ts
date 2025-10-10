@@ -137,6 +137,23 @@ export const usersService = {
     const response = await api.get<{ success: boolean; data: UserPerformance; message: string }>(`/${id}/performance`);
     return response.data.data;
   },
+
+  // Upload de photo de profil
+  async uploadPhoto(id: string, file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const response = await api.post<{ success: boolean; data: { photoUrl: string }; message: string }>(
+      `/${id}/upload-photo`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data.data.photoUrl;
+  },
 };
 
 export default usersService;
