@@ -15,11 +15,14 @@ import SecuritySection from './components/SecuritySection';
 import SupportSection from './components/SupportSection';
 import PasswordModal from './components/PasswordModal';
 import DeleteAccountModal from './components/DeleteAccountModal';
+import TwoFactorModal from './components/TwoFactorModal';
 
 export default function ProfilePageNew() {
   const { user, logout } = useAuthStore();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const userRole: UserRole = (user?.role as UserRole) || 'REP';
@@ -30,7 +33,7 @@ export default function ProfilePageNew() {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    photo: user?.photo || null,
+    photo: user?.photoUrl || user?.photo || null,
     territory: user?.territory || '',
     employeeId: user?.employeeId || '',
     hireDate: user?.hireDate || '',
@@ -81,8 +84,8 @@ export default function ProfilePageNew() {
             lastName: userData.lastName,
             email: userData.email,
             phone: userData.phone || '',
-            photo: userData.photo || null,
-            territory: userData.territory || '',
+            photo: userData.photoUrl || userData.photo || null,
+            territory: userData.territoryName || userData.territory || '',
             employeeId: userData.employeeId || '',
             hireDate: userData.hireDate || '',
             manager: userData.manager || '',
@@ -229,7 +232,12 @@ export default function ProfilePageNew() {
         )}
 
         {/* Section 6: Sécurité */}
-        <SecuritySection onChangePassword={() => setShowPasswordModal(true)} />
+        <SecuritySection 
+          onChangePassword={() => setShowPasswordModal(true)}
+          userRole={userRole}
+          on2FAClick={() => setShow2FAModal(true)}
+          is2FAEnabled={is2FAEnabled}
+        />
 
         {/* Section 7: Support & Légal */}
         <SupportSection />
@@ -263,6 +271,13 @@ export default function ProfilePageNew() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
+      />
+
+      <TwoFactorModal
+        isOpen={show2FAModal}
+        onClose={() => setShow2FAModal(false)}
+        is2FAEnabled={is2FAEnabled}
+        onStatusChange={setIs2FAEnabled}
       />
     </div>
   );

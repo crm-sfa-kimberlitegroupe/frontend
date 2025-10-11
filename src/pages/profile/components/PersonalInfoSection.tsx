@@ -75,10 +75,13 @@ export default function PersonalInfoSection({ profileData, onUpdate, onSave }: P
                 type="tel"
                 value={profileData.phone}
                 onChange={(e) => onUpdate({ phone: e.target.value })}
+                placeholder="+225 07 12 34 56 78"
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               />
             ) : (
-              <p className="text-sm text-slate-900">{profileData.phone}</p>
+              <p className="text-sm text-slate-900">
+                {profileData.phone || <span className="text-slate-400 italic">Non renseigné</span>}
+              </p>
             )}
           </div>
         </div>

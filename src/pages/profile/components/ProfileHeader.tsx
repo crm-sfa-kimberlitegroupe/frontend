@@ -53,6 +53,11 @@ export default function ProfileHeader({
       const photoUrl = await usersService.uploadPhoto(user.id, file);
       setCurrentPhoto(photoUrl);
       onPhotoUpdate?.(photoUrl);
+      
+      // Mettre à jour le store d'authentification
+      const { updateUserPhoto } = useAuthStore.getState();
+      updateUserPhoto(photoUrl);
+      
       alert('✓ Photo de profil mise à jour avec succès');
     } catch (error) {
       console.error('Erreur lors de l\'upload:', error);

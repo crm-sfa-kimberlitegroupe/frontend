@@ -10,6 +10,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
+  updateUserPhoto: (photoUrl: string) => void;
   login: (email: string, password: string, twoFactorCode?: string) => Promise<{ requiresTwoFactor?: boolean }>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -26,6 +27,10 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
       setLoading: (loading) => set({ loading }),
+
+      updateUserPhoto: (photoUrl) => set((state) => ({
+        user: state.user ? { ...state.user, photo: photoUrl, photoUrl: photoUrl } : null,
+      })),
 
       login: async (email, password, twoFactorCode) => {
         const response = await authService.login(email, password, twoFactorCode);

@@ -21,21 +21,27 @@ export default function ProfessionalInfoSection({
         <div className="space-y-4">
           <div className="flex items-center justify-between py-2 border-b border-slate-100">
             <span className="text-sm text-slate-600">Territoire</span>
-            <span className="text-sm font-medium text-slate-900">{territory}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {territory || <span className="text-slate-400 italic">Non renseigné</span>}
+            </span>
           </div>
           <div className="flex items-center justify-between py-2 border-b border-slate-100">
             <span className="text-sm text-slate-600">Matricule</span>
-            <span className="text-sm font-medium text-slate-900">{employeeId}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {employeeId || <span className="text-slate-400 italic">Non renseigné</span>}
+            </span>
           </div>
           <div className="flex items-center justify-between py-2 border-b border-slate-100">
             <span className="text-sm text-slate-600">Date d'embauche</span>
             <span className="text-sm font-medium text-slate-900">
-              {new Date(hireDate).toLocaleDateString('fr-FR')}
+              {hireDate ? new Date(hireDate).toLocaleDateString('fr-FR') : <span className="text-slate-400 italic">Non renseignée</span>}
             </span>
           </div>
           <div className="flex items-center justify-between py-2">
             <span className="text-sm text-slate-600">Manager</span>
-            <span className="text-sm font-medium text-slate-900">{manager}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {manager || <span className="text-slate-400 italic">Aucun manager</span>}
+            </span>
           </div>
         </div>
       </div>

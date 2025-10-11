@@ -10,8 +10,10 @@ export interface User {
   lastName: string;
   role: 'REP' | 'ADMIN' | 'SUP';
   phone?: string;
-  photo?: string;
-  territory?: string;
+  photo?: string; // Alias pour photoUrl (compatibilité)
+  photoUrl?: string; // Nom du backend
+  territory?: string; // ID du territoire
+  territoryName?: string; // Nom du territoire
   employeeId?: string;
   hireDate?: string;
   manager?: string;

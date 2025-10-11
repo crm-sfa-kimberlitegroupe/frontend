@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Button from '../ui/Button';
 import type { User, CreateUserDto, UpdateUserDto } from '../../services/usersService';
+import { useTerritoriesStore } from '../../store/territoriesStore';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -27,6 +28,13 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: Use
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const { territories, managers, fetchAll } = useTerritoriesStore();
+
+  // Charger les territoires et managers au montage
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   // Charger les données de l'utilisateur en mode édition
   useEffect(() => {
@@ -212,13 +220,18 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: Use
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Territoire
             </label>
-            <input
-              type="text"
+            <select
               value={formData.territoryId}
               onChange={(e) => setFormData({ ...formData, territoryId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Ex: Plateau, Cocody, Adjamé..."
-            />
+            >
+              <option value="">Sélectionner un territoire</option>
+              {territories.map((territory) => (
+                <option key={territory.id} value={territory.id}>
+                  {territory.name} ({territory.code})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Téléphone */}
@@ -262,19 +275,24 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: Use
             />
           </div>
 
-          {/* Manager (ID) */}
+          {/* Manager */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Manager (ID)
+              Manager
             </label>
-            <input
-              type="text"
+            <select
               value={formData.managerId}
               onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="ID du manager"
-            />
-            <p className="text-xs text-gray-500 mt-1">Laisser vide si pas de manager</p>
+            >
+              <option value="">Aucun manager</option>
+              {managers.map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.firstName} {manager.lastName} ({manager.role})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Sélectionner un superviseur ou administrateur</p>
           </div>
           </div>
 

@@ -9,3 +9,4 @@ export { default as SecuritySection } from './SecuritySection';
 export { default as SupportSection } from './SupportSection';
 export { default as PasswordModal } from './PasswordModal';
 export { default as DeleteAccountModal } from './DeleteAccountModal';
+export { default as TwoFactorModal } from './TwoFactorModal';
