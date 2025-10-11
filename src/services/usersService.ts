@@ -9,14 +9,14 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'REP' | 'ADMIN' | 'SUP';
-  phone?: string;
-  photo?: string; // Alias pour photoUrl (compatibilité)
-  photoUrl?: string; // Nom du backend
-  territory?: string; // ID du territoire
-  territoryName?: string; // Nom du territoire
-  employeeId?: string;
-  hireDate?: string;
-  manager?: string;
+  phone?: string | null;
+  photo?: string | null; // Alias pour photoUrl (compatibilité)
+  photoUrl?: string | null; // Nom du backend
+  territory?: string | null; // Nom du territoire (ou ID en fallback)
+  territoryName?: string | null; // Nom du territoire
+  employeeId?: string | null;
+  hireDate?: string | null;
+  manager?: string | null;
   isActive: boolean;
   lastLogin?: string;
 }

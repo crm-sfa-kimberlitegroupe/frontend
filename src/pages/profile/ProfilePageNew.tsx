@@ -79,6 +79,8 @@ export default function ProfilePageNew() {
           setLoading(true);
           
           const userData = await usersService.getById(user.id);
+          console.log('📊 Données utilisateur reçues du backend:', userData);
+          
           setProfileData({
             firstName: userData.firstName,
             lastName: userData.lastName,
