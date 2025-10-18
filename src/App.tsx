@@ -4,23 +4,48 @@ import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Pages publiques
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 
 // Layout principal
 import LayoutRouter from './layouts/LayoutRouter';
 
 // Pages SFA CRM
-import ProfileRouter from './pages/ProfileRouter';
-import HomePage from './pages/HomePage';
-import UnderConstruction from './pages/UnderConstruction';
-
+import ProfileRouter from './features/profile/ProfileRouter';
+import HomePage from './features/dashboard/pages/HomePage';
+import UnderConstruction from './features/UnderConstruction';
+import VisitsPage from './features/visits/pages/VisitsPage';
+import DataPage from './features/data/pages/DataPage';
+import RouteREP from './features/routes/pages/RouteREP';
+import RouteSUP from './features/routes/pages/RouteSUP';
+import RouteADMIN from './features/routes/pages/RouteADMIN';
 // Pages Desktop (ADMIN/SUP)
-import { 
-  TeamPage
-} from './pages/desktop';
+import TeamPage from './features/team/pages/TeamPage';
+import VisitsADMIN from './features/visits/pages/VisitsADMIN';
+
+function VisitsPageRoute() {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return null;
+  return <VisitsPage userRole={user.role} />;
+}
+
+function DataPageRoute() {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return null;
+  return <DataPage userRole={user.role} />;
+}
+
+function RoutePageRoute() {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return null;
+  if (user.role === 'REP') return <RouteREP />;
+  if (user.role === 'ADMIN') return <RouteADMIN />;
+  if (user.role === 'SUP') return <RouteSUP />;
+  // Par défaut, retourner null si rôle inconnu
+  return null;
+}
 
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
@@ -29,7 +54,7 @@ function App() {
     loadUser();
   }, [loadUser]);
 
-  // Mock role - à remplacer par user?.role quand le backend sera prêt
+  // Mock role à remplacer par user?.role quand le backend sera prêt
 
   return (
     <Router>
@@ -54,8 +79,8 @@ function App() {
           
           {/* Routes Desktop - ADMIN - TEMPORAIREMENT DÉSACTIVÉES */}
           <Route path="users" element={<UnderConstruction />} />
-          <Route path="pdv" element={<UnderConstruction />} />
-          <Route path="routes" element={<UnderConstruction />} />
+          <Route path="pdv" element={<VisitsADMIN />} />
+          {/*         <Route path="routes" element={<RoutesManagement />} /> */}
           <Route path="products" element={<UnderConstruction />} />
           <Route path="tasks" element={<UnderConstruction />} />
           
@@ -68,6 +93,9 @@ function App() {
           
           {/* Routes communes */}
           <Route path="profile" element={<ProfileRouter />} />
+          <Route path="visits" element={<VisitsPageRoute />} />
+          <Route path="data" element={<DataPageRoute />} />
+          <Route path="route" element={<RoutePageRoute />} />
           
           {/* Pages anciennes - TEMPORAIREMENT DÉSACTIVÉES */}
           <Route path="sessions" element={<UnderConstruction />} />

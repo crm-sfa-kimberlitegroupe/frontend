@@ -84,3 +84,93 @@ export const authApi = {
     return response.json();
   },
 };
+
+// API client pour les requêtes authentifiées
+const api = {
+  async get(url: string) {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    const response = await fetch(`${API_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async post(url: string, data?: any) {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    console.log('🔑 Token utilisé pour la requête:', token ? `${token.substring(0, 20)}...` : 'AUCUN TOKEN');
+    const response = await fetch(`${API_URL}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async patch(url: string, data?: any) {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    const response = await fetch(`${API_URL}${url}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async delete(url: string) {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    const response = await fetch(`${API_URL}${url}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
+};
+
+export default api;

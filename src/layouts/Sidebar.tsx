@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
-  LogOut
+  LogOut,
+  MapPin
 } from 'lucide-react';
 import type { UserRole } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -28,17 +29,17 @@ const navItems: NavItem[] = [
   //   path: '/dashboard/users',
   //   roles: ['ADMIN'],
   // },
+   {
+     label: 'Points de Vente',
+     icon: MapPin,
+     path: '/dashboard/pdv',
+     roles: ['ADMIN'],
+   },
   // {
-  //   label: 'Points de Vente',
-  //   icon: MapPin,
-  //   path: '/dashboard/pdv',
-  //   roles: ['ADMIN'],
-  // },
-  // {
-  //   label: 'Routes',
-  //   icon: Map,
-  //   path: '/dashboard/routes',
-  //   roles: ['ADMIN'],
+  //   label: 'Route Manager',
+  //   icon: LayoutDashboard,
+  //   path: '/dashboard/route',
+  //   roles: ['ADMIN', 'SUP'],
   // },
   // {
   //   label: 'Produits',

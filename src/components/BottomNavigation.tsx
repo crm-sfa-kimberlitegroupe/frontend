@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { UserRole } from '../types';
-import { HiHome, HiMap, HiLocationMarker, HiChartBar, HiUser } from 'react-icons/hi';
-import type { IconType } from 'react-icons';
+import { Icon } from '../core/ui/Icon';
+import type { IconName } from '../core/ui/Icon';
 
 interface NavItem {
   id: string;
   label: string;
-  icon: IconType;
+  icon: IconName;
   path: string;
   roles: UserRole[];
 }
@@ -15,35 +15,28 @@ const navItems: NavItem[] = [
   {
     id: 'home',
     label: 'Accueil',
-    icon: HiHome,
+    icon: 'home',
     path: '/dashboard',
     roles: ['REP', 'ADMIN', 'SUP'],
   },
   {
     id: 'route',
     label: 'Route',
-    icon: HiMap,
+    icon: 'map',
     path: '/dashboard/route',
     roles: ['REP', 'ADMIN', 'SUP'],
   },
   {
     id: 'visits',
     label: 'Visites',
-    icon: HiLocationMarker,
+    icon: 'locationMarker',
     path: '/dashboard/visits',
     roles: ['REP', 'ADMIN'],
   },
   {
-    id: 'data',
-    label: 'Data',
-    icon: HiChartBar,
-    path: '/dashboard/data',
-    roles: ['REP', 'ADMIN', 'SUP'],
-  },
-  {
     id: 'profile',
     label: 'Profil',
-    icon: HiUser,
+    icon: 'user',
     path: '/dashboard/profile',
     roles: ['REP', 'ADMIN', 'SUP'],
   },
@@ -72,10 +65,11 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
                 to={item.path}
                 className="flex flex-col items-center justify-center flex-1 h-full transition-colors relative"
               >
-                <item.icon 
-                  className={`text-2xl mb-1 transition-colors ${
-                    isActive ? 'text-primary' : 'text-gray-500'
-                  }`}
+                <Icon 
+                  name={item.icon}
+                  variant={isActive ? 'primary' : 'grey'}
+                  size="xl"
+                  className="mb-1"
                 />
                 <span className={`text-xs font-medium transition-colors ${
                   isActive ? 'text-primary' : 'text-gray-500'
