@@ -10,9 +10,10 @@ interface UserModalProps {
   onSubmit: (data: CreateUserDto | UpdateUserDto) => Promise<void>;
   user?: User | null;
   mode: 'create' | 'edit';
+  allowRoleSelection?: boolean; // Si true, permet de sélectionner le rôle (pour SUP). Si false, fixé à REP (pour ADMIN)
 }
 
-export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) {
+export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allowRoleSelection = false }: UserModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -117,7 +118,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: Use
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {mode === 'create' ? 'Nouvel Utilisateur' : 'Modifier l\'Utilisateur'}
+            {mode === 'create' ? 'Nouveau Vendeur' : 'Modifier le Vendeur'}
           </h2>
           <button
             onClick={onClose}
@@ -201,18 +202,30 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode }: Use
           {/* Rôle */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rôle <span className="text-red-500">*</span>
+              Rôle {!allowRoleSelection && <span className="text-xs text-gray-500">(Vendeur uniquement)</span>}
             </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            >
-              <option value="REP">Vendeur (REP)</option>
-              <option value="SUP">Superviseur (SUP)</option>
-              <option value="ADMIN">Administrateur (ADMIN)</option>
-            </select>
+            {allowRoleSelection ? (
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'REP' | 'ADMIN' | 'SUP' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="REP">Vendeur (REP)</option>
+                <option value="SUP">Manager (SUP)</option>
+                <option value="ADMIN">Administrateur (ADMIN)</option>
+              </select>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value="Vendeur (REP)"
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
+                />
+                <input type="hidden" value="REP" />
+              </>
+            )}
           </div>
 
           {/* Territoire */}

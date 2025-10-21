@@ -1,6 +1,6 @@
 import { MapPin, Navigation, Map as MapIcon } from 'lucide-react';
 import Button from '../../../core/ui/Button';
-import Map from '../../../components/Map';
+import Map from '../../../core/components/desktop/Map';
 import type { PDVFormData } from '../types/pdv.types';
 import { useState } from 'react';
 import type { UserRole } from '../../../core/types';
@@ -13,7 +13,7 @@ interface PDVFormStep2Props {
 
 export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: PDVFormStep2Props) {
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
-  const MAX_ACCURACY = 300; // Précision maximale acceptée en mètres
+  const MAX_ACCURACY = 1000; // Précision maximale acceptée en mètres
 
   const handleGetCurrentPosition = () => {
     if (navigator.geolocation) {

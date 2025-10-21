@@ -79,7 +79,8 @@ class OutletsService {
    */
   async create(data: CreateOutletData): Promise<Outlet> {
     const response = await api.post('/outlets', data);
-    return response.data;
+    // Le backend retourne directement l'outlet, pas { data: outlet }
+    return response;
   }
 
   /**
@@ -99,7 +100,7 @@ class OutletsService {
     if (filters?.proposedBy) params.append('proposedBy', filters.proposedBy);
 
     const response = await api.get(`/outlets?${params.toString()}`);
-    return response.data;
+    return response; // Backend retourne directement le tableau
   }
 
   /**
@@ -107,7 +108,7 @@ class OutletsService {
    */
   async getById(id: string): Promise<Outlet> {
     const response = await api.get(`/outlets/${id}`);
-    return response.data;
+    return response; // Backend retourne directement l'outlet
   }
 
   /**
@@ -115,7 +116,7 @@ class OutletsService {
    */
   async update(id: string, data: Partial<CreateOutletData>): Promise<Outlet> {
     const response = await api.patch(`/outlets/${id}`, data);
-    return response.data;
+    return response; // Backend retourne directement l'outlet
   }
 
   /**
@@ -123,7 +124,7 @@ class OutletsService {
    */
   async approve(id: string): Promise<Outlet> {
     const response = await api.patch(`/outlets/${id}/approve`);
-    return response.data;
+    return response; // Backend retourne directement l'outlet
   }
 
   /**
@@ -131,7 +132,7 @@ class OutletsService {
    */
   async reject(id: string, reason?: string): Promise<Outlet> {
     const response = await api.patch(`/outlets/${id}/reject`, { reason });
-    return response.data;
+    return response; // Backend retourne directement l'outlet
   }
 
   /**
@@ -139,7 +140,7 @@ class OutletsService {
    */
   async delete(id: string): Promise<{ message: string }> {
     const response = await api.delete(`/outlets/${id}`);
-    return response.data;
+    return response; // Backend retourne directement le message
   }
 
   /**
@@ -155,7 +156,7 @@ class OutletsService {
     if (filters?.proposedBy) params.append('proposedBy', filters.proposedBy);
 
     const response = await api.get(`/outlets/stats?${params.toString()}`);
-    return response.data;
+    return response; // Backend retourne directement les stats
   }
 }
 

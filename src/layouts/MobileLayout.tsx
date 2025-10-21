@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import BottomNavigation from '../components/BottomNavigation';
-import type { UserRole } from '../types';
+import BottomNavigation from '../core/components/BottomNavigation';
+import type { UserRole } from '../core/types';
 
 export default function MobileLayout() {
   // Le rôle sera toujours REP pour ce layout

@@ -4,35 +4,50 @@ import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { outletsService, OutletStatusEnum, type Outlet } from '../../../services/outletsService';
+import PDVDetailsModal from '../components/PDVDetailsModal';
 
 export default function VisitsADMIN() {
   const [selectedView, setSelectedView] = useState<'list' | 'validation'>('validation');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending'>('pending');
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [pendingPDV, setPendingPDV] = useState<Outlet[]>([]);
-  const [allPDV, setAllPDV] = useState<Outlet[]>([]);
+  const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV validés pour l'onglet "Points de vente"
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPDV, setSelectedPDV] = useState<Outlet | null>(null);
 
   // Charger les PDV depuis l'API
   useEffect(() => {
     loadPDV();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFilter]);
+  }, [selectedView]);
 
   const loadPDV = async () => {
     try {
       setIsLoading(true);
-      if (selectedFilter === 'pending') {
-        const data = await outletsService.getAll({ status: OutletStatusEnum.PENDING });
-        setPendingPDV(data);
+      console.log('🔄 Chargement des PDV, vue:', selectedView);
+      
+      // Si on est sur l'onglet "Points de vente", charger les PDV validés
+      if (selectedView === 'list') {
+        const data = await outletsService.getAll({ status: OutletStatusEnum.APPROVED });
+        console.log('📊 PDV validés (liste) reçus:', data);
+        console.log('📊 Nombre de PDV validés:', data?.length || 0);
+        setApprovedPDV(data || []);
       } else {
-        const data = await outletsService.getAll();
-        setAllPDV(data);
+        // Onglet "À valider" : charger seulement les PDV en attente
+        const data = await outletsService.getAll({ status: OutletStatusEnum.PENDING });
+        console.log('📊 PDV en attente reçus:', data);
+        console.log('📊 Nombre de PDV en attente:', data?.length || 0);
+        setPendingPDV(data || []);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des PDV:', error);
-      alert('Erreur lors du chargement des PDV');
+      console.error('❌ Erreur lors du chargement des PDV:', error);
+      // En cas d'erreur, initialiser avec un tableau vide
+      if (selectedView === 'list') {
+        setApprovedPDV([]);
+      } else {
+        setPendingPDV([]);
+      }
+      alert('Erreur lors du chargement des PDV. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
@@ -42,11 +57,16 @@ export default function VisitsADMIN() {
     if (!confirm(`Valider le PDV "${name}" ?`)) return;
     
     try {
-      await outletsService.approve(id);
+      console.log('🔄 Validation du PDV:', id);
+      const result = await outletsService.approve(id);
+      console.log('✅ PDV validé:', result);
       alert('✅ PDV validé avec succès!');
-      loadPDV(); // Recharger la liste
+      
+      // Recharger la liste actuelle
+      await loadPDV();
+      console.log('📊 Liste rechargée après validation');
     } catch (error) {
-      console.error('Erreur lors de la validation:', error);
+      console.error('❌ Erreur lors de la validation:', error);
       alert('❌ Erreur lors de la validation du PDV');
     }
   };
@@ -58,16 +78,22 @@ export default function VisitsADMIN() {
     }
     
     try {
-      await outletsService.reject(id, rejectionReason);
+      console.log('🔄 Rejet du PDV:', id, 'Raison:', rejectionReason);
+      const result = await outletsService.reject(id, rejectionReason);
+      console.log('✅ PDV rejeté:', result);
       alert(`✅ PDV "${name}" rejeté`);
       setShowRejectModal(null);
       setRejectionReason('');
-      loadPDV(); // Recharger la liste
+      
+      // Recharger la liste actuelle
+      await loadPDV();
+      console.log('📊 Liste rechargée après rejet');
     } catch (error) {
       console.error('Erreur lors du rejet:', error);
       alert('❌ Erreur lors du rejet du PDV');
     }
   };
+
 
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">
@@ -99,52 +125,110 @@ export default function VisitsADMIN() {
             <div className="flex items-center justify-center gap-2">
               <Icon name="checkCircle" size="sm" variant={selectedView === 'validation' ? 'primary' : 'grey'} />
               <span>À valider</span>
-              {pendingPDV.length > 0 && (
+              {pendingPDV && pendingPDV.length > 0 && (
                 <Badge variant="warning" size="sm">{pendingPDV.length}</Badge>
               )}
             </div>
           </button>
         </div>
 
-        {/* Sous-navigation pour la vue validation */}
-        {selectedView === 'validation' && (
-          <div className="px-4 py-3">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedFilter('pending')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedFilter === 'pending'
-                    ? 'bg-warning text-white'
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                En attente ({pendingPDV.length})
-              </button>
-              <button
-                onClick={() => setSelectedFilter('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedFilter === 'all'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                Tous les PDV
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="p-4">
         {/* Vue Points de vente */}
         {selectedView === 'list' && (
-          <Card className="p-8 text-center">
-            <div className="flex justify-center mb-3">
-              <Icon name="store" size="2xl" variant="primary" />
-            </div>
-            <p className="text-lg font-semibold text-gray-900">Liste des Points de vente</p>
-            <p className="text-sm text-gray-600 mt-1">Fonctionnalité en cours de développement</p>
-          </Card>
+          <>
+            {isLoading ? (
+              <Card className="p-8 text-center">
+                <p className="text-gray-600">Chargement des points de vente...</p>
+              </Card>
+            ) : !approvedPDV || approvedPDV.length === 0 ? (
+              <Card className="p-8 text-center">
+                <div className="flex justify-center mb-3">
+                  <Icon name="store" size="2xl" variant="primary" />
+                </div>
+                <p className="text-lg font-semibold text-gray-900">Aucun point de vente validé</p>
+                <p className="text-sm text-gray-600 mt-1">Les points de vente validés apparaîtront ici</p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {approvedPDV.map((pdv) => (
+                  <Card key={pdv.id} className="p-4">
+                    {/* En-tête PDV */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-20 h-20 bg-gradient-to-br from-success/20 to-primary/20 rounded-lg flex items-center justify-center">
+                        <Icon name="store" size="2xl" variant="green" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 mb-1">{pdv.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{pdv.address || 'Adresse non renseignée'}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="gray" size="sm">{pdv.channel}</Badge>
+                          {pdv.segment && <Badge variant="gray" size="sm">Segment {pdv.segment}</Badge>}
+                          <Badge variant="success" size="sm">✓ Validé</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Informations détaillées */}
+                    <div className="space-y-2 bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Icon name="store" size="sm" variant="grey" />
+                        <span className="text-gray-900">Code: {pdv.code}</span>
+                      </div>
+                      {pdv.lat && pdv.lng && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Icon name="locationMarker" size="sm" variant="grey" />
+                          <span className="text-gray-900">
+                            {Number(pdv.lat).toFixed(6)}, {Number(pdv.lng).toFixed(6)}
+                          </span>
+                        </div>
+                      )}
+                      {pdv.proposer && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Icon name="user" size="sm" variant="grey" />
+                          <span className="text-gray-900">
+                            Proposé par {pdv.proposer.firstName} {pdv.proposer.lastName}
+                          </span>
+                        </div>
+                      )}
+                      {pdv.validator && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Icon name="checkCircle" size="sm" variant="green" />
+                          <span className="text-gray-900">
+                            Validé par {pdv.validator.firstName} {pdv.validator.lastName}
+                          </span>
+                        </div>
+                      )}
+                      {pdv.validatedAt && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Icon name="clock" size="sm" variant="grey" />
+                          <span className="text-gray-900">
+                            Validé le {new Date(pdv.validatedAt).toLocaleString('fr-FR')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bouton Voir détails */}
+                    <div className="mt-4">
+                      <Button 
+                        variant="primary" 
+                        size="md" 
+                        fullWidth
+                        onClick={() => setSelectedPDV(pdv)}
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          <Icon name="eye" size="sm" variant="white" />
+                          <span>Voir détails & Modifier</span>
+                        </span>
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Vue Validation */}
@@ -154,17 +238,17 @@ export default function VisitsADMIN() {
               <Card className="p-8 text-center">
                 <p className="text-gray-600">Chargement des PDV...</p>
               </Card>
-            ) : pendingPDV.length === 0 ? (
-          <Card className="p-8 text-center">
-            <div className="flex justify-center mb-3">
-              <Icon name="checkCircle" size="2xl" variant="green" />
-            </div>
-            <p className="text-lg font-semibold text-gray-900">Aucun PDV en attente</p>
-            <p className="text-sm text-gray-600 mt-1">Tous les PDV ont été traités</p>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {pendingPDV.map((pdv) => (
+            ) : !pendingPDV || pendingPDV.length === 0 ? (
+              <Card className="p-8 text-center">
+                <div className="flex justify-center mb-3">
+                  <Icon name="checkCircle" size="2xl" variant="green" />
+                </div>
+                <p className="text-lg font-semibold text-gray-900">Aucun PDV en attente</p>
+                <p className="text-sm text-gray-600 mt-1">Tous les PDV ont été traités</p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {pendingPDV.map((pdv) => (
               <Card key={pdv.id} className="p-4">
                 {/* En-tête PDV */}
                 <div className="flex items-start gap-3 mb-4">
@@ -185,28 +269,22 @@ export default function VisitsADMIN() {
                 {/* Informations détaillées */}
                 <div className="space-y-2 mb-4 bg-gray-50 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <Icon name="tag" size="sm" variant="grey" />
+                    <Icon name="store" size="sm" variant="grey" />
                     <span className="text-gray-900">Code: {pdv.code}</span>
                   </div>
-                  {pdv.metadata?.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Icon name="phone" size="sm" variant="grey" />
-                      <span className="text-gray-900">{pdv.metadata.phone}</span>
-                    </div>
-                  )}
                   {pdv.lat && pdv.lng && (
                     <div className="flex items-center gap-2 text-sm">
                       <Icon name="locationMarker" size="sm" variant="grey" />
                       <span className="text-gray-900">
-                        {pdv.lat.toFixed(6)}, {pdv.lng.toFixed(6)}
+                        {Number(pdv.lat).toFixed(6)}, {Number(pdv.lng).toFixed(6)}
                       </span>
                     </div>
                   )}
-                  {pdv.createdBy && (
+                  {pdv.proposer && (
                     <div className="flex items-center gap-2 text-sm">
                       <Icon name="user" size="sm" variant="grey" />
                       <span className="text-gray-900">
-                        Proposé par {pdv.createdBy.firstName} {pdv.createdBy.lastName}
+                        Proposé par {pdv.proposer.firstName} {pdv.proposer.lastName}
                       </span>
                     </div>
                   )}
@@ -286,10 +364,17 @@ export default function VisitsADMIN() {
               </Card>
             ))}
           </div>
-        )}
+            )}
           </>
         )}
       </div>
+
+      {/* Modal de détails/édition */}
+      <PDVDetailsModal 
+        pdv={selectedPDV}
+        onClose={() => setSelectedPDV(null)}
+        onUpdate={loadPDV}
+      />
     </div>
   );
 }

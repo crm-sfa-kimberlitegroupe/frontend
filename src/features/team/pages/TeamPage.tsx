@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Users, MapPin, Phone, Mail, Calendar, TrendingUp } from 'lucide-react';
+import { Users, MapPin, Phone, Mail, Calendar, TrendingUp, UserPlus } from 'lucide-react';
 import { PageHeader, DashboardGrid, StatCard } from '../../../core/components/desktop';
+import Button from '../../../core/ui/Button';
+import UserModal from '../../../core/components/modals/UserModal';
+import { usersService, type CreateUserDto, type UpdateUserDto } from '../../../services/usersService';
 
 interface TeamMember {
   id: string;
@@ -98,8 +101,12 @@ const mockTeam: TeamMember[] = [
 ];
 
 export default function TeamPage() {
-  const [team] = useState<TeamMember[]>(mockTeam);
+  const [team, setTeam] = useState<TeamMember[]>(mockTeam);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  
+  // États pour le modal de création d'utilisateur
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode] = useState<'create' | 'edit'>('create');
 
   const activeMembers = team.filter((m) => m.status === 'active').length;
   const totalPDV = team.reduce((sum, m) => sum + m.pdvAssigned, 0);
@@ -108,11 +115,30 @@ export default function TeamPage() {
     team.reduce((sum, m) => sum + m.performance.coverage, 0) / team.length
   );
 
+  // Fonction pour créer un utilisateur
+  const handleSubmitUser = async (data: CreateUserDto | UpdateUserDto) => {
+    try {
+      await usersService.create(data as CreateUserDto);
+      alert('✅ Utilisateur créé avec succès!');
+      setIsModalOpen(false);
+      // TODO: Recharger la liste de l'équipe
+    } catch (error) {
+      console.error('❌ Erreur lors de la création:', error);
+      throw error; // Laisser le modal gérer l'erreur
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Mon Équipe"
         description={`${team.length} vendeurs • ${activeMembers} actifs`}
+        actions={
+          <Button variant="primary" size="md" onClick={() => setIsModalOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Nouvel Utilisateur
+          </Button>
+        }
       />
 
       {/* KPIs */}
@@ -353,6 +379,15 @@ export default function TeamPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de création d'utilisateur */}
+      <UserModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitUser}
+        mode={modalMode}
+        allowRoleSelection={true}  // Les SUP peuvent créer tous les types d'utilisateurs
+      />
     </div>
   );
 }

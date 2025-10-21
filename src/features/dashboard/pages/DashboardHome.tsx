@@ -1,4 +1,4 @@
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthStore } from '../../../core/auth';
 import { Icon } from '../../../core/ui/Icon';
 
 export default function DashboardHome() {

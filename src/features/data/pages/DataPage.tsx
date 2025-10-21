@@ -1,4 +1,4 @@
-import type { UserRole } from '../../../types';
+import type { UserRole } from '../../../core/types';
 import DataREP from './DataREP';
 import DataADMIN from './DataADMIN';
 import DataSUP from './DataSUP';

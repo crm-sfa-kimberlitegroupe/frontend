@@ -1,4 +1,4 @@
-// Types globaux pour l'application SFA CRM
+// Types pour l'application SFA CRM
 
 export type UserRole = 'REP' | 'ADMIN' | 'SUP';
 
@@ -10,9 +10,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   photo?: string;
-  photoUrl?: string;
   territory?: string;
-  territoryName?: string;
   employeeId?: string;
   hireDate?: string;
   manager?: string;

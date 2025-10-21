@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
@@ -10,6 +10,7 @@ import PDVFormStep3 from './PDVFormStep3';
 import PDVFormStep4 from './PDVFormStep4';
 import type { UserRole } from '../../../core/types';
 import { outletsService, OutletStatusEnum } from '../../../services/outletsService';
+import { useAuthStore } from '../../../core/auth';
 
 interface PDVFormWizardProps {
   onClose: () => void;
@@ -20,6 +21,14 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PDVFormData>(INITIAL_PDV_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const user = useAuthStore((state) => state.user);
+
+  // Initialiser le territoryId avec celui de l'utilisateur connecté
+  useEffect(() => {
+    if (user?.territoryId) {
+      setFormData(prev => ({ ...prev, territoryId: user.territoryId || '' }));
+    }
+  }, [user]);
 
   const handleChange = (data: Partial<PDVFormData>) => {
     setFormData({ ...formData, ...data });
@@ -28,7 +37,7 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
   const isStepValid = (step: number) => {
     switch (step) {
       case 1:
-        return formData.name && formData.channel && formData.territoryId;
+        return formData.name; // Seul le nom est obligatoire dans Step 1
       case 2:
         return formData.address && formData.latitude && formData.longitude;
       case 3:
@@ -68,15 +77,20 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
       : [];
 
     // Validation finale avant envoi
-    if (!formData.channel || !formData.territoryId) {
-      alert('❌ Erreur: Les champs Canal et Territoire sont obligatoires');
+    if (!formData.name) {
+      alert('❌ Erreur: Le nom du PDV est obligatoire');
+      return;
+    }
+    
+    if (!formData.territoryId) {
+      alert('❌ Erreur: Le territoire est requis. Veuillez vous reconnecter.');
       return;
     }
 
     const outletData = {
       code: formData.code || 'AUTO-GEN',
       name: formData.name,
-      channel: formData.channel,
+      channel: formData.channel || 'PROXI', // Valeur par défaut si non renseigné
       segment: formData.segment || undefined,
       address: formData.address || undefined,
       lat: formData.latitude ? parseFloat(formData.latitude) : undefined,
@@ -87,7 +101,7 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
         closing: formData.closingTime
       },
       status: OutletStatusEnum.PENDING,
-      territoryId: formData.territoryId, // Required field
+      territoryId: formData.territoryId, // Récupéré automatiquement de l'utilisateur
       osmMetadata: {
         phone: formData.phone,
         contactPerson: formData.contactPerson,

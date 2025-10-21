@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import type { UserRole } from '../types';
+import type { UserRole } from '../core/types';
 
 interface DesktopLayoutProps {
   userRole: UserRole;

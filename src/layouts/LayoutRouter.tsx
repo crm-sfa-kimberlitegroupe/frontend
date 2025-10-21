@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../core/auth';
 import MobileLayout from './MobileLayout';
 import DesktopLayout from './DesktopLayout';
 

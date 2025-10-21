@@ -5,8 +5,8 @@ import {
   LogOut,
   MapPin
 } from 'lucide-react';
-import type { UserRole } from '../types';
-import { useAuthStore } from '../store/authStore';
+import type { UserRole } from '../core/types';
+import { useAuthStore } from '../core/auth';
 
 interface NavItem {
   label: string;
@@ -22,25 +22,24 @@ const navItems: NavItem[] = [
     path: '/dashboard',
     roles: ['ADMIN', 'SUP'],
   },
-  // TEMPORAIREMENT DÉSACTIVÉ - En cours de développement
-  // {
-  //   label: 'Utilisateurs',
-  //   icon: Users,
-  //   path: '/dashboard/users',
-  //   roles: ['ADMIN'],
-  // },
+  {
+    label: 'Vendeurs',
+    icon: Users,
+    path: '/dashboard/users',
+    roles: ['ADMIN'],
+  },
    {
      label: 'Points de Vente',
      icon: MapPin,
      path: '/dashboard/pdv',
      roles: ['ADMIN'],
    },
-  // {
-  //   label: 'Route Manager',
-  //   icon: LayoutDashboard,
-  //   path: '/dashboard/route',
-  //   roles: ['ADMIN', 'SUP'],
-  // },
+   {
+     label: 'Route Manager',
+     icon: LayoutDashboard,
+     path: '/dashboard/route',
+     roles: ['ADMIN', 'SUP'],
+   },
   // {
   //   label: 'Produits',
   //   icon: Package,

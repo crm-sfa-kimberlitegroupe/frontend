@@ -80,7 +80,16 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      version: 1, // Incrémenter si structure change
       partialize: (state) => ({ user: state.user }),
+      // Migration automatique si version change
+      migrate: (persistedState: unknown, version: number) => {
+        if (version === 0) {
+          // Nettoyer l'ancien format si nécessaire
+          return persistedState as Partial<AuthState>;
+        }
+        return persistedState as Partial<AuthState>;
+      },
     }
   )
 );

@@ -1,11 +1,11 @@
 export interface PDVFormData {
   code: string;
-  name: string;
+  name: string; // Obligatoire
   address: string;
   phone: string;
-  channel: string;
-  segment: string;
-  territoryId: string;
+  channel: string; // Optionnel - valeur par défaut appliquée
+  segment: string; // Optionnel
+  territoryId: string; // Optionnel
   latitude: string;
   longitude: string;
   notes: string;

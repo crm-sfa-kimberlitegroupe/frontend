@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Edit, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { PageHeader, DataTable, FilterBar } from '../../components/desktop';
-import type { Column } from '../../components/desktop/DataTable';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '../../services/usersService';
-import UserModal from '../../components/modals/UserModal';
+import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
+import type { Column } from '../../../core/components/desktop/DataTable';
+import Button from '../../../core/ui/Button';
+import Badge from '../../../core/ui/Badge';
+import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '../../../services/usersService';
+import UserModal from '../../../core/components/modals/UserModal';
 
 const roleLabels = {
   REP: 'Vendeur',
@@ -35,7 +35,9 @@ export default function UsersManagement() {
       setLoading(true);
       setError(null);
       const data = await usersService.getAll();
-      setUsers(data);
+      // Filtrer pour afficher seulement les vendeurs (REP)
+      const repsOnly = data.filter(user => user.role === 'REP');
+      setUsers(repsOnly);
     } catch (err) {
       console.error('Error loading users:', err);
       setError('Erreur lors du chargement des utilisateurs');
@@ -298,12 +300,12 @@ export default function UsersManagement() {
       )}
 
       <PageHeader
-        title="Gestion des Utilisateurs"
-        description="Gérer les vendeurs, managers et administrateurs"
+        title="Gestion des Vendeurs"
+        description="Gérer les vendeurs (REP) de votre équipe"
         actions={
           <Button variant="primary" size="md" onClick={handleOpenCreateModal}>
             <UserPlus className="w-4 h-4 mr-2" />
-            Nouvel Utilisateur
+            Nouveau Vendeur
           </Button>
         }
       />
@@ -312,22 +314,6 @@ export default function UsersManagement() {
         activeFiltersCount={activeFiltersCount}
         onClear={handleClearFilters}
       >
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Rôle
-          </label>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Tous les rôles</option>
-            <option value="REP">Vendeurs</option>
-            <option value="SUP">Managers</option>
-            <option value="ADMIN">Administrateurs</option>
-          </select>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Statut

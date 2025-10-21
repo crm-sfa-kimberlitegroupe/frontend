@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
-import type { UserRole } from '../../../types';
+import type { UserRole } from '../../../core/types';
 
 interface PersonalInfoSectionProps {
   profileData: {

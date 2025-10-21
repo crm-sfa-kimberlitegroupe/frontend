@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './store/authStore';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { useAuthStore } from './core/auth';
+import { ProtectedRoute } from './core/components/ProtectedRoute';
 
 // Pages publiques
 import LoginPage from './features/auth/pages/LoginPage';
@@ -20,10 +20,11 @@ import VisitsPage from './features/visits/pages/VisitsPage';
 import DataPage from './features/data/pages/DataPage';
 import RouteREP from './features/routes/pages/RouteREP';
 import RouteSUP from './features/routes/pages/RouteSUP';
-import RouteADMIN from './features/routes/pages/RouteADMIN';
+import RouteManager from './features/routes/pages/RouteManager';
 // Pages Desktop (ADMIN/SUP)
 import TeamPage from './features/team/pages/TeamPage';
 import VisitsADMIN from './features/visits/pages/VisitsADMIN';
+import UsersManagement from './features/users/pages/UsersManagement';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -41,7 +42,7 @@ function RoutePageRoute() {
   const user = useAuthStore((s) => s.user);
   if (!user) return null;
   if (user.role === 'REP') return <RouteREP />;
-  if (user.role === 'ADMIN') return <RouteADMIN />;
+  if (user.role === 'ADMIN') return <RouteManager />;
   if (user.role === 'SUP') return <RouteSUP />;
   // Par défaut, retourner null si rôle inconnu
   return null;
@@ -77,8 +78,8 @@ function App() {
           {/* Page d'accueil (affiche le bon dashboard selon le rôle) */}
           <Route index element={<HomePage />} />
           
-          {/* Routes Desktop - ADMIN - TEMPORAIREMENT DÉSACTIVÉES */}
-          <Route path="users" element={<UnderConstruction />} />
+          {/* Routes Desktop - ADMIN */}
+          <Route path="users" element={<UsersManagement />} />
           <Route path="pdv" element={<VisitsADMIN />} />
           {/*         <Route path="routes" element={<RoutesManagement />} /> */}
           <Route path="products" element={<UnderConstruction />} />

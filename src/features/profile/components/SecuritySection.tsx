@@ -2,7 +2,7 @@ import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
-import type { UserRole } from '../../../types';
+import type { UserRole } from '../../../core/types';
 
 interface SecuritySectionProps {
   onChangePassword: () => void;

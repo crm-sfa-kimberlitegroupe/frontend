@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { usersService } from '../../../services/usersService';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthStore } from '../../../core/auth';
 
 interface ProfileHeaderProps {
   firstName: string;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthStore } from '../../../core/auth';
 import { usersService, type UserPerformance } from '../../../services/usersService';
-import type { UserRole } from '../../../types';
+import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
 
 // Import des composants modulaires
@@ -94,8 +94,8 @@ export default function ProfilePage() {
             isActive: userData.isActive,
           });
           
-          // Charger les performances (seulement pour REP et SUP)
-          if (userData.role === 'REP' || userData.role === 'SUP') {
+          // Charger les performances (seulement pour REP)
+          if (userData.role === 'REP') {
             try {
               const performance = await usersService.getPerformance(user.id);
               setPerformanceKPIs(performance);
@@ -212,22 +212,24 @@ export default function ProfilePage() {
           manager={profileData.manager}
         />
 
-        {/* Section 3: Performances (si REP ou SUP) */}
-        {(userRole === 'REP' || userRole === 'SUP') && (
+        {/* Section 3: Performances (seulement pour REP) */}
+        {userRole === 'REP' && (
           <PerformanceSection performance={performanceKPIs} />
         )}
 
-        {/* Section 4: Paramètres */}
-        <SettingsSection
-          settings={{
-            darkMode: settings.darkMode,
-            autoSync: settings.autoSync,
-            geoLocation: settings.geoLocation,
-            photoQuality: settings.photoQuality,
-          }}
-          onUpdate={updateSettings}
-          userRole={userRole}
-        />
+        {/* Section 4: Paramètres (seulement pour REP) */}
+        {userRole === 'REP' && (
+          <SettingsSection
+            settings={{
+              darkMode: settings.darkMode,
+              autoSync: settings.autoSync,
+              geoLocation: settings.geoLocation,
+              photoQuality: settings.photoQuality,
+            }}
+            onUpdate={updateSettings}
+            userRole={userRole}
+          />
+        )}
 
         {/* Section 5: Synchronisation (si REP) */}
         {userRole === 'REP' && (
