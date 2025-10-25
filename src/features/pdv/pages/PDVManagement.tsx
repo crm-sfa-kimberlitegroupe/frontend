@@ -6,7 +6,6 @@ import { Button, Badge, LoadingSpinner } from '@/core/ui';
 import { useFilters } from '@/core/hooks';
 import { outletsService } from '../services';
 import type { Outlet } from '../services/outletsService';
-import { useAuthStore } from '@/core/auth';
 
 // Supprimer les mock data - on utilise maintenant l'API réelle
 
@@ -33,6 +32,12 @@ export default function PDVManagement() {
     channel: 'all',
     segment: 'all',
   });
+  
+  // Aliases pour compatibilité avec le code existant
+  const channelFilter = filters.channel;
+  const segmentFilter = filters.segment;
+  const setChannelFilter = (value: string) => setFilter('channel', value);
+  const setSegmentFilter = (value: string) => setFilter('segment', value);
 
   // 🔄 Charger les PDV depuis l'API (filtré automatiquement par le backend)
   useEffect(() => {
@@ -42,14 +47,12 @@ export default function PDVManagement() {
   const loadOutlets = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       // ✅ Le backend filtre automatiquement par territoire selon le rôle de l'utilisateur
       const data = await outletsService.getAll();
       setOutlets(data);
     } catch (err: any) {
       console.error('Erreur chargement PDV:', err);
-      setError(err?.message || 'Erreur lors du chargement des PDV');
     } finally {
       setLoading(false);
     }
@@ -72,15 +75,15 @@ export default function PDVManagement() {
     // TODO: Implémenter le rejet
   };
 
-  const columns: Column<PDV>[] = [
+  const columns: Column<Outlet>[] = [
     {
       key: 'name',
       label: 'Point de Vente',
       sortable: true,
-      render: (pdv) => (
+      render: (outlet) => (
         <div>
-          <p className="font-medium text-gray-900">{pdv.name}</p>
-          <p className="text-sm text-gray-500">{pdv.address}</p>
+          <p className="font-medium text-gray-900">{outlet.name}</p>
+          <p className="text-sm text-gray-500">{outlet.address}</p>
         </div>
       ),
     },
@@ -88,25 +91,25 @@ export default function PDVManagement() {
       key: 'channel',
       label: 'Canal',
       sortable: true,
-      render: (pdv) => (
-        <Badge variant="secondary">{pdv.channel}</Badge>
+      render: (outlet) => (
+        <Badge variant="secondary">{outlet.channel}</Badge>
       ),
     },
     {
       key: 'segment',
       label: 'Segment',
       sortable: true,
-      render: (pdv) => (
-        <span className="font-semibold text-gray-700">{pdv.segment}</span>
+      render: (outlet) => (
+        <span className="font-semibold text-gray-700">{outlet.segment}</span>
       ),
     },
     {
       key: 'status',
       label: 'Statut',
       sortable: true,
-      render: (pdv) => (
-        <Badge variant={statusColors[pdv.status]}>
-          {statusLabels[pdv.status]}
+      render: (outlet) => (
+        <Badge variant={statusColors[outlet.status]}>
+          {statusLabels[outlet.status]}
         </Badge>
       ),
     },
@@ -114,9 +117,9 @@ export default function PDVManagement() {
       key: 'assignedTo',
       label: 'Assigné à',
       sortable: true,
-      render: (pdv) => (
+      render: (outlet) => (
         <span className="text-sm text-gray-600">
-          {pdv.assignedTo || '-'}
+          {outlet.assignedTo || '-'}
         </span>
       ),
     },
@@ -124,14 +127,14 @@ export default function PDVManagement() {
       key: 'actions',
       label: 'Actions',
       sortable: false,
-      render: (pdv) => (
+      render: (outlet) => (
         <div className="flex items-center gap-2">
-          {pdv.status === 'PENDING' && (
+          {outlet.status === 'PENDING' && (
             <>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleApprove(pdv.id);
+                  handleApprove(outlet.id);
                 }}
                 className="p-2 text-success hover:bg-green-50 rounded-lg transition-colors"
                 title="Approuver"
@@ -141,7 +144,7 @@ export default function PDVManagement() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleReject(pdv.id);
+                  handleReject(outlet.id);
                 }}
                 className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
                 title="Rejeter"
@@ -153,7 +156,7 @@ export default function PDVManagement() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit PDV:', pdv.id);
+              console.log('Edit PDV:', outlet.id);
             }}
             className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
             title="Modifier"
@@ -164,7 +167,7 @@ export default function PDVManagement() {
             onClick={(e) => {
               e.stopPropagation();
               if (confirm('Supprimer ce PDV ?')) {
-                console.log('Delete PDV:', pdv.id);
+                console.log('Delete PDV:', outlet.id);
               }
             }}
             className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"

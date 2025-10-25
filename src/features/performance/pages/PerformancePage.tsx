@@ -102,10 +102,17 @@ export default function PerformancePage() {
   const [performances] = useState<RepPerformance[]>(mockPerformances);
   
   // ✅ Hook réutilisable pour les filtres
-  const { filters } = useFilters({
+  const { filters, setFilter } = useFilters({
     period: 'month',
     territory: 'all',
   });
+  
+  // Aliases pour compatibilité avec le code existant
+  const period = filters.period;
+  const territory = filters.territory;
+  const setPeriod = (value: string) => setFilter('period', value);
+  const setTerritory = (value: string) => setFilter('territory', value);
+  const activeFiltersCount = (filters.period !== 'month' ? 1 : 0) + (filters.territory !== 'all' ? 1 : 0);
 
   const filteredPerformances = performances.filter((perf) => {
     if (filters.territory !== 'all' && perf.territory !== filters.territory) return false;
