@@ -45,7 +45,7 @@ export default function HomeREP() {
   const progressPercentage = Math.round((todayStats.pdvVisited / todayStats.pdvToVisit) * 100);
 
   return (
-    <div className="pb-20 pb-safe-bottom px-4 pt-6 bg-gray-50 min-h-screen">
+    <div className="pb-nav-safe px-4 pt-6 bg-gray-50 min-h-screen">
       {/* En-tête sobre et professionnel */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
