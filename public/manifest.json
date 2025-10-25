@@ -1,7 +1,7 @@
 {
   "name": "SFA REP - Force de Vente",
   "short_name": "SFA REP",
-  "description": "Application mobile pour les représentants commerciaux",
+  "description": "Application mobile pour les vendeurs commerciaux",
   "start_url": "/dashboard",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
