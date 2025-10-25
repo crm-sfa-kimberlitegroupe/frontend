@@ -8,16 +8,15 @@ export default function InstallPWA() {
   const { canInstall, isInstalled, isStandalone, promptInstall } = usePWA();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // MODE TEST: Toujours afficher en développement pour voir l'UI
-  const isDevMode = import.meta.env.DEV;
-  const shouldShow = isDevMode || (canInstall && !isInstalled && !isStandalone && !isDismissed);
-
-  // Ne rien afficher si déjà installé, en mode standalone, ou si l'utilisateur a fermé
-  if (!shouldShow) {
-    return null;
-  }
-
+  // MODE DEBUG: Activer pour toujours voir la bannière (à désactiver en production)
+  const DEBUG_MODE = true; // Mettre à false pour la production
+  
   const handleInstall = async () => {
+    if (!canInstall) {
+      console.warn('PWA: Installation non disponible pour le moment');
+      alert('Installation PWA non disponible. Veuillez accéder à l\'application via HTTPS ou attendre que le navigateur active cette fonctionnalité.');
+      return;
+    }
     await promptInstall();
   };
 
@@ -29,11 +28,21 @@ export default function InstallPWA() {
 
   // Vérifier si l'utilisateur a déjà fermé récemment
   const dismissedTime = localStorage.getItem('pwa-install-dismissed');
-  if (dismissedTime) {
+  if (dismissedTime && !DEBUG_MODE) {
     const daysSinceDismissed = (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
     if (daysSinceDismissed < 7) {
       return null;
     }
+  }
+
+  // Ne rien afficher si déjà installé, en mode standalone, ou si l'utilisateur a fermé
+  if (!DEBUG_MODE && (isInstalled || isStandalone || isDismissed)) {
+    return null;
+  }
+
+  // En mode production, ne pas afficher si canInstall est false
+  if (!DEBUG_MODE && !canInstall) {
+    return null;
   }
 
   return (
