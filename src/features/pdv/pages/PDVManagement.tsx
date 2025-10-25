@@ -54,6 +54,7 @@ export default function PDVManagement() {
       const data = await outletsService.getAll();
       setOutlets(data);
     } catch {
+      // Erreur silencieuse
     } finally {
       setLoading(false);
     }
@@ -66,12 +67,14 @@ export default function PDVManagement() {
     return true;
   });
 
-  const handleApprove = (pdvId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleApprove = (_pdvId: string) => {
     // TODO: Implémenter l'approbation
     alert('Fonction d\'approbation à implémenter');
   };
 
-  const handleReject = (pdvId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleReject = (_pdvId: string) => {
     // TODO: Implémenter le rejet
     alert('Fonction de rejet à implémenter');
   };

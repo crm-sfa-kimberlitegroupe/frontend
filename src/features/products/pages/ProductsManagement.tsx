@@ -180,7 +180,8 @@ export default function ProductsManagement() {
       key: 'actions',
       label: 'Actions',
       sortable: false,
-      render: (product) => (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      render: (_product) => (
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => {
