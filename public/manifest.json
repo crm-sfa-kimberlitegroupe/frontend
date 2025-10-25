@@ -1,6 +1,6 @@
 {
   "name": "SFA REP - Force de Vente",
-  "short_name": "SFA REP",
+  "short_name": "Kimberlite",
   "description": "Application mobile pour les vendeurs commerciaux",
   "start_url": "/dashboard",
   "display": "standalone",
