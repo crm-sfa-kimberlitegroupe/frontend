@@ -1,70 +1,14 @@
-import { useState } from 'react';
-import { Plus, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, CheckCircle, XCircle, Edit, Trash2, Clock } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
+import { Button, Badge, LoadingSpinner } from '@/core/ui';
+import { useFilters } from '@/core/hooks';
+import { outletsService } from '../services';
+import type { Outlet } from '../services/outletsService';
+import { useAuthStore } from '@/core/auth';
 
-interface PDV {
-  id: string;
-  name: string;
-  address: string;
-  channel: string;
-  segment: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  assignedTo?: string;
-  latitude?: number;
-  longitude?: number;
-  phone?: string;
-  createdAt: string;
-}
-
-// Mock data
-const mockPDVs: PDV[] = [
-  {
-    id: '1',
-    name: 'Supermarché Plateau',
-    address: '123 Avenue Houphouët-Boigny, Plateau',
-    channel: 'Supermarché',
-    segment: 'A',
-    status: 'APPROVED',
-    assignedTo: 'Jean Kouassi',
-    latitude: 5.3167,
-    longitude: -4.0167,
-    phone: '+225 01 23 45 67',
-    createdAt: '2025-10-01',
-  },
-  {
-    id: '2',
-    name: 'Boutique Cocody',
-    address: '45 Boulevard Latrille, Cocody',
-    channel: 'Boutique',
-    segment: 'B',
-    status: 'APPROVED',
-    assignedTo: 'Marie Diallo',
-    phone: '+225 07 89 01 23',
-    createdAt: '2025-10-02',
-  },
-  {
-    id: '3',
-    name: 'Kiosque Adjamé',
-    address: 'Marché Adjamé',
-    channel: 'Kiosque',
-    segment: 'C',
-    status: 'PENDING',
-    phone: '+225 05 67 89 01',
-    createdAt: '2025-10-05',
-  },
-  {
-    id: '4',
-    name: 'Épicerie Yopougon',
-    address: 'Quartier Niangon, Yopougon',
-    channel: 'Épicerie',
-    segment: 'B',
-    status: 'REJECTED',
-    createdAt: '2025-10-04',
-  },
-];
+// Supprimer les mock data - on utilise maintenant l'API réelle
 
 const statusLabels = {
   PENDING: 'En attente',
@@ -79,28 +23,45 @@ const statusColors = {
 } as const;
 
 export default function PDVManagement() {
-  const [pdvs] = useState<PDV[]>(mockPDVs);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [channelFilter, setChannelFilter] = useState<string>('all');
-  const [segmentFilter, setSegmentFilter] = useState<string>('all');
-
-  const filteredPDVs = pdvs.filter((pdv) => {
-    if (statusFilter !== 'all' && pdv.status !== statusFilter) return false;
-    if (channelFilter !== 'all' && pdv.channel !== channelFilter) return false;
-    if (segmentFilter !== 'all' && pdv.segment !== segmentFilter) return false;
-    return true;
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const user = useAuthStore((state) => state.user);
+  
+  // ✅ Hook réutilisable pour les filtres
+  const { filters, setFilter, resetFilters } = useFilters({
+    status: 'all',
+    channel: 'all',
+    segment: 'all',
   });
 
-  const activeFiltersCount =
-    (statusFilter !== 'all' ? 1 : 0) +
-    (channelFilter !== 'all' ? 1 : 0) +
-    (segmentFilter !== 'all' ? 1 : 0);
+  // 🔄 Charger les PDV depuis l'API (filtré automatiquement par le backend)
+  useEffect(() => {
+    loadOutlets();
+  }, []);
 
-  const handleClearFilters = () => {
-    setStatusFilter('all');
-    setChannelFilter('all');
-    setSegmentFilter('all');
+  const loadOutlets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // ✅ Le backend filtre automatiquement par territoire selon le rôle de l'utilisateur
+      const data = await outletsService.getAll();
+      setOutlets(data);
+    } catch (err: any) {
+      console.error('Erreur chargement PDV:', err);
+      setError(err?.message || 'Erreur lors du chargement des PDV');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const filteredPDVs = outlets.filter((outlet) => {
+    if (filters.status !== 'all' && outlet.status !== filters.status) return false;
+    if (filters.channel !== 'all' && outlet.channel !== filters.channel) return false;
+    if (filters.segment !== 'all' && outlet.segment !== filters.segment) return false;
+    return true;
+  });
 
   const handleApprove = (pdvId: string) => {
     console.log('Approve PDV:', pdvId);
@@ -217,13 +178,19 @@ export default function PDVManagement() {
     },
   ];
 
-  const pendingCount = pdvs.filter((p) => p.status === 'PENDING').length;
+  const pendingCount = outlets.filter((o) => o.status === 'PENDING').length;
+  const activeFiltersCount = (filters.status !== 'all' ? 1 : 0) + (filters.channel !== 'all' ? 1 : 0) + (filters.segment !== 'all' ? 1 : 0);
+
+  // Affichage du loading
+  if (loading) {
+    return <LoadingSpinner size="lg" text="Chargement des PDV..." />;
+  }
 
   return (
     <div>
       <PageHeader
         title="Gestion des Points de Vente"
-        description={`${pdvs.length} PDV au total • ${pendingCount} en attente de validation`}
+        description={`${outlets.length} PDV au total • ${pendingCount} en attente de validation`}
         actions={
           <Button variant="primary" size="md">
             <Plus className="w-4 h-4 mr-2" />
@@ -247,7 +214,7 @@ export default function PDVManagement() {
           <Button
             variant="warning"
             size="sm"
-            onClick={() => setStatusFilter('PENDING')}
+            onClick={() => setFilter('status', 'PENDING')}
           >
             Voir
           </Button>
@@ -256,15 +223,15 @@ export default function PDVManagement() {
 
       <FilterBar
         activeFiltersCount={activeFiltersCount}
-        onClear={handleClearFilters}
+        onClear={resetFilters}
       >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Statut
           </label>
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={filters.status}
+            onChange={(e) => setFilter('status', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">Tous les statuts</option>

@@ -14,7 +14,7 @@ function Ensure-Directory {
     param($path)
     if (-not (Test-Path $path)) {
         New-Item -ItemType Directory -Path $path -Force | Out-Null
-        Write-Host "✓ Créé: $path" -ForegroundColor Green
+        Write-Host "[OK] Cree: $path" -ForegroundColor Green
     }
 }
 
@@ -23,7 +23,7 @@ function Move-FileWithBackup {
     param($source, $destination)
     
     if (-not (Test-Path $source)) {
-        Write-Host "⚠ Fichier source introuvable: $source" -ForegroundColor Yellow
+        Write-Host "[WARN] Fichier source introuvable: $source" -ForegroundColor Yellow
         return
     }
     
@@ -31,14 +31,14 @@ function Move-FileWithBackup {
     Ensure-Directory $destDir
     
     if (Test-Path $destination) {
-        Write-Host "⚠ Le fichier existe déjà: $destination" -ForegroundColor Yellow
+        Write-Host "[WARN] Le fichier existe deja: $destination" -ForegroundColor Yellow
         $backup = "$destination.backup"
         Copy-Item $destination $backup -Force
-        Write-Host "  → Backup créé: $backup" -ForegroundColor Gray
+        Write-Host "  -> Backup cree: $backup" -ForegroundColor Gray
     }
     
     Move-Item $source $destination -Force
-    Write-Host "✓ Déplacé: $(Split-Path $source -Leaf) → $destination" -ForegroundColor Green
+    Write-Host "[OK] Deplace: $(Split-Path $source -Leaf) -> $destination" -ForegroundColor Green
 }
 
 # Fonction pour mettre à jour les imports dans un fichier
@@ -51,12 +51,12 @@ function Update-Imports {
         
         if ($content -ne $newContent) {
             Set-Content $filePath $newContent -NoNewline
-            Write-Host "✓ Imports mis à jour: $(Split-Path $filePath -Leaf)" -ForegroundColor Green
+            Write-Host "[OK] Imports mis a jour: $(Split-Path $filePath -Leaf)" -ForegroundColor Green
         }
     }
 }
 
-Write-Host "ÉTAPE 1: Migration des Services" -ForegroundColor Yellow
+Write-Host "ETAPE 1: Migration des Services" -ForegroundColor Yellow
 Write-Host "================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -64,9 +64,9 @@ Write-Host ""
 $authServiceSrc = Join-Path $srcPath "services\authService.ts"
 $authServiceDest = Join-Path $srcPath "core\auth\authService.ts"
 if (Test-Path $authServiceSrc) {
-    Write-Host "Note: authService.ts existe déjà dans core/auth, vérification..." -ForegroundColor Cyan
+    Write-Host "Note: authService.ts existe deja dans core/auth, verification..." -ForegroundColor Cyan
     if (Test-Path $authServiceDest) {
-        Write-Host "✓ authService.ts déjà dans core/auth" -ForegroundColor Green
+        Write-Host "[OK] authService.ts deja dans core/auth" -ForegroundColor Green
     }
 }
 
@@ -101,7 +101,7 @@ $apiServiceDest = Join-Path $srcPath "core\api\api.ts"
 Move-FileWithBackup $apiServiceSrc $apiServiceDest
 
 Write-Host ""
-Write-Host "ÉTAPE 2: Migration des Composants" -ForegroundColor Yellow
+Write-Host "ETAPE 2: Migration des Composants" -ForegroundColor Yellow
 Write-Host "==================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -112,7 +112,7 @@ if (Test-Path $protectedRouteSrc) {
     if (-not (Test-Path $protectedRouteDest)) {
         Move-FileWithBackup $protectedRouteSrc $protectedRouteDest
     } else {
-        Write-Host "✓ ProtectedRoute.tsx déjà dans core/components" -ForegroundColor Green
+        Write-Host "[OK] ProtectedRoute.tsx deja dans core/components" -ForegroundColor Green
     }
 }
 
@@ -123,7 +123,7 @@ if (Test-Path $bottomNavSrc) {
     if (-not (Test-Path $bottomNavDest)) {
         Move-FileWithBackup $bottomNavSrc $bottomNavDest
     } else {
-        Write-Host "✓ BottomNavigation.tsx déjà dans core/components" -ForegroundColor Green
+        Write-Host "[OK] BottomNavigation.tsx deja dans core/components" -ForegroundColor Green
     }
 }
 
@@ -133,7 +133,7 @@ $mapDest = Join-Path $srcPath "core\components\Map.tsx"
 Move-FileWithBackup $mapSrc $mapDest
 
 Write-Host ""
-Write-Host "ÉTAPE 3: Migration du Store" -ForegroundColor Yellow
+Write-Host "ETAPE 3: Migration du Store" -ForegroundColor Yellow
 Write-Host "============================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -143,7 +143,7 @@ $territoriesStoreDest = Join-Path $srcPath "features\territories\store\territori
 Move-FileWithBackup $territoriesStoreSrc $territoriesStoreDest
 
 Write-Host ""
-Write-Host "ÉTAPE 4: Migration des Types" -ForegroundColor Yellow
+Write-Host "ETAPE 4: Migration des Types" -ForegroundColor Yellow
 Write-Host "=============================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -152,16 +152,16 @@ $typesSrc = Join-Path $srcPath "types\index.ts"
 $typesDest = Join-Path $srcPath "core\types\index.ts"
 if (Test-Path $typesSrc) {
     if (Test-Path $typesDest) {
-        Write-Host "⚠ Les deux fichiers types/index.ts existent. Fusion manuelle requise." -ForegroundColor Yellow
-        Write-Host "  → Ancien: $typesSrc" -ForegroundColor Gray
-        Write-Host "  → Nouveau: $typesDest" -ForegroundColor Gray
+        Write-Host "[WARN] Les deux fichiers types/index.ts existent. Fusion manuelle requise." -ForegroundColor Yellow
+        Write-Host "  -> Ancien: $typesSrc" -ForegroundColor Gray
+        Write-Host "  -> Nouveau: $typesDest" -ForegroundColor Gray
     } else {
         Move-FileWithBackup $typesSrc $typesDest
     }
 }
 
 Write-Host ""
-Write-Host "ÉTAPE 5: Suppression des dossiers vides" -ForegroundColor Yellow
+Write-Host "ETAPE 5: Suppression des dossiers vides" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -178,11 +178,11 @@ foreach ($folder in $foldersToCheck) {
         $items = Get-ChildItem $folder -Recurse
         if ($items.Count -eq 0) {
             Remove-Item $folder -Recurse -Force
-            Write-Host "✓ Supprimé dossier vide: $folder" -ForegroundColor Green
+            Write-Host "[OK] Supprime dossier vide: $folder" -ForegroundColor Green
         } else {
-            Write-Host "⚠ Dossier non vide (vérification manuelle requise): $folder" -ForegroundColor Yellow
+            Write-Host "[WARN] Dossier non vide (verification manuelle requise): $folder" -ForegroundColor Yellow
             Get-ChildItem $folder | ForEach-Object {
-                Write-Host "  → $($_.Name)" -ForegroundColor Gray
+                Write-Host "  -> $($_.Name)" -ForegroundColor Gray
             }
         }
     }
@@ -193,13 +193,13 @@ $authContextPath = Join-Path $srcPath "contexts\AuthContext.tsx"
 $authStorePath = Join-Path $srcPath "core\auth\authStore.ts"
 if ((Test-Path $authContextPath) -and (Test-Path $authStorePath)) {
     Write-Host ""
-    Write-Host "⚠ ATTENTION: AuthContext.tsx et authStore.ts coexistent" -ForegroundColor Yellow
+    Write-Host "[WARN] ATTENTION: AuthContext.tsx et authStore.ts coexistent" -ForegroundColor Yellow
     Write-Host "  Avant de supprimer AuthContext, assurez-vous que tous les composants utilisent authStore" -ForegroundColor Yellow
-    Write-Host "  Pour supprimer AuthContext, exécutez: Remove-Item '$authContextPath'" -ForegroundColor Gray
+    Write-Host "  Pour supprimer AuthContext, executez: Remove-Item '$authContextPath'" -ForegroundColor Gray
 }
 
 Write-Host ""
-Write-Host "ÉTAPE 6: Création des fichiers index.ts manquants" -ForegroundColor Yellow
+Write-Host "ETAPE 6: Creation des fichiers index.ts manquants" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -210,7 +210,7 @@ if (-not (Test-Path $dashboardServicesIndex)) {
     @"
 export * from './dashboardService';
 "@ | Set-Content $dashboardServicesIndex
-    Write-Host "✓ Créé: features/dashboard/services/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Cree: features/dashboard/services/index.ts" -ForegroundColor Green
 }
 
 # Créer index.ts pour features/pdv/services
@@ -220,7 +220,7 @@ if (-not (Test-Path $pdvServicesIndex)) {
     @"
 export * from './outletsService';
 "@ | Set-Content $pdvServicesIndex
-    Write-Host "✓ Créé: features/pdv/services/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Cree: features/pdv/services/index.ts" -ForegroundColor Green
 }
 
 # Créer index.ts pour features/routes/services
@@ -230,7 +230,7 @@ if (-not (Test-Path $routesServicesIndex)) {
     @"
 export * from './routesService';
 "@ | Set-Content $routesServicesIndex
-    Write-Host "✓ Créé: features/routes/services/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Cree: features/routes/services/index.ts" -ForegroundColor Green
 }
 
 # Créer index.ts pour features/users/services
@@ -240,7 +240,7 @@ if (-not (Test-Path $usersServicesIndex)) {
     @"
 export * from './usersService';
 "@ | Set-Content $usersServicesIndex
-    Write-Host "✓ Créé: features/users/services/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Cree: features/users/services/index.ts" -ForegroundColor Green
 }
 
 # Créer index.ts pour features/territories/services
@@ -250,7 +250,7 @@ if (-not (Test-Path $territoriesServicesIndex)) {
     @"
 export * from './territoriesService';
 "@ | Set-Content $territoriesServicesIndex
-    Write-Host "✓ Créé: features/territories/services/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Cree: features/territories/services/index.ts" -ForegroundColor Green
 }
 
 # Mettre à jour core/components/index.ts
@@ -261,19 +261,19 @@ export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as BottomNavigation } from './BottomNavigation';
 "@
     Set-Content $coreComponentsIndex $expectedContent
-    Write-Host "✓ Mis à jour: core/components/index.ts" -ForegroundColor Green
+    Write-Host "[OK] Mis a jour: core/components/index.ts" -ForegroundColor Green
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MIGRATION TERMINÉE !" -ForegroundColor Green
+Write-Host "  MIGRATION TERMINEE !" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "PROCHAINES ÉTAPES:" -ForegroundColor Yellow
-Write-Host "1. Exécutez: .\update-imports.ps1 (pour mettre à jour tous les imports)" -ForegroundColor White
-Write-Host "2. Vérifiez les fichiers avec .backup et supprimez-les si tout fonctionne" -ForegroundColor White
+Write-Host "PROCHAINES ETAPES:" -ForegroundColor Yellow
+Write-Host "1. Executez: .\update-imports.ps1 (pour mettre a jour tous les imports)" -ForegroundColor White
+Write-Host "2. Verifiez les fichiers avec .backup et supprimez-les si tout fonctionne" -ForegroundColor White
 Write-Host "3. Testez votre application: npm run dev" -ForegroundColor White
-Write-Host "4. Supprimez les dossiers vides restants manuellement si nécessaire" -ForegroundColor White
+Write-Host "4. Supprimez les dossiers vides restants manuellement si necessaire" -ForegroundColor White
 Write-Host ""
 Write-Host "Pour annuler la migration, restaurez les fichiers .backup" -ForegroundColor Gray
 Write-Host ""

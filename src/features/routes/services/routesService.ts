@@ -1,4 +1,6 @@
-import api from './api';
+import { apiClient } from '@/core/api/client';
+
+const api = apiClient;
 
 export interface RoutePlan {
   id: string;
@@ -40,6 +42,13 @@ export interface CreateRoutePlanDto {
   userId: string;
   date: string;
   outletIds: string[];
+}
+
+export interface GenerateRouteDto {
+  userId: string;
+  date: string;
+  outletIds?: string[];
+  optimize?: boolean;
 }
 
 const routesService = {
@@ -90,6 +99,48 @@ const routesService = {
   // Terminer une route
   async complete(id: string): Promise<RoutePlan> {
     const response = await api.patch(`/routes/${id}/complete`);
+    return response.data;
+  },
+
+  // Récupérer la route du jour pour l'utilisateur connecté
+  async getTodayRoute(): Promise<RoutePlan | null> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await api.get(`/routes/my-routes?date=${today}`);
+      // Retourne la première route du jour ou null
+      return response.data && response.data.length > 0 ? response.data[0] : null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la route du jour:', error);
+      return null;
+    }
+  },
+
+  // Récupérer mes routes
+  async getMyRoutes(filters?: {
+    date?: string;
+    status?: string;
+  }): Promise<RoutePlan[]> {
+    const params = new URLSearchParams();
+    if (filters?.date) params.append('date', filters.date);
+    if (filters?.status) params.append('status', filters.status);
+
+    const response = await api.get(`/routes/my-routes?${params.toString()}`);
+    return response.data || [];
+  },
+
+  // Générer une route automatiquement avec optimisation
+  async generateRoute(data: GenerateRouteDto): Promise<RoutePlan> {
+    const response = await api.post('/routes/generate', data);
+    return response.data;
+  },
+
+  // Récupérer les PDV du secteur du vendeur
+  async getVendorSectorOutlets(vendorId: string): Promise<{
+    user: { id: string; firstName: string; lastName: string };
+    sector: { id: string; code: string; name: string };
+    outlets: any[];
+  }> {
+    const response = await api.get(`/territories/vendors/${vendorId}/outlets`);
     return response.data;
   },
 };

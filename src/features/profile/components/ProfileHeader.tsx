@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
-import { usersService } from '../../../services/usersService';
+import { usersService } from '@/features/users/services';
 import { useAuthStore } from '../../../core/auth';
 
 interface ProfileHeaderProps {

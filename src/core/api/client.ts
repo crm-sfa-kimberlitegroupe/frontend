@@ -28,20 +28,26 @@ export interface PaginatedResponse<T> {
 }
 
 export class ApiError extends Error {
+  statusCode?: number;
+  data?: any;
+  
   constructor(
     message: string,
-    public statusCode?: number,
-    public data?: any
+    statusCode?: number,
+    data?: any
   ) {
     super(message);
     this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.data = data;
   }
 }
 
 export const apiClient = {
   async request<T = any>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry = false
   ): Promise<T> {
     const token = localStorage.getItem('access_token');
     
@@ -56,6 +62,56 @@ export const apiClient = {
     };
 
     const response = await fetch(`${API_URL}${endpoint}`, config);
+
+    // Si erreur 401 et pas déjà un retry, tenter de refresh le token
+    if (response.status === 401 && !isRetry) {
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      if (refreshToken) {
+        try {
+          console.log('🔄 Token expiré, tentative de refresh...');
+          
+          // Appel au endpoint de refresh
+          const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            
+            // Sauvegarder les nouveaux tokens
+            localStorage.setItem('access_token', refreshData.access_token);
+            localStorage.setItem('refresh_token', refreshData.refresh_token);
+            
+            console.log('✅ Token refreshé avec succès');
+            
+            // Réessayer la requête originale avec le nouveau token
+            return this.request<T>(endpoint, options, true);
+          } else {
+            // Refresh a échoué, déconnecter l'utilisateur
+            console.error('❌ Refresh token invalide, déconnexion...');
+            localStorage.clear();
+            window.location.href = '/login';
+            throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
+          }
+        } catch (refreshError) {
+          console.error('❌ Erreur lors du refresh:', refreshError);
+          localStorage.clear();
+          window.location.href = '/login';
+          throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
+        }
+      } else {
+        // Pas de refresh token, déconnecter
+        console.error('❌ Pas de refresh token, déconnexion...');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new ApiError('Non autorisé', 401);
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Une erreur est survenue' }));

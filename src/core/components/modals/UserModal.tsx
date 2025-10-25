@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Button from '../../ui/Button';
-import type { User, CreateUserDto, UpdateUserDto } from '../../../services/usersService';
-import { useTerritoriesStore } from '../../../store/territoriesStore';
+import type { User, CreateUserDto, UpdateUserDto } from '@/features/users/services';
+import { useTerritoriesStore } from '@/features/territories/store/territoriesStore';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -103,6 +103,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
       }
 
       onClose();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || 'Une erreur est survenue');
     } finally {
@@ -239,12 +240,25 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Sélectionner un territoire</option>
-              {territories.map((territory) => (
-                <option key={territory.id} value={territory.id}>
-                  {territory.name} ({territory.code})
-                </option>
-              ))}
+              {territories
+                .filter((territory) => {
+                  // En mode édition, afficher le territoire actuellement assigné + les territoires non assignés
+                  if (mode === 'edit' && user && territory.id === user.territory) {
+                    return true;
+                  }
+                  // Filtrer les territoires non assignés (sans utilisateurs assignés ou avec tableau vide)
+                  return !territory.assignedUsers || territory.assignedUsers.length === 0;
+                })
+                .map((territory) => (
+                  <option key={territory.id} value={territory.id}>
+                    {territory.name} ({territory.code})
+                    {territory.assignedUsers && territory.assignedUsers.length > 0 && ' - Déjà assigné'}
+                  </option>
+                ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Seuls les territoires non assignés sont affichés
+            </p>
           </div>
 
           {/* Téléphone */}

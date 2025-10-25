@@ -13,51 +13,122 @@ interface PDVFormStep2Props {
 
 export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: PDVFormStep2Props) {
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [isCapturingGPS, setIsCapturingGPS] = useState(false);
+  const [gpsAttempts, setGpsAttempts] = useState(0);
   const MAX_ACCURACY = 1000; // Précision maximale acceptée en mètres
+  const DESIRED_ACCURACY = 20; // Précision idéale en mètres
+  const MAX_WAIT_TIME = 30000; // Temps maximum d'attente (30 secondes)
 
   const handleGetCurrentPosition = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const accuracy = position.coords.accuracy;
-          setGpsAccuracy(accuracy);
-
-          // Vérifier la précision
-          if (accuracy > MAX_ACCURACY) {
-            alert(
-              `⚠️ Précision GPS insuffisante!\n\n` +
-              `Précision actuelle: ${accuracy.toFixed(0)}m\n` +
-              `Précision requise: < ${MAX_ACCURACY}m\n\n` +
-              `Veuillez:\n` +
-              `• Vous déplacer en extérieur\n` +
-              `• Activer le GPS haute précision\n` +
-              `• Attendre quelques secondes\n` +
-              `• Réessayer`
-            );
-            return;
-          }
-
-          onChange({
-            latitude: position.coords.latitude.toFixed(6),
-            longitude: position.coords.longitude.toFixed(6),
-          });
-          alert(
-            `✅ Position capturée avec succès!\n\n` +
-            `Précision: ${accuracy.toFixed(0)}m`
-          );
-        },
-        (error) => {
-          alert('❌ Impossible de récupérer la position: ' + error.message);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       alert('❌ Géolocalisation non supportée par votre appareil');
+      return;
     }
+
+    setIsCapturingGPS(true);
+    setGpsAttempts(0);
+    
+    let bestAccuracy = Infinity;
+    let bestPosition: GeolocationPosition | null = null;
+    const startTime = Date.now();
+    let watchId: number;
+
+    const finishCapture = (position: GeolocationPosition, accuracy: number) => {
+      navigator.geolocation.clearWatch(watchId);
+      setIsCapturingGPS(false);
+      setGpsAccuracy(accuracy);
+
+      onChange({
+        latitude: position.coords.latitude.toFixed(6),
+        longitude: position.coords.longitude.toFixed(6),
+      });
+
+      const qualityEmoji = accuracy <= 10 ? '🎯' : accuracy <= 20 ? '✅' : accuracy <= 50 ? '👍' : '⚠️';
+      const qualityText = accuracy <= 10 ? 'Excellente' : accuracy <= 20 ? 'Très bonne' : accuracy <= 50 ? 'Bonne' : 'Acceptable';
+      
+      alert(
+        `${qualityEmoji} Position capturée avec succès!\n\n` +
+        `Précision: ${accuracy.toFixed(1)}m\n` +
+        `Qualité: ${qualityText}\n` +
+        `Tentatives: ${gpsAttempts + 1}`
+      );
+    };
+
+    // Utiliser watchPosition pour améliorer continuellement la précision
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const accuracy = position.coords.accuracy;
+        const elapsed = Date.now() - startTime;
+        
+        setGpsAttempts(prev => prev + 1);
+        setGpsAccuracy(accuracy);
+
+        // Garder la meilleure position
+        if (accuracy < bestAccuracy) {
+          bestAccuracy = accuracy;
+          bestPosition = position;
+        }
+
+        // Conditions d'arrêt:
+        // 1. Précision excellente atteinte (< DESIRED_ACCURACY)
+        if (accuracy <= DESIRED_ACCURACY) {
+          finishCapture(position, accuracy);
+          return;
+        }
+
+        // 2. Temps maximum écoulé - prendre la meilleure position obtenue
+        if (elapsed >= MAX_WAIT_TIME) {
+          if (bestPosition && bestAccuracy <= MAX_ACCURACY) {
+            finishCapture(bestPosition, bestAccuracy);
+          } else {
+            navigator.geolocation.clearWatch(watchId);
+            setIsCapturingGPS(false);
+            alert(
+              `⚠️ Précision GPS insuffisante après ${MAX_WAIT_TIME/1000}s\n\n` +
+              `Meilleure précision obtenue: ${bestAccuracy.toFixed(0)}m\n` +
+              `Précision requise: < ${MAX_ACCURACY}m\n\n` +
+              `Conseils:\n` +
+              `• Activez le GPS haute précision dans les paramètres\n` +
+              `• Déplacez-vous en extérieur (loin des bâtiments)\n` +
+              `• Vérifiez votre connexion internet (aide le A-GPS)\n` +
+              `• Attendez que le GPS se stabilise\n` +
+              `• Réessayez dans quelques instants`
+            );
+          }
+          return;
+        }
+
+        // 3. Bonne précision après au moins 3 tentatives
+        if (gpsAttempts >= 2 && accuracy <= 50) {
+          finishCapture(position, accuracy);
+          return;
+        }
+      },
+      (error) => {
+        navigator.geolocation.clearWatch(watchId);
+        setIsCapturingGPS(false);
+        
+        let errorMessage = 'Erreur inconnue';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permission de géolocalisation refusée.\nVeuillez autoriser l\'accès à votre position.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Position indisponible.\nVérifiez que le GPS est activé.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Délai d\'attente dépassé.\nLe signal GPS est trop faible.';
+            break;
+        }
+        
+        alert(`❌ Impossible de récupérer la position\n\n${errorMessage}`);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: MAX_WAIT_TIME,
+        maximumAge: 0
+      }
+    );
   };
 
   return (
@@ -112,6 +183,30 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
                 >
                   Recapturer
                 </Button>
+              </div>
+            </div>
+          ) : isCapturingGPS ? (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <div className="text-sm">
+                  <div className="font-medium text-blue-900">Recherche du signal GPS...</div>
+                  <div className="text-blue-700 mt-1">
+                    {gpsAccuracy ? (
+                      <>
+                        Précision actuelle: <span className="font-semibold">{gpsAccuracy.toFixed(1)}m</span>
+                        {gpsAccuracy > DESIRED_ACCURACY && (
+                          <span className="text-xs ml-2">(amélioration en cours...)</span>
+                        )}
+                      </>
+                    ) : (
+                      'Initialisation...'
+                    )}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    Tentative {gpsAttempts} • Objectif: &lt;{DESIRED_ACCURACY}m
+                  </div>
+                </div>
               </div>
             </div>
           ) : (

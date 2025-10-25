@@ -9,7 +9,7 @@ import PDVFormStep2 from './PDVFormStep2';
 import PDVFormStep3 from './PDVFormStep3';
 import PDVFormStep4 from './PDVFormStep4';
 import type { UserRole } from '../../../core/types';
-import { outletsService, OutletStatusEnum } from '../../../services/outletsService';
+import { outletsService, OutletStatusEnum } from '@/features/pdv/services';
 import { useAuthStore } from '../../../core/auth';
 
 interface PDVFormWizardProps {
@@ -25,8 +25,8 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
 
   // Initialiser le territoryId avec celui de l'utilisateur connecté
   useEffect(() => {
-    if (user?.territoryId) {
-      setFormData(prev => ({ ...prev, territoryId: user.territoryId || '' }));
+    if (user?.territory) {
+      setFormData(prev => ({ ...prev, territoryId: user.territory || '' }));
     }
   }, [user]);
 

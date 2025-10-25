@@ -1,5 +1,5 @@
 import Card from '../../../core/ui/Card';
-import type { UserPerformance } from '../../../services/usersService';
+import type { UserPerformance } from '@/features/users/services';
 
 interface PerformanceSectionProps {
   performance: UserPerformance;

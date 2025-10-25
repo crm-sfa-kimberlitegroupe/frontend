@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { Users, MapPin, Phone, Mail, Calendar, TrendingUp, UserPlus } from 'lucide-react';
 import { PageHeader, DashboardGrid, StatCard } from '../../../core/components/desktop';
-import Button from '../../../core/ui/Button';
+import { Button, Modal, Badge, Card } from '@/core/ui';
+import { useToggle, useMutation } from '@/core/hooks';
 import UserModal from '../../../core/components/modals/UserModal';
-import { usersService, type CreateUserDto, type UpdateUserDto } from '../../../services/usersService';
+import { usersService, type CreateUserDto, type UpdateUserDto } from '@/features/users/services';
 
 interface TeamMember {
   id: string;
@@ -101,11 +103,11 @@ const mockTeam: TeamMember[] = [
 ];
 
 export default function TeamPage() {
-  const [team, setTeam] = useState<TeamMember[]>(mockTeam);
+  const [team] = useState<TeamMember[]>(mockTeam);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
-  // États pour le modal de création d'utilisateur
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // ✅ Hook réutilisable pour le modal
+  const [isModalOpen, , setIsModalOpen] = useToggle(false);
   const [modalMode] = useState<'create' | 'edit'>('create');
 
   const activeMembers = team.filter((m) => m.status === 'active').length;
@@ -115,17 +117,22 @@ export default function TeamPage() {
     team.reduce((sum, m) => sum + m.performance.coverage, 0) / team.length
   );
 
-  // Fonction pour créer un utilisateur
-  const handleSubmitUser = async (data: CreateUserDto | UpdateUserDto) => {
-    try {
-      await usersService.create(data as CreateUserDto);
-      alert('✅ Utilisateur créé avec succès!');
-      setIsModalOpen(false);
-      // TODO: Recharger la liste de l'équipe
-    } catch (error) {
-      console.error('❌ Erreur lors de la création:', error);
-      throw error; // Laisser le modal gérer l'erreur
+  // ✅ Hook réutilisable pour les mutations
+  const createUserMutation = useMutation(
+    (data: CreateUserDto) => usersService.create(data),
+    {
+      onSuccess: () => {
+        alert('✅ Utilisateur créé avec succès!');
+        setIsModalOpen(false);
+      },
+      onError: (error) => {
+        console.error('❌ Erreur lors de la création:', error);
+      },
     }
+  );
+
+  const handleSubmitUser = (data: CreateUserDto | UpdateUserDto) => {
+    return createUserMutation.mutateAsync(data as CreateUserDto);
   };
 
   return (
@@ -178,10 +185,10 @@ export default function TeamPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Membres de l'Équipe</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {team.map((member) => (
-            <div
+            <Card
               key={member.id}
               onClick={() => setSelectedMember(member)}
-              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -194,15 +201,12 @@ export default function TeamPage() {
                     <p className="text-sm text-gray-500">{member.role}</p>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    member.status === 'active'
-                      ? 'bg-success/10 text-success'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
+                <Badge
+                  variant={member.status === 'active' ? 'success' : 'gray'}
+                  size="sm"
                 >
                   {member.status === 'active' ? 'Actif' : 'Inactif'}
-                </span>
+                </Badge>
               </div>
 
               {/* Info */}
@@ -272,39 +276,30 @@ export default function TeamPage() {
                   />
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
 
-      {/* Modal détails (optionnel) */}
-      {selectedMember && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedMember(null)}
-        >
-          <div
-            className="bg-white rounded-lg max-w-2xl w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold">
-                  {selectedMember.name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {selectedMember.name}
-                  </h2>
-                  <p className="text-gray-600">{selectedMember.role}</p>
-                </div>
+      {/* ✅ Modal réutilisable pour les détails */}
+      <Modal
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        title={selectedMember?.name || ''}
+        size="lg"
+      >
+        {selectedMember && (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold">
+                {selectedMember.name.split(' ').map(n => n[0]).join('')}
               </div>
-              <button
-                onClick={() => setSelectedMember(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
+              <div>
+                <p className="text-gray-600">{selectedMember.role}</p>
+                <Badge variant="success" size="sm" className="mt-1">
+                  {selectedMember.status === 'active' ? 'Actif' : 'Inactif'}
+                </Badge>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -377,8 +372,8 @@ export default function TeamPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Modal de création d'utilisateur */}
       <UserModal

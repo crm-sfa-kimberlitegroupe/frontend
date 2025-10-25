@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { authService } from '@/core/auth';
+import { Button, Alert } from '@/core/ui';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -61,11 +62,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+          {error && <Alert variant="error" message={error} />}
 
           <div className="space-y-4">
             <div>
@@ -101,15 +98,9 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
-            </button>
-          </div>
+          <Button type="submit" variant="primary" fullWidth disabled={loading}>
+            {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+          </Button>
 
           <div className="text-center">
             <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">

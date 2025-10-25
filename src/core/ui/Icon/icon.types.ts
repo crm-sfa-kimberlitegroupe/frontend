@@ -56,7 +56,11 @@ export type IconName =
   | 'minus'
   | 'x'
   | 'arrowLeft'
-  | 'arrowRight';
+  | 'arrowRight'
+  | 'chevronLeft'
+  | 'chevronRight'
+  | 'chevronUp'
+  | 'trash';
 
 // Tailles d'icônes disponibles
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';

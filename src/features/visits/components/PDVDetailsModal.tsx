@@ -3,7 +3,7 @@ import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
-import { outletsService, type Outlet } from '../../../services/outletsService';
+import { outletsService, type Outlet } from '@/features/pdv/services';
 
 interface PDVDetailsModalProps {
   pdv: Outlet | null;
@@ -293,7 +293,7 @@ export default function PDVDetailsModal({ pdv, onClose, onUpdate }: PDVDetailsMo
                   onClick={handleEdit}
                 >
                   <span className="flex items-center gap-2">
-                    <Icon name="pencil" size="sm" variant="white" />
+                    <Icon name="edit" size="sm" variant="white" />
                     Modifier
                   </span>
                 </Button>

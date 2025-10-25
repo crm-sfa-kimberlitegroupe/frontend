@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User } from '../types';
+import type { User } from '@/core/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
 

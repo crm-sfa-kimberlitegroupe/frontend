@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import Card from '../../../core/ui/Card';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
+import { Card, Button, Badge, PageLayout, PageHeader, FilterBar, Input, Select } from '@/core/ui';
+import { useToggle } from '@/core/hooks';
 
 export default function DataREP() {
   const [activeTab, setActiveTab] = useState<'orders' | 'stock'>('orders');
-  const [showNewOrder, setShowNewOrder] = useState(false);
+  // ✅ Hook réutilisable pour le toggle
+  const [showNewOrder, toggleNewOrder] = useToggle(false);
 
   const orders = [
     { id: '1', pdvName: 'Supermarché Plateau', status: 'DELIVERED', totalAmount: 125000, itemsCount: 15, date: '2025-10-03' },
@@ -44,33 +44,20 @@ export default function DataREP() {
   };
 
   return (
-    <div className="pb-20 bg-gray-50 min-h-screen">
-      {/* En-tête avec onglets */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-gray-900 mb-3">Données 📊</h1>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'orders'
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            🛒 Commandes
-          </button>
-          <button
-            onClick={() => setActiveTab('stock')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'stock'
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            📦 Stock
-          </button>
-        </div>
+    <PageLayout>
+      {/* ✅ Composant PageHeader réutilisable */}
+      <PageHeader title="Données 📊" />
+      
+      {/* ✅ Composant FilterBar réutilisable */}
+      <div className="px-4 pt-2">
+        <FilterBar
+          tabs={[
+            { key: 'orders', label: '🛒 Commandes', count: orders.length },
+            { key: 'stock', label: '📦 Stock', count: stockAlerts.length },
+          ]}
+          selected={activeTab}
+          onChange={(tab) => setActiveTab(tab as 'orders' | 'stock')}
+        />
       </div>
 
       <div className="p-4">
@@ -82,7 +69,7 @@ export default function DataREP() {
               size="lg" 
               fullWidth 
               className="mb-4"
-              onClick={() => setShowNewOrder(!showNewOrder)}
+              onClick={toggleNewOrder}
             >
               <span className="mr-2">➕</span>
               Nouvelle commande
@@ -94,16 +81,12 @@ export default function DataREP() {
                 <h3 className="font-semibold text-gray-900 mb-3">Créer une commande</h3>
                 
                 {/* Recherche produits */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rechercher un produit
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nom du produit..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
+                {/* ✅ Composant Input réutilisable */}
+                <Input
+                  label="Rechercher un produit"
+                  placeholder="Nom du produit..."
+                  fullWidth
+                />
 
                 {/* Liste produits */}
                 <div className="space-y-2 mb-4">
@@ -139,19 +122,19 @@ export default function DataREP() {
                 </div>
 
                 {/* Mode paiement */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mode de paiement
-                  </label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                    <option>Espèces</option>
-                    <option>Mobile Money</option>
-                    <option>Crédit</option>
-                  </select>
-                </div>
+                {/* ✅ Composant Select réutilisable */}
+                <Select
+                  label="Mode de paiement"
+                  options={[
+                    { value: 'cash', label: 'Espèces' },
+                    { value: 'mobile', label: 'Mobile Money' },
+                    { value: 'credit', label: 'Crédit' },
+                  ]}
+                  fullWidth
+                />
 
-                <div className="flex gap-2">
-                  <Button variant="outline" fullWidth onClick={() => setShowNewOrder(false)}>
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" fullWidth onClick={toggleNewOrder}>
                     Annuler
                   </Button>
                   <Button variant="success" fullWidth>
@@ -256,6 +239,6 @@ export default function DataREP() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

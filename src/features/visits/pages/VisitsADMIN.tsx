@@ -3,8 +3,9 @@ import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
-import { outletsService, OutletStatusEnum, type Outlet } from '../../../services/outletsService';
+import { outletsService, OutletStatusEnum, type Outlet } from '@/features/pdv/services';
 import PDVDetailsModal from '../components/PDVDetailsModal';
+import { useAuthStore } from '@/core/auth';
 
 export default function VisitsADMIN() {
   const [selectedView, setSelectedView] = useState<'list' | 'validation'>('validation');
@@ -14,6 +15,9 @@ export default function VisitsADMIN() {
   const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV validés pour l'onglet "Points de vente"
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPDV, setSelectedPDV] = useState<Outlet | null>(null);
+  
+  // ✅ Récupérer l'utilisateur connecté
+  const user = useAuthStore((state) => state.user);
 
   // Charger les PDV depuis l'API
   useEffect(() => {
@@ -26,17 +30,27 @@ export default function VisitsADMIN() {
       setIsLoading(true);
       console.log('🔄 Chargement des PDV, vue:', selectedView);
       
-      // Si on est sur l'onglet "Points de vente", charger les PDV validés
+      // Logs utilisateur
+      console.log('👤 Utilisateur connecté:', user);
+      console.log('🗺️ TerritoryId de l\'utilisateur:', user?.territoryId);
+
+      
+      // 🔒 UTILISATION DU NOUVEL ENDPOINT DÉDIÉ
       if (selectedView === 'list') {
-        const data = await outletsService.getAll({ status: OutletStatusEnum.APPROVED });
-        console.log('📊 PDV validés (liste) reçus:', data);
-        console.log('📊 Nombre de PDV validés:', data?.length || 0);
+        console.log('📤 Appel API: /outlets/my-territory?status=APPROVED');
+        const data = await outletsService.getMyTerritoryOutlets({ 
+          status: OutletStatusEnum.APPROVED,
+        });
+        console.log('📥 PDV validés de MON territoire reçus:', data);
+        console.log('📊 Nombre:', data?.length || 0);
         setApprovedPDV(data || []);
       } else {
-        // Onglet "À valider" : charger seulement les PDV en attente
-        const data = await outletsService.getAll({ status: OutletStatusEnum.PENDING });
-        console.log('📊 PDV en attente reçus:', data);
-        console.log('📊 Nombre de PDV en attente:', data?.length || 0);
+        console.log('📤 Appel API: /outlets/my-territory?status=PENDING');
+        const data = await outletsService.getMyTerritoryOutlets({  
+          status: OutletStatusEnum.PENDING,
+        });
+        console.log('📥 PDV en attente de MON territoire reçus:', data);
+        console.log('📊 Nombre:', data?.length || 0);
         setPendingPDV(data || []);
       }
     } catch (error) {
@@ -47,7 +61,7 @@ export default function VisitsADMIN() {
       } else {
         setPendingPDV([]);
       }
-      alert('Erreur lors du chargement des PDV. Veuillez réessayer.');
+      console.error('Erreur lors du chargement des PDV');
     } finally {
       setIsLoading(false);
     }
@@ -60,20 +74,17 @@ export default function VisitsADMIN() {
       console.log('🔄 Validation du PDV:', id);
       const result = await outletsService.approve(id);
       console.log('✅ PDV validé:', result);
-      alert('✅ PDV validé avec succès!');
-      
       // Recharger la liste actuelle
       await loadPDV();
       console.log('📊 Liste rechargée après validation');
     } catch (error) {
       console.error('❌ Erreur lors de la validation:', error);
-      alert('❌ Erreur lors de la validation du PDV');
     }
   };
 
-  const handleReject = async (id: string, name: string) => {
+  const handleReject = async (id: string) => {
     if (!rejectionReason.trim()) {
-      alert('Veuillez indiquer une raison de rejet');
+      console.warn('Raison de rejet manquante');
       return;
     }
     
@@ -81,7 +92,6 @@ export default function VisitsADMIN() {
       console.log('🔄 Rejet du PDV:', id, 'Raison:', rejectionReason);
       const result = await outletsService.reject(id, rejectionReason);
       console.log('✅ PDV rejeté:', result);
-      alert(`✅ PDV "${name}" rejeté`);
       setShowRejectModal(null);
       setRejectionReason('');
       
@@ -90,7 +100,6 @@ export default function VisitsADMIN() {
       console.log('📊 Liste rechargée après rejet');
     } catch (error) {
       console.error('Erreur lors du rejet:', error);
-      alert('❌ Erreur lors du rejet du PDV');
     }
   };
 
@@ -145,10 +154,15 @@ export default function VisitsADMIN() {
             ) : !approvedPDV || approvedPDV.length === 0 ? (
               <Card className="p-8 text-center">
                 <div className="flex justify-center mb-3">
-                  <Icon name="store" size="2xl" variant="primary" />
+                  <Icon name="store" size="2xl" variant="grey" />
                 </div>
                 <p className="text-lg font-semibold text-gray-900">Aucun point de vente validé</p>
-                <p className="text-sm text-gray-600 mt-1">Les points de vente validés apparaîtront ici</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Aucun PDV validé trouvé pour votre territoire.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Les points de vente proposés par vos vendeurs apparaîtront dans l'onglet "À valider"
+                </p>
               </Card>
             ) : (
               <div className="space-y-4">
@@ -244,7 +258,12 @@ export default function VisitsADMIN() {
                   <Icon name="checkCircle" size="2xl" variant="green" />
                 </div>
                 <p className="text-lg font-semibold text-gray-900">Aucun PDV en attente</p>
-                <p className="text-sm text-gray-600 mt-1">Tous les PDV ont été traités</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Tous les PDV de votre territoire ont été traités
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Les nouveaux PDV proposés par vos vendeurs apparaîtront ici
+                </p>
               </Card>
             ) : (
               <div className="space-y-4">
@@ -353,7 +372,7 @@ export default function VisitsADMIN() {
                         <Button 
                           variant="danger" 
                           fullWidth
-                          onClick={() => handleReject(pdv.id, pdv.name)}
+                          onClick={() => handleReject(pdv.id)}
                         >
                           Confirmer le rejet
                         </Button>

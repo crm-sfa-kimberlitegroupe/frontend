@@ -1,6 +1,9 @@
 import type { IconName } from './icon.types';
 import {
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronUp,
   FiEye,
   FiAlertTriangle,
   FiSearch,
@@ -22,6 +25,7 @@ import {
   FiX,
   FiArrowLeft,
   FiArrowRight,
+  FiTrash2,
 } from 'react-icons/fi';
 import { HiMap, HiLocationMarker } from 'react-icons/hi';
 import { FaUserCircle } from 'react-icons/fa';
@@ -83,4 +87,8 @@ export const ICON_MAP: Record<IconName, React.ComponentType> = {
   x: FiX,
   arrowLeft: FiArrowLeft,
   arrowRight: FiArrowRight,
+  chevronLeft: FiChevronLeft,
+  chevronRight: FiChevronRight,
+  chevronUp: FiChevronUp,
+  trash: FiTrash2,
 } as const;

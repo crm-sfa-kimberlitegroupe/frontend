@@ -1,4 +1,6 @@
-import api from './api';
+import { apiClient } from '@/core/api/client';
+
+const api = apiClient;
 
 export type OutletStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
 
@@ -78,7 +80,7 @@ class OutletsService {
    * Créer un nouveau point de vente
    */
   async create(data: CreateOutletData): Promise<Outlet> {
-    const response = await api.post('/outlets', data);
+    const response = await apiClient.post('/outlets', data);
     // Le backend retourne directement l'outlet, pas { data: outlet }
     return response;
   }
@@ -101,6 +103,24 @@ class OutletsService {
 
     const response = await api.get(`/outlets?${params.toString()}`);
     return response; // Backend retourne directement le tableau
+  }
+
+  /**
+   * 🔒 NOUVEAU : Récupérer les PDV de MON territoire (ADMIN/SUP uniquement)
+   * Utilise l'endpoint dédié /outlets/my-territory
+   * Le backend extrait automatiquement le territoryId du JWT
+   */
+  async getMyTerritoryOutlets(filters?: {
+    status?: OutletStatus;
+    channel?: string;
+  }): Promise<Outlet[]> {
+    const params = new URLSearchParams();
+    
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.channel) params.append('channel', filters.channel);
+
+    const response = await api.get(`/outlets/my-territory?${params.toString()}`);
+    return response; // Backend retourne directement le tableau filtré
   }
 
   /**

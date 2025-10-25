@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { territoriesService, type Territory, type Manager } from '../services/territoriesService';
+import { territoriesService, type Territory, type Manager } from '@/features/territories/services';
 
 interface TerritoriesState {
   territories: Territory[];

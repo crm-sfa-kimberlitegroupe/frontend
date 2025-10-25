@@ -18,6 +18,7 @@ export interface User {
   hireDate?: string | null;
   manager?: string | null;
   isActive: boolean;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'; // Ajout du status
   lastLogin?: string;
 }
 

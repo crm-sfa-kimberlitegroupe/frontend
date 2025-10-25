@@ -2,14 +2,14 @@
 # Ce script met à jour tous les imports pour utiliser la nouvelle structure
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MISE À JOUR DES IMPORTS" -ForegroundColor Cyan
+Write-Host "  MISE A JOUR DES IMPORTS" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 $projectRoot = $PSScriptRoot
 $srcPath = Join-Path $projectRoot "src"
 
-# Fonction pour mettre à jour les imports dans un fichier
+# Fonction pour mettre a jour les imports dans un fichier
 function Update-ImportsInFile {
     param($filePath)
     
@@ -100,10 +100,10 @@ function Update-ImportsInFile {
         $content = $content -replace [regex]::Escape($old), $new
     }
     
-    # Si le contenu a changé, sauvegarder
+    # Si le contenu a change, sauvegarder
     if ($content -ne $originalContent) {
         Set-Content $filePath $content -NoNewline
-        Write-Host "✓ Mis à jour: $fileName" -ForegroundColor Green
+        Write-Host "[OK] Mis a jour: $fileName" -ForegroundColor Green
         return $true
     }
     
@@ -111,7 +111,7 @@ function Update-ImportsInFile {
 }
 
 # Parcourir tous les fichiers TypeScript/TSX
-Write-Host "Recherche des fichiers à mettre à jour..." -ForegroundColor Cyan
+Write-Host "Recherche des fichiers a mettre a jour..." -ForegroundColor Cyan
 Write-Host ""
 
 $files = Get-ChildItem -Path $srcPath -Include *.ts,*.tsx -Recurse -File
@@ -126,13 +126,13 @@ foreach ($file in $files) {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MISE À JOUR TERMINÉE !" -ForegroundColor Green
+Write-Host "  MISE A JOUR TERMINEE !" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Fichiers mis à jour: $updatedCount" -ForegroundColor White
+Write-Host "Fichiers mis a jour: $updatedCount" -ForegroundColor White
 Write-Host ""
-Write-Host "PROCHAINES ÉTAPES:" -ForegroundColor Yellow
-Write-Host "1. Vérifiez que l'application compile: npm run build" -ForegroundColor White
+Write-Host "PROCHAINES ETAPES:" -ForegroundColor Yellow
+Write-Host "1. Verifiez que l'application compile: npm run build" -ForegroundColor White
 Write-Host "2. Testez l'application: npm run dev" -ForegroundColor White
-Write-Host "3. Vérifiez manuellement les imports dans App.tsx et les layouts" -ForegroundColor White
+Write-Host "3. Verifiez manuellement les imports dans App.tsx et les layouts" -ForegroundColor White
 Write-Host ""

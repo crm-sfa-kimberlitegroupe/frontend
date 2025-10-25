@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import type { UserRole } from '../types';
+import type { UserRole } from '@/core/types';
 import { Icon } from '../ui/Icon';
 import type { IconName } from '../ui/Icon';
 

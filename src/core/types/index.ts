@@ -10,7 +10,8 @@ export interface User {
   role: UserRole;
   phone?: string;
   photo?: string;
-  territory?: string;
+  territory?: string;       // Nom du territoire
+  territoryId?: string;     // ID du territoire (ajouté pour le filtrage)
   employeeId?: string;
   hireDate?: string;
   manager?: string;

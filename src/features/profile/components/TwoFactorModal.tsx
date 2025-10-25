@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
-import { authService } from '../../../services/authService';
+import { authService } from '@/core/auth/authService';
 
 interface TwoFactorModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../core/auth';
-import { usersService, type UserPerformance } from '../../../services/usersService';
+import { usersService, type UserPerformance } from '@/features/users/services';
 import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
 
@@ -33,7 +33,7 @@ export default function ProfilePage() {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    photo: user?.photoUrl || user?.photo || null,
+    photo: user?.photo || user?.photo || null,
     territory: user?.territory || '',
     employeeId: user?.employeeId || '',
     hireDate: user?.hireDate || '',

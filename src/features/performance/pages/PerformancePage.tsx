@@ -96,17 +96,21 @@ const territoryData = [
   { territory: 'Yopougon', coverage: 64, strikeRate: 55 },
 ];
 
+import { useFilters } from '@/core/hooks';
+
 export default function PerformancePage() {
   const [performances] = useState<RepPerformance[]>(mockPerformances);
-  const [period, setPeriod] = useState('month');
-  const [territory, setTerritory] = useState('all');
-
-  const filteredPerformances = performances.filter((perf) => {
-    if (territory !== 'all' && perf.territory !== territory) return false;
-    return true;
+  
+  // ✅ Hook réutilisable pour les filtres
+  const { filters } = useFilters({
+    period: 'month',
+    territory: 'all',
   });
 
-  const activeFiltersCount = (period !== 'month' ? 1 : 0) + (territory !== 'all' ? 1 : 0);
+  const filteredPerformances = performances.filter((perf) => {
+    if (filters.territory !== 'all' && perf.territory !== filters.territory) return false;
+    return true;
+  });
 
   const columns: Column<RepPerformance>[] = [
     {

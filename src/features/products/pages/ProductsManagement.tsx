@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Package, Plus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
+import { Button, Badge } from '@/core/ui';
+import { useFilters } from '@/core/hooks';
 
 interface Product {
   id: string;
@@ -67,30 +67,23 @@ const mockProducts: Product[] = [
 
 export default function ProductsManagement() {
   const [products] = useState<Product[]>(mockProducts);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [stockFilter, setStockFilter] = useState<string>('all');
-
-  const filteredProducts = products.filter((product) => {
-    if (categoryFilter !== 'all' && product.category !== categoryFilter) return false;
-    if (statusFilter === 'active' && !product.isActive) return false;
-    if (statusFilter === 'inactive' && product.isActive) return false;
-    if (stockFilter === 'in_stock' && product.stock === 0) return false;
-    if (stockFilter === 'out_of_stock' && product.stock > 0) return false;
-    if (stockFilter === 'low_stock' && product.stock > 100) return false;
-    return true;
+  
+  // ✅ Hook réutilisable pour les filtres
+  const { filters, setFilter, resetFilters, activeCount } = useFilters({
+    category: 'all',
+    status: 'all',
+    stock: 'all',
   });
 
-  const activeFiltersCount =
-    (categoryFilter !== 'all' ? 1 : 0) +
-    (statusFilter !== 'all' ? 1 : 0) +
-    (stockFilter !== 'all' ? 1 : 0);
-
-  const handleClearFilters = () => {
-    setCategoryFilter('all');
-    setStatusFilter('all');
-    setStockFilter('all');
-  };
+  const filteredProducts = products.filter((product) => {
+    if (filters.category !== 'all' && product.category !== filters.category) return false;
+    if (filters.status === 'active' && !product.isActive) return false;
+    if (filters.status === 'inactive' && product.isActive) return false;
+    if (filters.stock === 'in_stock' && product.stock === 0) return false;
+    if (filters.stock === 'out_of_stock' && product.stock > 0) return false;
+    if (filters.stock === 'low_stock' && product.stock > 100) return false;
+    return true;
+  });
 
   const columns: Column<Product>[] = [
     {

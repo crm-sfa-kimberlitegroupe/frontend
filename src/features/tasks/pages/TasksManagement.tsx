@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ClipboardList, Plus, Edit, Trash2, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar, DashboardGrid, StatCard } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
+import { Button, Badge } from '@/core/ui';
+import { useFilters } from '@/core/hooks';
 
 interface Task {
   id: string;
@@ -98,27 +98,20 @@ const priorityColors = {
 
 export default function TasksManagement() {
   const [tasks] = useState<Task[]>(mockTasks);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-
-  const filteredTasks = tasks.filter((task) => {
-    if (typeFilter !== 'all' && task.type !== typeFilter) return false;
-    if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-    if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-    return true;
+  
+  // ✅ Hook réutilisable pour les filtres
+  const { filters } = useFilters({
+    type: 'all',
+    status: 'all',
+    priority: 'all',
   });
 
-  const activeFiltersCount =
-    (typeFilter !== 'all' ? 1 : 0) +
-    (statusFilter !== 'all' ? 1 : 0) +
-    (priorityFilter !== 'all' ? 1 : 0);
-
-  const handleClearFilters = () => {
-    setTypeFilter('all');
-    setStatusFilter('all');
-    setPriorityFilter('all');
-  };
+  const filteredTasks = tasks.filter((task) => {
+    if (filters.type !== 'all' && task.type !== filters.type) return false;
+    if (filters.status !== 'all' && task.status !== filters.status) return false;
+    if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
+    return true;
+  });
 
   const columns: Column<Task>[] = [
     {

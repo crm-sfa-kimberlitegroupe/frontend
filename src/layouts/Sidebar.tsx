@@ -3,10 +3,12 @@ import {
   LayoutDashboard, 
   Users, 
   LogOut,
-  MapPin
+  MapPin,
+  Map,
+  Grid3x3
 } from 'lucide-react';
-import type { UserRole } from '../core/types';
-import { useAuthStore } from '../core/auth';
+import type { UserRole } from '@/core/types';
+import { useAuthStore } from '@/core/auth';
 
 interface NavItem {
   label: string;
@@ -35,6 +37,12 @@ const navItems: NavItem[] = [
      roles: ['ADMIN'],
    },
    {
+     label: 'Secteurs',
+     icon: Grid3x3,
+     path: '/dashboard/sectors',
+     roles: ['ADMIN'],
+   },
+   {
      label: 'Route Manager',
      icon: LayoutDashboard,
      path: '/dashboard/route',
@@ -58,6 +66,12 @@ const navItems: NavItem[] = [
   //   path: '/dashboard/performance',
   //   roles: ['SUP'],
   // },
+  {
+    label: 'Territoires',
+    icon: Map,
+    path: '/dashboard/territories',
+    roles: ['SUP'],
+  },
   {
     label: 'Équipe',
     icon: Users,

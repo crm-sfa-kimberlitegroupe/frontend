@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import Button from '../../../core/ui/Button';
-import type     { Visit } from '../types/pdv.types';
+import { Button, PageLayout } from '@/core/ui';
+import { useToggle } from '@/core/hooks';
+import type { Visit } from '../types/pdv.types';
 import VisitsHeader from '../components/VisitsHeader';
 import ActiveVisitCTA from '../components/ActiveVisitCTA';
 import PDVFormWizard from '../components/PDVFormWizard';
@@ -9,7 +10,8 @@ import VisitDetail from '../components/VisitDetail';
 
 export default function VisitsREP() {
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
-  const [showPDVForm, setShowPDVForm] = useState(false);
+  // ✅ Hook réutilisable pour le toggle
+  const [showPDVForm, , setShowPDVForm] = useToggle(false);
 
   const visits: Visit[] = [
     { id: '1', pdvName: 'Supermarché Plateau', status: 'COMPLETED', scheduledTime: '08:00', checkInTime: '08:05', checkOutTime: '08:45' },
@@ -25,7 +27,7 @@ export default function VisitsREP() {
   const plannedCount = visits.filter(v => v.status === 'PLANNED').length;
 
   return (
-    <div className="pb-20 bg-gray-50 min-h-screen">
+    <PageLayout>
       <VisitsHeader 
         completedCount={completedCount}
         inProgressCount={inProgressCount}
@@ -86,6 +88,6 @@ export default function VisitsREP() {
           <VisitDetail onBack={() => setSelectedVisit(null)} />
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

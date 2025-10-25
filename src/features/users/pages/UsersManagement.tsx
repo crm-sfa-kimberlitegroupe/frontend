@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from 'react';
+import { UserPlus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
-import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '../../../services/usersService';
+import { Button, Badge, LoadingSpinner, Alert, Select } from '@/core/ui';
+import { useQuery, useMutation, useFilters, useToggle } from '@/core/hooks';
+import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '@/features/users/services';
 import UserModal from '../../../core/components/modals/UserModal';
 
 const roleLabels = {
@@ -14,93 +15,50 @@ const roleLabels = {
 };
 
 export default function UsersManagement() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // ✅ Hook réutilisable pour charger les données
+  const { data: users = [], loading, error, refetch } = useQuery(async () => {
+    const data = await usersService.getAll();
+    // Filtrer pour afficher seulement les vendeurs (REP)
+    return data.filter(user => user.role === 'REP');
+  });
+
+  // ✅ Hook réutilisable pour les filtres
+  const { filters, setFilter } = useFilters({
+    role: 'all',
+    status: 'all',
+  });
   
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // ✅ Hook réutilisable pour le modal
+  const [isModalOpen, , setIsModalOpen] = useToggle(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // Charger les utilisateurs au montage
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await usersService.getAll();
-      // Filtrer pour afficher seulement les vendeurs (REP)
-      const repsOnly = data.filter(user => user.role === 'REP');
-      setUsers(repsOnly);
-    } catch (err) {
-      console.error('Error loading users:', err);
-      setError('Erreur lors du chargement des utilisateurs');
-      // Utiliser des données mockées en cas d'erreur
-      setUsers([
-        {
-          id: '1',
-          firstName: 'Jean',
-          lastName: 'Kouassi',
-          email: 'jean.kouassi@example.com',
-          role: 'REP',
-          territory: 'Abidjan Plateau',
-          isActive: true,
-          lastLogin: '2025-10-07 09:30',
-        },
-        {
-          id: '2',
-          firstName: 'Marie',
-          lastName: 'Diallo',
-          email: 'marie.diallo@example.com',
-          role: 'REP',
-          territory: 'Cocody',
-          isActive: true,
-          lastLogin: '2025-10-07 08:15',
-        },
-        {
-          id: '3',
-          firstName: 'Paul',
-          lastName: 'Bamba',
-          email: 'paul.bamba@example.com',
-          role: 'SUP',
-          territory: 'Abidjan',
-          isActive: true,
-          lastLogin: '2025-10-06 17:45',
-        },
-      ]);
-    } finally {
-      setLoading(false);
+  // ✅ Hook réutilisable pour les mutations
+  const deleteMutation = useMutation(
+    (userId: string) => usersService.delete(userId),
+    {
+      onSuccess: () => refetch(),
+      onError: () => alert('Erreur lors de la suppression'),
     }
-  };
+  );
 
   const handleDelete = async (userId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       return;
     }
-
-    try {
-      await usersService.delete(userId);
-      setUsers(users.filter((u) => u.id !== userId));
-    } catch (err) {
-      console.error('Error deleting user:', err);
-      alert('Erreur lors de la suppression');
-    }
+    deleteMutation.mutate(userId);
   };
 
-  const handleToggleStatus = async (userId: string) => {
-    try {
-      const updatedUser = await usersService.toggleStatus(userId);
-      setUsers(users.map((u) => (u.id === userId ? updatedUser : u)));
-    } catch (err) {
-      console.error('Error toggling status:', err);
-      alert('Erreur lors de la modification du statut');
+  const toggleStatusMutation = useMutation(
+    (userId: string) => usersService.toggleStatus(userId),
+    {
+      onSuccess: () => refetch(),
+      onError: () => alert('Erreur lors de la modification du statut'),
     }
+  );
+
+  const handleToggleStatus = (userId: string) => {
+    toggleStatusMutation.mutate(userId);
   };
 
   // Ouvrir le modal pour créer un utilisateur
@@ -117,36 +75,39 @@ export default function UsersManagement() {
     setIsModalOpen(true);
   };
 
-  // Soumettre le formulaire (création ou édition)
-  const handleSubmitUser = async (data: CreateUserDto | UpdateUserDto) => {
-    try {
+  const submitMutation = useMutation(
+    async (data: CreateUserDto | UpdateUserDto) => {
       if (modalMode === 'create') {
-        const newUser = await usersService.create(data as CreateUserDto);
-        setUsers([...users, newUser]);
+        return await usersService.create(data as CreateUserDto);
       } else if (selectedUser) {
-        const updatedUser = await usersService.update(selectedUser.id, data as UpdateUserDto);
-        setUsers(users.map((u) => (u.id === selectedUser.id ? updatedUser : u)));
+        return await usersService.update(selectedUser.id, data as UpdateUserDto);
       }
-      setIsModalOpen(false);
-    } catch (err: any) {
-      console.error('Error submitting user:', err);
-      throw err; // Laisser le modal gérer l'erreur
+    },
+    {
+      onSuccess: () => {
+        refetch();
+        setIsModalOpen(false);
+      },
     }
+  );
+
+  const handleSubmitUser = (data: CreateUserDto | UpdateUserDto) => {
+    return submitMutation.mutateAsync(data);
   };
 
-  const filteredUsers = users.filter((user) => {
-    if (roleFilter !== 'all' && user.role !== roleFilter) return false;
-    if (statusFilter === 'active' && !user.isActive) return false;
-    if (statusFilter === 'inactive' && user.isActive) return false;
+  const filteredUsers = (users || []).filter((user) => {
+    if (filters.role !== 'all' && user.role !== filters.role) return false;
+    if (filters.status === 'active' && !user.isActive) return false;
+    if (filters.status === 'inactive' && user.isActive) return false;
     return true;
   });
 
   const activeFiltersCount =
-    (roleFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0);
+    (filters.role !== 'all' ? 1 : 0) + (filters.status !== 'all' ? 1 : 0);
 
   const handleClearFilters = () => {
-    setRoleFilter('all');
-    setStatusFilter('all');
+    setFilter('role', 'all');
+    setFilter('status', 'all');
   };
 
   const columns: Column<User>[] = [
@@ -272,31 +233,27 @@ export default function UsersManagement() {
     },
   ];
 
-  // Afficher le loader pendant le chargement
+  // ✅ Composant LoadingSpinner réutilisable
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-gray-600">Chargement des utilisateurs...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" text="Chargement des utilisateurs..." />;
   }
 
   return (
     <div>
-      {/* Message d'erreur */}
+      {/* ✅ Composant Alert réutilisable */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">{error}</p>
+        <Alert
+          variant="error"
+          title="Erreur"
+          message={error.message || 'Erreur lors du chargement des utilisateurs'}
+        >
           <button
-            onClick={loadUsers}
+            onClick={refetch}
             className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
           >
             Réessayer
           </button>
-        </div>
+        </Alert>
       )}
 
       <PageHeader
@@ -315,18 +272,18 @@ export default function UsersManagement() {
         onClear={handleClearFilters}
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Statut
-          </label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Tous</option>
-            <option value="active">Actifs</option>
-            <option value="inactive">Inactifs</option>
-          </select>
+          {/* ✅ Composant Select réutilisable */}
+          <Select
+            label="Statut"
+            value={filters.status}
+            onChange={(e) => setFilter('status', e.target.value)}
+            options={[
+              { value: 'all', label: 'Tous' },
+              { value: 'active', label: 'Actifs' },
+              { value: 'inactive', label: 'Inactifs' },
+            ]}
+            fullWidth
+          />
         </div>
       </FilterBar>
 

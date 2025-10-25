@@ -2,4 +2,4 @@
 export * from './api';
 export * from './auth';
 export * from './components';
-export * from './types';
+export * from '@/core/types';

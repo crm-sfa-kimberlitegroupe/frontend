@@ -1,59 +1,54 @@
-import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Plus, Filter } from 'lucide-react';
-import Card from '../../../core/ui/Card';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
-import routesService, { RoutePlan } from '../../../services/routesService';
-import usersService from '../../../services/usersService';
-import { useAuthStore } from '../../../core/auth';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { MapPin, Users, Plus } from 'lucide-react';
+import {
+  PageLayout,
+  PageHeader,
+  FilterBar,
+  DatePicker,
+  StatsGrid,
+  EmptyState,
+  LoadingSpinner,
+  Card,
+  Button,
+  Badge,
+} from '@/core/ui';
+import { useQuery, useFilters } from '@/core/hooks';
+import routesService from '@/features/routes/services';
+import usersService from '@/features/users/services';
+import { useAuthStore } from '@/core/auth';
 
 export default function RouteManager() {
-  const [routes, setRoutes] = useState<RoutePlan[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'PLANNED' | 'IN_PROGRESS' | 'DONE'>('all');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const currentUser = useAuthStore((s) => s.user);
 
-  useEffect(() => {
-    loadData();
-  }, [selectedDate, selectedFilter]);
+  // ✅ Hook réutilisable pour les filtres
+  const { filters, setFilter } = useFilters({
+    status: 'all' as 'all' | 'PLANNED' | 'IN_PROGRESS' | 'DONE',
+    date: new Date().toISOString().split('T')[0],
+  });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Charger les utilisateurs (vendeurs)
-      const usersData = await usersService.getAll();
-      const reps = usersData.filter((u: any) => u.role === 'REP');
-      setUsers(reps);
-
-      // Charger les routes avec filtres
-      const filters: any = { date: selectedDate };
-      if (selectedFilter !== 'all') {
-        filters.status = selectedFilter;
-      }
-      
-      const routesData = await routesService.getAll(filters);
-      
-      // Filtrer par territoire si l'admin a un territoire spécifique
-      if (currentUser?.territoryId) {
-        const filteredRoutes = routesData.filter((route) => {
-          const user = usersData.find((u: any) => u.id === route.userId);
-          return user?.territoryId === currentUser.territoryId;
-        });
-        setRoutes(filteredRoutes);
-      } else {
-        setRoutes(routesData);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      // En cas d'erreur, utiliser des données mock
-      setRoutes([]);
-    } finally {
-      setLoading(false);
+  // ✅ Hook réutilisable pour charger les données
+  const { data: routesData, loading, refetch } = useQuery(async () => {
+    const usersData = await usersService.getAll();
+    const filterParams: any = { date: filters.date };
+    
+    if (filters.status !== 'all') {
+      filterParams.status = filters.status;
     }
-  };
+    
+    const routesData = await routesService.getAll(filterParams);
+    
+    // Filtrer par territoire si nécessaire
+    if (currentUser?.territory) {
+      return routesData.filter((route) => {
+        const user = usersData.find((u: any) => u.id === route.userId);
+        return user?.territory === currentUser.territory;
+      });
+    }
+    
+    return routesData;
+  });
+
+  const routes = routesData || [];
 
   const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
@@ -90,7 +85,7 @@ export default function RouteManager() {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette route ?')) {
       try {
         await routesService.delete(id);
-        loadData();
+        refetch();
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
         alert('Erreur lors de la suppression de la route');
@@ -98,109 +93,82 @@ export default function RouteManager() {
     }
   };
 
-  const stats = {
-    total: routes.length,
-    planned: routes.filter(r => r.status === 'PLANNED').length,
-    inProgress: routes.filter(r => r.status === 'IN_PROGRESS').length,
-    done: routes.filter(r => r.status === 'DONE').length,
-  };
+  // Calcul des stats pour StatsGrid
+  const stats = [
+    {
+      label: 'Total Routes',
+      value: routes.length,
+      color: 'primary' as const,
+      icon: <MapPin className="w-5 h-5" />,
+    },
+    {
+      label: 'En cours',
+      value: routes.filter((r) => r.status === 'IN_PROGRESS').length,
+      color: 'warning' as const,
+      icon: <Users className="w-5 h-5" />,
+    },
+    {
+      label: 'Terminées',
+      value: routes.filter((r) => r.status === 'DONE').length,
+      color: 'success' as const,
+      icon: <MapPin className="w-5 h-5" />,
+    },
+  ];
 
   return (
-    <div className="pb-20 bg-gray-50 min-h-screen">
-      {/* En-tête */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-900">Gestion des Routes</h1>
+    <PageLayout>
+      {/* ✅ Composant PageHeader réutilisable */}
+      <PageHeader
+        title="Gestion des Routes"
+        actions={
           <Button variant="primary" size="sm" onClick={handleCreateRoute}>
             <Plus className="w-4 h-4 mr-1" />
             Nouvelle Route
           </Button>
-        </div>
+        }
+      />
 
-        {/* Sélecteur de date */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-sm"
-            />
-          </div>
-        </div>
+      <div className="p-4 space-y-4">
+        {/* ✅ Composant DatePicker réutilisable */}
+        <DatePicker
+          value={filters.date}
+          onChange={(e) => setFilter('date', e.target.value)}
+          fullWidth
+        />
 
-        {/* Filtres de statut */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {[
-            { key: 'all', label: 'Toutes', count: stats.total },
-            { key: 'PLANNED', label: 'Planifiées', count: stats.planned },
-            { key: 'IN_PROGRESS', label: 'En cours', count: stats.inProgress },
-            { key: 'DONE', label: 'Terminées', count: stats.done },
-          ].map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => setSelectedFilter(filter.key as any)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedFilter === filter.key
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {filter.label} ({filter.count})
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* ✅ Composant FilterBar réutilisable */}
+        <FilterBar
+          tabs={[
+            { key: 'all', label: 'Toutes', count: routes.length },
+            { key: 'PLANNED', label: 'Planifiées', count: routes.filter(r => r.status === 'PLANNED').length },
+            { key: 'IN_PROGRESS', label: 'En cours', count: routes.filter(r => r.status === 'IN_PROGRESS').length },
+            { key: 'DONE', label: 'Terminées', count: routes.filter(r => r.status === 'DONE').length },
+          ]}
+          selected={filters.status}
+          onChange={(status) => setFilter('status', status as any)}
+        />
 
-      <div className="p-4">
-        {/* Statistiques */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <Card className="p-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{stats.total}</div>
-              <div className="text-xs text-gray-600 mt-1">Total Routes</div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-warning">{stats.inProgress}</div>
-              <div className="text-xs text-gray-600 mt-1">En cours</div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-success">{stats.done}</div>
-              <div className="text-xs text-gray-600 mt-1">Terminées</div>
-            </div>
-          </Card>
-        </div>
+        {/* ✅ Composant StatsGrid réutilisable */}
+        <StatsGrid stats={stats} columns={3} />
 
-        {/* Liste des routes */}
+        {/* ✅ Composant LoadingSpinner réutilisable */}
         {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Chargement...</p>
-          </div>
+          <LoadingSpinner text="Chargement des routes..." />
         ) : routes.length === 0 ? (
-          <Card className="p-8">
-            <div className="text-center">
-              <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Aucune route trouvée
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Créez une nouvelle route pour commencer
-              </p>
-              <Button variant="primary" onClick={handleCreateRoute}>
-                <Plus className="w-4 h-4 mr-1" />
-                Créer une route
-              </Button>
-            </div>
-          </Card>
+          /* ✅ Composant EmptyState réutilisable */
+          <EmptyState
+            icon={MapPin}
+            title="Aucune route trouvée"
+            description="Créez une nouvelle route pour commencer"
+            action={{
+              label: 'Créer une route',
+              onClick: handleCreateRoute,
+              icon: <Plus className="w-4 h-4" />,
+            }}
+          />
         ) : (
           <div className="space-y-3">
             {routes.map((route) => {
-              const user = users.find(u => u.id === route.userId);
               const stopCount = route.routeStops?.length || 0;
 
               return (
@@ -215,18 +183,16 @@ export default function RouteManager() {
                           <h4 className="font-medium text-gray-900">
                             Route du {new Date(route.date).toLocaleDateString('fr-FR')}
                           </h4>
-                          {user && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
-                              <Users className="w-3 h-3" />
-                              <span>{user.firstName} {user.lastName}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                            <Users className="w-3 h-3" />
+                            <span>Utilisateur #{route.userId}</span>
+                          </div>
                         </div>
                         <Badge variant={getStatusColor(route.status)} size="sm">
                           {getStatusLabel(route.status)}
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center gap-3 text-xs text-gray-600">
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
@@ -248,9 +214,9 @@ export default function RouteManager() {
                         <Button variant="outline" size="sm" fullWidth>
                           Modifier
                         </Button>
-                        <Button 
-                          variant="danger" 
-                          size="sm" 
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleDeleteRoute(route.id)}
                         >
                           Supprimer
@@ -264,6 +230,6 @@ export default function RouteManager() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

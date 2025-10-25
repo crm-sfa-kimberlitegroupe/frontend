@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './core/auth';
+import { useAuthStore } from '@/core/auth';
 import { ProtectedRoute } from './core/components/ProtectedRoute';
 
 // Pages publiques
@@ -20,11 +20,14 @@ import VisitsPage from './features/visits/pages/VisitsPage';
 import DataPage from './features/data/pages/DataPage';
 import RouteREP from './features/routes/pages/RouteREP';
 import RouteSUP from './features/routes/pages/RouteSUP';
-import RouteManager from './features/routes/pages/RouteManager';
+import RouteADMIN from './features/routes/pages/RouteADMIN';
 // Pages Desktop (ADMIN/SUP)
 import TeamPage from './features/team/pages/TeamPage';
 import VisitsADMIN from './features/visits/pages/VisitsADMIN';
 import UsersManagement from './features/users/pages/UsersManagement';
+import SectorsManagementUnified from './features/territories/pages/SectorsManagementUnified';
+import TerritoriesManagement from './features/territories/pages/TerritoriesManagement';
+import CreateTerritoryWithMap from './features/territories/pages/CreateTerritoryWithMap';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -42,7 +45,7 @@ function RoutePageRoute() {
   const user = useAuthStore((s) => s.user);
   if (!user) return null;
   if (user.role === 'REP') return <RouteREP />;
-  if (user.role === 'ADMIN') return <RouteManager />;
+  if (user.role === 'ADMIN') return <RouteADMIN />;
   if (user.role === 'SUP') return <RouteSUP />;
   // Par défaut, retourner null si rôle inconnu
   return null;
@@ -81,11 +84,14 @@ function App() {
           {/* Routes Desktop - ADMIN */}
           <Route path="users" element={<UsersManagement />} />
           <Route path="pdv" element={<VisitsADMIN />} />
+          <Route path="sectors" element={<SectorsManagementUnified />} />
           {/*         <Route path="routes" element={<RoutesManagement />} /> */}
           <Route path="products" element={<UnderConstruction />} />
           <Route path="tasks" element={<UnderConstruction />} />
           
           {/* Routes Desktop - SUP */}
+          <Route path="territories" element={<TerritoriesManagement />} />
+          <Route path="territories/create-with-map" element={<CreateTerritoryWithMap />} />
           <Route path="performance" element={<UnderConstruction />} />
           <Route path="team" element={<TeamPage />} />
           
