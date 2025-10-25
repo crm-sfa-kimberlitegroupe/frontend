@@ -56,9 +56,6 @@ export default function SectorsManagement() {
         outletsService.getAll({ status: 'APPROVED' }),
       ]);
 
-      console.log('Territoires:', territoriesData);
-      console.log('Secteurs:', sectorsData);
-      console.log('PDV:', outletsData);
       // Trouver le territoire de l'utilisateur (peut être un ID ou un nom)
       const myTerritory = territoriesData.find(
         t => t.id === user.territory || t.name === user.territory || t.code === user.territory
@@ -86,8 +83,7 @@ export default function SectorsManagement() {
       // Pré-remplir le territoire parent dans le formulaire
       setFormData(prev => ({ ...prev, parentId: myTerritory.id }));
 
-    } catch (error) {
-      console.error('Erreur chargement données:', error);
+    } catch {
       showError('Impossible de charger les données');
     } finally {
       setLoading(false);
@@ -113,7 +109,6 @@ export default function SectorsManagement() {
       setSelectedOutlets([]);
       loadData();
     } catch (error: any) {
-      console.error('Erreur création secteur:', error);
       showError(error?.response?.data?.message || 'Erreur lors de la création');
     } finally {
       setLoading(false);
@@ -129,7 +124,6 @@ export default function SectorsManagement() {
       showSuccess('Secteur supprimé avec succès');
       loadData();
     } catch (error: any) {
-      console.error('Erreur suppression secteur:', error);
       showError(error?.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
       setLoading(false);
@@ -156,20 +150,12 @@ export default function SectorsManagement() {
     return matchSearch && matchRegion && matchCommune && matchVille && matchQuartier;
   });
   
-  // 🗺️ Extraire les valeurs uniques pour les filtres
+  // Extraire les valeurs uniques pour les filtres
   const uniqueRegions = [...new Set(availableOutlets.map(o => (o as any).region).filter(Boolean))];
   const uniqueCommunes = [...new Set(availableOutlets.map(o => (o as any).commune).filter(Boolean))];
   const uniqueVilles = [...new Set(availableOutlets.map(o => (o as any).ville).filter(Boolean))];
   const uniqueQuartiers = [...new Set(availableOutlets.map(o => (o as any).quartier).filter(Boolean))];
   
-  console.log('🗺️ Filtres géographiques disponibles:', {
-    regions: uniqueRegions,
-    communes: uniqueCommunes,
-    villes: uniqueVilles,
-    quartiers: uniqueQuartiers,
-    totalPDV: availableOutlets.length
-  });
-
   const filteredSectors = sectors.filter(
     (sector) =>
       sector.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

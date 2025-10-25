@@ -79,7 +79,6 @@ export default function ProfilePage() {
           setLoading(true);
           
           const userData = await usersService.getById(user.id);
-          console.log('Données utilisateur reçues du backend:', userData);
           
           setProfileData({
             firstName: userData.firstName,
@@ -99,12 +98,12 @@ export default function ProfilePage() {
             try {
               const performance = await usersService.getPerformance(user.id);
               setPerformanceKPIs(performance);
-            } catch (perfError) {
-              console.error('Erreur lors du chargement des performances:', perfError);
+            } catch {
+              // Erreur silencieuse pour les performances
             }
           }
-        } catch (error) {
-          console.error('Erreur lors du chargement des données:', error);
+        } catch {
+          alert('Erreur lors du chargement des données');
         } finally {
           setLoading(false);
         }
@@ -129,8 +128,7 @@ export default function ProfilePage() {
         hireDate: profileData.hireDate || undefined,
       });
       alert('Modifications enregistrées avec succès');
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+    } catch {
       alert('Erreur lors de la sauvegarde');
     } finally {
       setLoading(false);

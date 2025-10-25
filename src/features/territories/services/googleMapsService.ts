@@ -35,8 +35,6 @@ export class GoogleMapsService {
     }
 
     try {
-      console.log(`🔍 Recherche Google Maps pour: "${placeName}"`);
-
       const result = await new Promise<google.maps.GeocoderResult[]>((resolve, reject) => {
         this.geocoder!.geocode(
           {
@@ -56,12 +54,10 @@ export class GoogleMapsService {
       });
 
       if (result.length === 0) {
-        console.warn('Aucun résultat trouvé');
         return null;
       }
 
       const place = result[0];
-      console.log('✅ Résultat Google Maps:', place);
 
       // Créer un polygone rectangulaire basé sur le viewport
       const viewport = place.geometry.viewport;
@@ -90,7 +86,6 @@ export class GoogleMapsService {
       };
 
     } catch (error) {
-      console.error('Erreur Google Maps:', error);
       throw error;
     }
   }

@@ -5,7 +5,6 @@ import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { outletsService, OutletStatusEnum, type Outlet } from '@/features/pdv/services';
 import PDVDetailsModal from '../components/PDVDetailsModal';
-import { useAuthStore } from '@/core/auth';
 
 export default function VisitsADMIN() {
   const [selectedView, setSelectedView] = useState<'list' | 'validation'>('validation');
@@ -15,9 +14,6 @@ export default function VisitsADMIN() {
   const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV validés pour l'onglet "Points de vente"
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPDV, setSelectedPDV] = useState<Outlet | null>(null);
-  
-  // ✅ Récupérer l'utilisateur connecté
-  const user = useAuthStore((state) => state.user);
 
   // Charger les PDV depuis l'API
   useEffect(() => {
@@ -28,40 +24,25 @@ export default function VisitsADMIN() {
   const loadPDV = async () => {
     try {
       setIsLoading(true);
-      console.log('🔄 Chargement des PDV, vue:', selectedView);
       
-      // Logs utilisateur
-      console.log('👤 Utilisateur connecté:', user);
-      console.log('🗺️ TerritoryId de l\'utilisateur:', user?.territoryId);
-
-      
-      // 🔒 UTILISATION DU NOUVEL ENDPOINT DÉDIÉ
       if (selectedView === 'list') {
-        console.log('📤 Appel API: /outlets/my-territory?status=APPROVED');
         const data = await outletsService.getMyTerritoryOutlets({ 
           status: OutletStatusEnum.APPROVED,
         });
-        console.log('📥 PDV validés de MON territoire reçus:', data);
-        console.log('📊 Nombre:', data?.length || 0);
         setApprovedPDV(data || []);
       } else {
-        console.log('📤 Appel API: /outlets/my-territory?status=PENDING');
         const data = await outletsService.getMyTerritoryOutlets({  
           status: OutletStatusEnum.PENDING,
         });
-        console.log('📥 PDV en attente de MON territoire reçus:', data);
-        console.log('📊 Nombre:', data?.length || 0);
         setPendingPDV(data || []);
       }
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des PDV:', error);
+    } catch {
       // En cas d'erreur, initialiser avec un tableau vide
       if (selectedView === 'list') {
         setApprovedPDV([]);
       } else {
         setPendingPDV([]);
       }
-      console.error('Erreur lors du chargement des PDV');
     } finally {
       setIsLoading(false);
     }
@@ -71,35 +52,29 @@ export default function VisitsADMIN() {
     if (!confirm(`Valider le PDV "${name}" ?`)) return;
     
     try {
-      console.log('🔄 Validation du PDV:', id);
-      const result = await outletsService.approve(id);
-      console.log('✅ PDV validé:', result);
+      await outletsService.approve(id);
       // Recharger la liste actuelle
       await loadPDV();
-      console.log('📊 Liste rechargée après validation');
-    } catch (error) {
-      console.error('❌ Erreur lors de la validation:', error);
+    } catch {
+      alert('Erreur lors de la validation du PDV');
     }
   };
 
   const handleReject = async (id: string) => {
     if (!rejectionReason.trim()) {
-      console.warn('Raison de rejet manquante');
+      alert('Veuillez indiquer une raison de rejet');
       return;
     }
     
     try {
-      console.log('🔄 Rejet du PDV:', id, 'Raison:', rejectionReason);
-      const result = await outletsService.reject(id, rejectionReason);
-      console.log('✅ PDV rejeté:', result);
+      await outletsService.reject(id, rejectionReason);
       setShowRejectModal(null);
       setRejectionReason('');
       
       // Recharger la liste actuelle
       await loadPDV();
-      console.log('📊 Liste rechargée après rejet');
-    } catch (error) {
-      console.error('Erreur lors du rejet:', error);
+    } catch {
+      alert('Erreur lors du rejet du PDV');
     }
   };
 

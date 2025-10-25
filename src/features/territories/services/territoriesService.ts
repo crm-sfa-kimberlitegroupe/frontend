@@ -144,7 +144,6 @@ export const territoriesService = {
       const response = await api.get<{ success: boolean; data: Territory[]; message: string }>('/territories');
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching territories:', error);
       throw error;
     }
   },
@@ -155,7 +154,6 @@ export const territoriesService = {
       const response = await api.get<{ success: boolean; data: Manager[]; message: string }>('/users/managers/list');
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching managers:', error);
       throw error;
     }
   },

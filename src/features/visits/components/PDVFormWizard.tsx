@@ -78,12 +78,12 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
 
     // Validation finale avant envoi
     if (!formData.name) {
-      alert('❌ Erreur: Le nom du PDV est obligatoire');
+      alert('Erreur: Le nom du PDV est obligatoire');
       return;
     }
     
     if (!formData.territoryId) {
-      alert('❌ Erreur: Le territoire est requis. Veuillez vous reconnecter.');
+      alert('Erreur: Le territoire est requis. Veuillez vous reconnecter.');
       return;
     }
 
@@ -123,19 +123,16 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
     
     try {
       setIsSubmitting(true);
-      console.log('📤 Envoi du PDV au backend:', outletData);
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const createdOutlet = await outletsService.create(outletData as any);
       
-      console.log('✅ PDV créé avec succès:', createdOutlet);
-      alert(`✅ PDV enregistré avec succès!\n\nCode: ${createdOutlet.code}\nStatut: En attente de validation\n\nUn superviseur validera ce point de vente prochainement.`);
+      alert(`PDV enregistré avec succès!\n\nCode: ${createdOutlet.code}\nStatut: En attente de validation\n\nUn superviseur validera ce point de vente prochainement.`);
       onClose();
     } catch (error) {
-      console.error('❌ Erreur lors de la création du PDV:', error);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage = (error as any).response?.data?.message || (error as Error).message || 'Une erreur est survenue';
-      alert(`❌ Erreur lors de l'enregistrement du PDV:\n\n${errorMessage}`);
+      alert(`Erreur lors de l'enregistrement du PDV:\n\n${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -46,7 +46,6 @@ export class GeoService {
         bbox: this.calculateBBox(element)
       }));
     } catch (error) {
-      console.error('Erreur getAdministrativeBoundaries:', error);
       throw error;
     }
   }
@@ -79,8 +78,6 @@ export class GeoService {
         out geom;
       `;
 
-      console.log(`🔍 Découpage automatique de "${parentName}" par ${subdivisionType}...`);
-
       const response = await fetch(
         `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
       );
@@ -90,8 +87,6 @@ export class GeoService {
       }
 
       const data = await response.json();
-
-      console.log(`✅ ${data.elements.length} ${subdivisionType} trouvées`);
 
       if (data.elements.length === 0) {
         throw new Error(`Aucune subdivision trouvée pour "${parentName}"`);
@@ -105,7 +100,6 @@ export class GeoService {
         bbox: this.calculateBBox(element)
       }));
     } catch (error) {
-      console.error('Erreur autoDivideByHierarchy:', error);
       throw error;
     }
   }
@@ -132,8 +126,7 @@ export class GeoService {
         lng: parseFloat(data[0].lon),
         displayName: data[0].display_name
       };
-    } catch (error) {
-      console.error('Erreur geocodeCity:', error);
+    } catch {
       return null;
     }
   }

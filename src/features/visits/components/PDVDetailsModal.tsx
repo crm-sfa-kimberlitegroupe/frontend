@@ -37,13 +37,12 @@ export default function PDVDetailsModal({ pdv, onClose, onUpdate }: PDVDetailsMo
         lng: editedPDV.lng,
       });
       
-      alert('✅ PDV modifié avec succès!');
+      alert(' PDV modifié avec succès!');
       setIsEditing(false);
       onUpdate(); // Recharger la liste
       onClose(); // Fermer le modal
-    } catch (error) {
-      console.error('❌ Erreur lors de la modification:', error);
-      alert('❌ Erreur lors de la modification du PDV');
+    } catch {
+      alert('Erreur lors de la modification du PDV');
     }
   };
 
@@ -142,7 +141,7 @@ export default function PDVDetailsModal({ pdv, onClose, onUpdate }: PDVDetailsMo
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Statut
                   </label>
-                  <Badge variant="success" size="md">✓ Validé</Badge>
+                  <Badge variant="success" size="md">Validé</Badge>
                 </div>
               </div>
             </div>

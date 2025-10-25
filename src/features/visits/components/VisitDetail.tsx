@@ -109,7 +109,7 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
         onClick={() => {
           if (confirm('Terminer cette visite ?')) {
             onBack();
-            alert('Visite terminée! ✓');
+            alert('Visite terminée!');
           }
         }}
       >

@@ -53,8 +53,7 @@ export default function PDVManagement() {
       // ✅ Le backend filtre automatiquement par territoire selon le rôle de l'utilisateur
       const data = await outletsService.getAll();
       setOutlets(data);
-    } catch (err: any) {
-      console.error('Erreur chargement PDV:', err);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -68,13 +67,13 @@ export default function PDVManagement() {
   });
 
   const handleApprove = (pdvId: string) => {
-    console.log('Approve PDV:', pdvId);
     // TODO: Implémenter l'approbation
+    alert('Fonction d\'approbation à implémenter');
   };
 
   const handleReject = (pdvId: string) => {
-    console.log('Reject PDV:', pdvId);
     // TODO: Implémenter le rejet
+    alert('Fonction de rejet à implémenter');
   };
 
   const columns: Column<Outlet>[] = [
@@ -158,7 +157,7 @@ export default function PDVManagement() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit PDV:', outlet.id);
+              alert('Fonction de modification à implémenter');
             }}
             className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
             title="Modifier"
@@ -169,7 +168,7 @@ export default function PDVManagement() {
             onClick={(e) => {
               e.stopPropagation();
               if (confirm('Supprimer ce PDV ?')) {
-                console.log('Delete PDV:', outlet.id);
+                alert('Fonction de suppression à implémenter');
               }
             }}
             className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
@@ -284,7 +283,6 @@ export default function PDVManagement() {
         columns={columns}
         searchable
         searchPlaceholder="Rechercher un PDV..."
-        onRowClick={(pdv) => console.log('View PDV details:', pdv)}
       />
     </div>
   );

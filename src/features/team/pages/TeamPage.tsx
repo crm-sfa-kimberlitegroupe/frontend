@@ -121,11 +121,11 @@ export default function TeamPage() {
     (data: CreateUserDto) => usersService.create(data),
     {
       onSuccess: () => {
-        alert('✅ Utilisateur créé avec succès!');
+        alert('Utilisateur créé avec succès!');
         setIsModalOpen(false);
       },
-      onError: (error) => {
-        console.error('❌ Erreur lors de la création:', error);
+      onError: () => {
+        alert('Erreur lors de la création de l\'utilisateur');
       },
     }
   );

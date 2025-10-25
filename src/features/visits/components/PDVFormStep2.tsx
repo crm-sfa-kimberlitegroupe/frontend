@@ -21,7 +21,7 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
 
   const handleGetCurrentPosition = () => {
     if (!navigator.geolocation) {
-      alert('❌ Géolocalisation non supportée par votre appareil');
+      alert('Géolocalisation non supportée par votre appareil');
       return;
     }
 
@@ -43,11 +43,10 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
         longitude: position.coords.longitude.toFixed(6),
       });
 
-      const qualityEmoji = accuracy <= 10 ? '🎯' : accuracy <= 20 ? '✅' : accuracy <= 50 ? '👍' : '⚠️';
       const qualityText = accuracy <= 10 ? 'Excellente' : accuracy <= 20 ? 'Très bonne' : accuracy <= 50 ? 'Bonne' : 'Acceptable';
       
       alert(
-        `${qualityEmoji} Position capturée avec succès!\n\n` +
+        `Position capturée avec succès!\n\n` +
         `Précision: ${accuracy.toFixed(1)}m\n` +
         `Qualité: ${qualityText}\n` +
         `Tentatives: ${gpsAttempts + 1}`
@@ -84,7 +83,7 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
             navigator.geolocation.clearWatch(watchId);
             setIsCapturingGPS(false);
             alert(
-              `⚠️ Précision GPS insuffisante après ${MAX_WAIT_TIME/1000}s\n\n` +
+              `Précision GPS insuffisante après ${MAX_WAIT_TIME/1000}s\n\n` +
               `Meilleure précision obtenue: ${bestAccuracy.toFixed(0)}m\n` +
               `Précision requise: < ${MAX_ACCURACY}m\n\n` +
               `Conseils:\n` +
@@ -121,7 +120,7 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
             break;
         }
         
-        alert(`❌ Impossible de récupérer la position\n\n${errorMessage}`);
+        alert(`Impossible de récupérer la position\n\n${errorMessage}`);
       },
       {
         enableHighAccuracy: true,
@@ -165,7 +164,7 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
             <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="text-sm">
-                  <span className="font-medium text-green-900">Position capturée ✓</span>
+                  <span className="font-medium text-green-900">Position capturée</span>
                   <div className="text-green-700 mt-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
@@ -247,9 +246,8 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
                 />
               </div>
               {userRole !== 'REP' && (
-                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                  <span className="text-blue-500">ℹ️</span>
-                  Déplacez le marqueur sur la carte pour ajuster précisément la position
+                <p className="text-xs text-gray-500 mt-2">
+                  Info: Déplacez le marqueur sur la carte pour ajuster précisément la position
                 </p>
               )}
             </div>
@@ -264,7 +262,6 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <span className="text-lg">🇨🇮</span>
                 <span>+225</span>
               </div>
             </div>

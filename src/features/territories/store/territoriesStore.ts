@@ -22,8 +22,7 @@ export const useTerritoriesStore = create<TerritoriesState>((set) => ({
       set({ loading: true });
       const territories = await territoriesService.getAll();
       set({ territories, loading: false });
-    } catch (error) {
-      console.error('Error fetching territories:', error);
+    } catch {
       set({ loading: false });
     }
   },
@@ -33,8 +32,7 @@ export const useTerritoriesStore = create<TerritoriesState>((set) => ({
       set({ loading: true });
       const managers = await territoriesService.getManagers();
       set({ managers, loading: false });
-    } catch (error) {
-      console.error('Error fetching managers:', error);
+    } catch {
       set({ loading: false });
     }
   },
@@ -47,8 +45,7 @@ export const useTerritoriesStore = create<TerritoriesState>((set) => ({
         territoriesService.getManagers(),
       ]);
       set({ territories, managers, loading: false });
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
       set({ loading: false });
     }
   },

@@ -46,22 +46,16 @@ export default function RoutePlanningModal({ isOpen, onClose, onSuccess }: Route
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 Chargement des utilisateurs...');
       const allUsers = await usersService.getAll();
-      console.log('✅ Utilisateurs reçus:', allUsers);
-      console.log('📊 Nombre total d\'utilisateurs:', allUsers?.length || 0);
       
       const repUsers = allUsers.filter(u => u.role === 'REP' && u.status === 'ACTIVE');
-      console.log('👥 REPs actifs trouvés:', repUsers);
-      console.log('📊 Nombre de REPs actifs:', repUsers.length);
       
       setReps(repUsers);
       
       if (repUsers.length === 0) {
         setError('Aucun représentant actif trouvé. Vérifiez que des utilisateurs avec le rôle REP existent et sont actifs.');
       }
-    } catch (err) {
-      console.error('❌ Erreur chargement REPs:', err);
+    } catch {
       setError('Impossible de charger les représentants');
     } finally {
       setLoading(false);
@@ -76,7 +70,6 @@ export default function RoutePlanningModal({ isOpen, onClose, onSuccess }: Route
       // Vérifier si le REP a un territoire
       if (!selectedRep?.territory) {
         // Si pas de territoire, on charge tous les points de vente
-        console.log('⚠️ Aucun territoire assigné au REP, chargement de tous les points de vente');
         const allOutlets = await outletsService.getAll({
           status: 'APPROVED'
         });
@@ -85,21 +78,13 @@ export default function RoutePlanningModal({ isOpen, onClose, onSuccess }: Route
       }
       
       // Si le REP a un territoire, on charge les points de vente de ce territoire
-      console.log(`Chargement des points de vente pour le territoire: ${selectedRep.territory}`);
       const allOutlets = await outletsService.getAll({
         territoryId: selectedRep.territory,
         status: 'APPROVED'
       });
       
-      if (allOutlets.length === 0) {
-        console.log('Aucun point de vente trouvé pour ce territoire');
-      } else {
-        console.log(`✅ ${allOutlets.length} points de vente chargés`);
-      }
-      
       setOutlets(allOutlets);
     } catch (err) {
-      console.error('❌ Erreur chargement PDV:', err);
       setError('Impossible de charger les points de vente. ' + (err instanceof Error ? err.message : ''));
     } finally {
       setLoading(false);
@@ -169,7 +154,6 @@ export default function RoutePlanningModal({ isOpen, onClose, onSuccess }: Route
       onSuccess?.();
       onClose();
     } catch (err) {
-      console.error('Erreur création route:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erreur lors de la création de la route';
       setError(errorMessage);
     } finally {

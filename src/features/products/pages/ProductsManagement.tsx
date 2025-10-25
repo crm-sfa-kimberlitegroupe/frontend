@@ -185,7 +185,7 @@ export default function ProductsManagement() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit product:', product.id);
+              alert('Fonction de modification à implémenter');
             }}
             className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
             title="Modifier"
@@ -196,7 +196,7 @@ export default function ProductsManagement() {
             onClick={(e) => {
               e.stopPropagation();
               if (confirm('Supprimer ce produit ?')) {
-                console.log('Delete product:', product.id);
+                alert('Fonction de suppression à implémenter');
               }
             }}
             className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
@@ -329,7 +329,6 @@ export default function ProductsManagement() {
         columns={columns}
         searchable
         searchPlaceholder="Rechercher un produit..."
-        onRowClick={(product) => console.log('View product details:', product)}
       />
     </div>
   );

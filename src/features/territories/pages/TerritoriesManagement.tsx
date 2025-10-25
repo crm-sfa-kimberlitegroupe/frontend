@@ -9,8 +9,8 @@ import GoogleMapsService from '../services/googleMapsService';
 import territoriesService from '../services/territoriesService';
 import type { Territory } from '../services/territoriesService';
 
-const showSuccess = (message: string) => console.log('✅', message);
-const showError = (message: string) => console.error('❌', message);
+const showSuccess = (message: string) => alert(message);
+const showError = (message: string) => alert(message);
 
 interface CreateTerritoryForm {
   code: string;
@@ -71,8 +71,7 @@ export default function TerritoriesManagement() {
       // Filtrer uniquement les ZONES (pas les secteurs)
       const zones = data.filter(t => t.level === 'ZONE');
       setTerritories(zones);
-    } catch (error) {
-      console.error('Erreur chargement territoires:', error);
+    } catch {
       showError('Impossible de charger les territoires');
     } finally {
       setLoading(false);
@@ -100,7 +99,6 @@ export default function TerritoriesManagement() {
       
       showSuccess('Territoire créé avec succès');
     } catch (error: any) {
-      console.error('Erreur création territoire:', error);
       showError(error?.response?.data?.message || 'Erreur lors de la création');
     } finally {
       setLoading(false);
@@ -116,7 +114,6 @@ export default function TerritoriesManagement() {
       showSuccess('Territoire supprimé avec succès');
       loadTerritories();
     } catch (error: any) {
-      console.error('Erreur suppression territoire:', error);
       showError(error?.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
       setLoading(false);
@@ -145,7 +142,7 @@ export default function TerritoriesManagement() {
 
   const handleSearchBoundaries = async () => {
     if (!searchTerritoryName.trim()) {
-      console.warn('⚠️ Veuillez entrer le nom d\'une région, ville ou quartier');
+      alert('Veuillez entrer le nom d\'une région, ville ou quartier');
       return;
     }
 
@@ -156,13 +153,9 @@ export default function TerritoriesManagement() {
       const boundary = await GoogleMapsService.searchBoundaries(searchTerritoryName);
       
       if (!boundary) {
-        console.error('❌ Aucune frontière trouvée pour "' + searchTerritoryName + '"');
+        alert('Aucune frontière trouvée pour "' + searchTerritoryName + '"');
         return;
       }
-
-      console.log('🗺️ Frontière Google Maps trouvée:', boundary);
-      console.log('📐 Géométrie:', boundary.geometry);
-      console.log('📦 Viewport:', boundary.viewport);
       
       // Mettre à jour la géométrie
       setDrawnGeometry(boundary.geometry);
@@ -180,10 +173,9 @@ export default function TerritoriesManagement() {
       }));
       
       setShowMap(true);
-      console.log(`✅ Frontières de "${boundary.name}" chargées avec succès !`);
       
-    } catch (error) {
-      console.error('❌ Erreur recherche frontières:', error);
+    } catch {
+      alert('Erreur lors de la recherche des frontières');
     } finally {
       setLoadingBoundaries(false);
     }
