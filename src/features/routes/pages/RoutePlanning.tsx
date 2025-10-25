@@ -254,7 +254,7 @@ export default function RoutePlanning() {
                               </span>
                               <span className="text-gray-700">{stop.outlet?.name}</span>
                               {stop.status === 'VISITED' && (
-                                <Icon name="checkCircle" size="xs" variant="success" />
+                                <Icon name="checkCircle" size="xs" variant="green" />
                               )}
                             </div>
                           ))}

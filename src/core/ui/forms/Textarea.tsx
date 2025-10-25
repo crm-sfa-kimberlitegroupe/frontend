@@ -1,4 +1,5 @@
-import { forwardRef, TextareaHTMLAttributes } from 'react';
+import { forwardRef } from 'react';
+import type { TextareaHTMLAttributes } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {

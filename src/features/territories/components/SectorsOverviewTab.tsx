@@ -62,7 +62,7 @@ export default function SectorsOverviewTab() {
               <p className="text-2xl font-bold text-green-600">{vendorsWithSector}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Icon name="check-circle" size="lg" variant="success" />
+              <Icon name="checkCircle" size="lg" variant="green" />
             </div>
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function SectorsOverviewTab() {
               <p className="text-2xl font-bold text-orange-600">{vendorsWithoutSector}</p>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Icon name="alert-circle" size="lg" variant="warning" />
+              <Icon name="warning" size="lg" variant="yellow" />
             </div>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function SectorsOverviewTab() {
               <p className="text-2xl font-bold text-purple-600">{totalPDV}</p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Icon name="map-pin" size="lg" variant="primary" />
+              <Icon name="locationMarker" size="lg" variant="primary" />
             </div>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function SectorsOverviewTab() {
                   <td className="px-6 py-4">
                     {vendor.assignedSector?.outletsSector ? (
                       <div className="flex items-center gap-2">
-                        <Icon name="map-pin" size="sm" variant="primary" />
+                        <Icon name="locationMarker" size="sm" variant="primary" />
                         <span className="font-medium text-gray-900">
                           {vendor.assignedSector.outletsSector.length}
                         </span>
@@ -184,12 +184,12 @@ export default function SectorsOverviewTab() {
                   <td className="px-6 py-4">
                     {vendor.assignedSectorId ? (
                       <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                        <Icon name="check-circle" size="sm" variant="success" />
+                        <Icon name="checkCircle" size="sm" variant="green" />
                         Actif
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-orange-600 text-sm">
-                        <Icon name="alert-circle" size="sm" variant="warning" />
+                        <Icon name="warning" size="sm" variant="yellow" />
                         En attente
                       </span>
                     )}

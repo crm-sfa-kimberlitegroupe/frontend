@@ -100,11 +100,21 @@ export default function TasksManagement() {
   const [tasks] = useState<Task[]>(mockTasks);
   
   // ✅ Hook réutilisable pour les filtres
-  const { filters } = useFilters({
+  const { filters, setFilter, resetFilters } = useFilters({
     type: 'all',
     status: 'all',
     priority: 'all',
   });
+  
+  // Aliases pour compatibilité avec le code existant
+  const typeFilter = filters.type;
+  const statusFilter = filters.status;
+  const priorityFilter = filters.priority;
+  const setTypeFilter = (value: string) => setFilter('type', value);
+  const setStatusFilter = (value: string) => setFilter('status', value);
+  const setPriorityFilter = (value: string) => setFilter('priority', value);
+  const activeFiltersCount = (filters.type !== 'all' ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.priority !== 'all' ? 1 : 0);
+  const handleClearFilters = resetFilters;
 
   const filteredTasks = tasks.filter((task) => {
     if (filters.type !== 'all' && task.type !== filters.type) return false;

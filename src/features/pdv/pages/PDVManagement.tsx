@@ -25,8 +25,7 @@ const statusColors = {
 export default function PDVManagement() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const user = useAuthStore((state) => state.user);
+
   
   // ✅ Hook réutilisable pour les filtres
   const { filters, setFilter, resetFilters } = useFilters({

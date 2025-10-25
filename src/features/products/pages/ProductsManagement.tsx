@@ -69,11 +69,21 @@ export default function ProductsManagement() {
   const [products] = useState<Product[]>(mockProducts);
   
   // ✅ Hook réutilisable pour les filtres
-  const { filters, setFilter, resetFilters, activeCount } = useFilters({
+  const { filters, setFilter, resetFilters } = useFilters({
     category: 'all',
     status: 'all',
     stock: 'all',
   });
+  
+  // Aliases pour compatibilité avec le code existant
+  const categoryFilter = filters.category;
+  const statusFilter = filters.status;
+  const stockFilter = filters.stock;
+  const setCategoryFilter = (value: string) => setFilter('category', value);
+  const setStatusFilter = (value: string) => setFilter('status', value);
+  const setStockFilter = (value: string) => setFilter('stock', value);
+  const activeFiltersCount = (filters.category !== 'all' ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.stock !== 'all' ? 1 : 0);
+  const handleClearFilters = resetFilters;
 
   const filteredProducts = products.filter((product) => {
     if (filters.category !== 'all' && product.category !== filters.category) return false;

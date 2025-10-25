@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { Users, MapPin, Phone, Mail, Calendar, TrendingUp, UserPlus } from 'lucide-react';
 import { PageHeader, DashboardGrid, StatCard } from '../../../core/components/desktop';
@@ -131,8 +130,8 @@ export default function TeamPage() {
     }
   );
 
-  const handleSubmitUser = (data: CreateUserDto | UpdateUserDto) => {
-    return createUserMutation.mutateAsync(data as CreateUserDto);
+  const handleSubmitUser = async (data: CreateUserDto | UpdateUserDto): Promise<void> => {
+    await createUserMutation.mutateAsync(data as CreateUserDto);
   };
 
   return (

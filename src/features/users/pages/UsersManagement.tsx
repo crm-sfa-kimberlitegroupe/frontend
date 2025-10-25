@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { UserPlus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
@@ -91,8 +90,8 @@ export default function UsersManagement() {
     }
   );
 
-  const handleSubmitUser = (data: CreateUserDto | UpdateUserDto) => {
-    return submitMutation.mutateAsync(data);
+  const handleSubmitUser = async (data: CreateUserDto | UpdateUserDto): Promise<void> => {
+    await submitMutation.mutateAsync(data);
   };
 
   const filteredUsers = (users || []).filter((user) => {
