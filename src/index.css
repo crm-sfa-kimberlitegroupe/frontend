@@ -22,19 +22,26 @@ body {
 #root {
   min-height: 100vh;
   min-height: -webkit-fill-available;
-  
-  /* Safe areas pour TOUS les téléphones avec encoches */
-  padding-top: constant(safe-area-inset-top); /* iOS 11.0 */
-  padding-top: env(safe-area-inset-top); /* iOS 11.2+ */
-  
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
-  
-  padding-left: constant(safe-area-inset-left);
-  padding-left: env(safe-area-inset-left);
-  
-  padding-right: constant(safe-area-inset-right);
-  padding-right: env(safe-area-inset-right);
+  position: relative;
+}
+
+/* PWA: Barre de statut bleue pour iPhone X (zone de l'encoche) */
+#root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: constant(safe-area-inset-top);
+  height: env(safe-area-inset-top);
+  background: #0284c7; /* Bleu de l'app (même que theme_color) */
+  z-index: 9999;
+}
+
+/* Le contenu principal commence après la barre bleue avec un peu d'espace */
+#root > * {
+  padding-top: calc(constant(safe-area-inset-top) + 1.5rem); /* safe-area + 24px d'espace */
+  padding-top: calc(env(safe-area-inset-top) + 1.5rem);
 }
 
 /* PWA: Classes utilitaires pour zones sûres (iPhone X, Android, etc.) */
