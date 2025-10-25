@@ -9,17 +9,19 @@ import type { Outlet } from '../services/outletsService';
 
 // Supprimer les mock data - on utilise maintenant l'API réelle
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   PENDING: 'En attente',
   APPROVED: 'Approuvé',
   REJECTED: 'Rejeté',
+  INACTIVE: 'Inactif',
 };
 
-const statusColors = {
+const statusColors: Record<string, 'warning' | 'success' | 'danger' | 'gray'> = {
   PENDING: 'warning',
   APPROVED: 'success',
   REJECTED: 'danger',
-} as const;
+  INACTIVE: 'gray',
+};
 
 export default function PDVManagement() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -114,12 +116,12 @@ export default function PDVManagement() {
       ),
     },
     {
-      key: 'assignedTo',
-      label: 'Assigné à',
+      key: 'proposedBy',
+      label: 'Proposé par',
       sortable: true,
       render: (outlet) => (
         <span className="text-sm text-gray-600">
-          {outlet.assignedTo || '-'}
+          {outlet.proposer ? `${outlet.proposer.firstName} ${outlet.proposer.lastName}` : '-'}
         </span>
       ),
     },
