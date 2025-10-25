@@ -6,7 +6,6 @@ import KPICard from '../../../core/ui/KPICard';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { useAuthStore } from '@/core/auth';
-import InstallPWA from './InstallPWA';
 
 export default function HomeREP() {
   const navigate = useNavigate();
@@ -76,9 +75,6 @@ export default function HomeREP() {
           </div>
         </div>
       </div>
-
-      {/* Bannière d'installation PWA */}
-      <InstallPWA />
 
       {/* Résumé de la journée - Design sobre */}
       <Card className="p-5 mb-5">

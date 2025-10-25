@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur d'icônes PWA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0284c7;
+            text-align: center;
+        }
+        .preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 30px 0;
+            justify-content: center;
+        }
+        .icon-item {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #0284c7;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0369a1;
+        }
+        .instructions {
+            background: #e0f2fe;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .success {
+            background: #d1fae5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Générateur d'icônes PWA SFA</h1>
+        
+        <div class="preview" id="preview"></div>
+        
+        <div style="text-align: center;">
+            <button onclick="generateIcons()">Générer les icônes</button>
+            <button onclick="downloadAll()">Télécharger toutes les icônes</button>
+        </div>
+
+        <div class="success" id="success">
+            ✅ Icônes générées! Cliquez sur chaque image pour télécharger individuellement, ou utilisez "Télécharger toutes les icônes".
+        </div>
+
+        <div class="instructions">
+            <h3>📝 Instructions:</h3>
+            <ol>
+                <li>Cliquez sur <strong>"Générer les icônes"</strong></li>
+                <li>Cliquez sur <strong>"Télécharger toutes les icônes"</strong></li>
+                <li>Placez tous les fichiers PNG dans <code>public/icons/</code></li>
+                <li>Les icônes seront automatiquement utilisées par la PWA</li>
+            </ol>
+            <p><strong>Note:</strong> Vous pouvez personnaliser le texte et les couleurs dans le code HTML ci-dessous.</p>
+        </div>
+    </div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        let generatedCanvases = {};
+
+        function generateIcons() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            generatedCanvases = {};
+
+            sizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Fond bleu
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(0, 0, size, size);
+
+                // Texte "SFA"
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${size * 0.35}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('SFA', size / 2, size / 2);
+
+                // Stocker le canvas
+                generatedCanvases[size] = canvas;
+
+                // Créer l'élément de prévisualisation
+                const div = document.createElement('div');
+                div.className = 'icon-item';
+                div.innerHTML = `
+                    <canvas width="${Math.min(size, 192)}" height="${Math.min(size, 192)}"></canvas>
+                    <p>${size}×${size}</p>
+                `;
+                
+                const previewCanvas = div.querySelector('canvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                const scale = Math.min(192, size) / size;
+                previewCtx.scale(scale, scale);
+                previewCtx.drawImage(canvas, 0, 0);
+
+                div.onclick = () => downloadIcon(size);
+                div.style.cursor = 'pointer';
+                preview.appendChild(div);
+            });
+
+            document.getElementById('success').style.display = 'block';
+        }
+
+        function downloadIcon(size) {
+            const canvas = generatedCanvases[size];
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAll() {
+            if (Object.keys(generatedCanvases).length === 0) {
+                alert('Générez d\'abord les icônes en cliquant sur "Générer les icônes"');
+                return;
+            }
+
+            sizes.forEach((size, index) => {
+                setTimeout(() => {
+                    downloadIcon(size);
+                }, index * 200);
+            });
+        }
+
+        // Générer automatiquement au chargement
+        window.onload = generateIcons;
+    </script>
+</body>
+</html>

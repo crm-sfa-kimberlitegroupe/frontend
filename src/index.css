@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+/* PWA: Gestion des encoches et zones sûres */
+@supports (padding: max(0px)) {
+  body {
+    /* Éviter que le contenu soit caché par les encoches */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* PWA: Plein écran sans bordures */
+@media (display-mode: standalone) {
+  body {
+    /* Pas de marges en mode standalone */
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Empêcher le zoom et les gestes de navigation */
+  * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mais permettre la sélection dans les inputs */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
