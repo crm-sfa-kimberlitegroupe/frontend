@@ -1,10 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { copyFileSync, existsSync } from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'copy-service-worker',
+      closeBundle() {
+        // Copier le service worker dans le dossier dist
+        const src = path.resolve(process.cwd(), 'public/service-worker.js');
+        const dest = path.resolve(process.cwd(), 'dist/service-worker.js');
+        if (existsSync(src)) {
+          copyFileSync(src, dest);
+          console.log('Service Worker copié dans dist/');
+        }
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': path.resolve(process.cwd(), './src'),
