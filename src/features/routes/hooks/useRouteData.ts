@@ -1,6 +1,7 @@
      import { useState, useEffect } from 'react';
 import routesService, { type RoutePlan, type RouteStop as BackendRouteStop } from '../services/routesService';
 import outletsService, { type Outlet } from '../../pdv/services/outletsService';
+import territoriesService from '../../territories/services/territoriesService';
 import type { RouteStop } from '../components/RouteMap';
 import { useAuthStore } from '@/core/auth';
 
@@ -89,13 +90,52 @@ export function useRouteData(): UseRouteDataReturn {
       // Charger la route du jour
       const route = await routesService.getTodayRoute();
       
-      // Charger TOUS les PDV du territoire de l'utilisateur
+      // Charger les PDV du secteur assigné au vendeur (si c'est un REP)
       let outlets: Outlet[] = [];
-      if (user?.territory) {
+      if (user?.role === 'REP' && user?.id) {
+        try {
+          // Récupérer le secteur assigné au vendeur
+          const assignedSectorResponse = await territoriesService.getVendorAssignedSector(user.id);
+          const assignedSector = assignedSectorResponse?.data;
+          
+          if (assignedSector && assignedSector.outletsSector) {
+            // Extraire les PDV du secteur assigné
+            outlets = assignedSector.outletsSector.map((outletSector: any) => ({
+              id: outletSector.outlet.id,
+              name: outletSector.outlet.name,
+              code: outletSector.outlet.code,
+              address: outletSector.outlet.address,
+              lat: outletSector.outlet.lat,
+              lng: outletSector.outlet.lng,
+              status: 'APPROVED' as any,
+              territoryId: user.territoryId,
+              sectorId: assignedSector.id,
+            }));
+            
+            console.log(`✅ Secteur assigné trouvé: ${assignedSector.name} avec ${outlets.length} PDV`);
+          } else {
+            console.log('⚠️ Aucun secteur assigné ou aucun PDV dans le secteur');
+          }
+        } catch (sectorErr: any) {
+          console.warn('⚠️ Erreur lors du chargement du secteur assigné:', sectorErr);
+          // Si pas de secteur assigné, essayer de charger tous les PDV du territoire
+          if (user?.territoryId) {
+            try {
+              outlets = await outletsService.getAll({ 
+                territoryId: user.territoryId,
+                status: 'APPROVED'
+              });
+            } catch (outletErr) {
+              console.warn('⚠️ Erreur lors du chargement des PDV du territoire:', outletErr);
+            }
+          }
+        }
+      } else if (user?.territoryId) {
+        // Pour les autres rôles (ADMIN, SUP), charger tous les PDV du territoire
         try {
           outlets = await outletsService.getAll({ 
-            territoryId: user.territory,
-            status: 'APPROVED' // Seulement les PDV approuvés
+            territoryId: user.territoryId,
+            status: 'APPROVED'
           });
         } catch (outletErr) {
           console.warn('⚠️ Erreur lors du chargement des PDV:', outletErr);
@@ -126,7 +166,11 @@ export function useRouteData(): UseRouteDataReturn {
         setRoutePlan(null);
         setRouteStops([]);
         if (allOutletsConverted.length === 0) {
-          setError('Aucun point de vente disponible dans votre territoire');
+          if (user?.role === 'REP') {
+            setError('Aucun secteur assigné ou aucun point de vente dans votre secteur. Contactez votre administrateur.');
+          } else {
+            setError('Aucun point de vente disponible dans votre territoire');
+          }
         }
         // Ne pas afficher d'erreur si on a des PDV à afficher
       }

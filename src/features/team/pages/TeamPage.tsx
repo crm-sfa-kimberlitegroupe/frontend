@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Users, MapPin, Phone, Mail, Calendar, TrendingUp, UserPlus } from 'lucide-react';
 import { PageHeader, DashboardGrid, StatCard } from '../../../core/components/desktop';
 import { Button, Modal, Badge, Card } from '@/core/ui';
-import { useToggle, useMutation } from '@/core/hooks';
+import { useToggle, useMutation, useQuery } from '@/core/hooks';
 import UserModal from '../../../core/components/modals/UserModal';
-import { usersService, type CreateUserDto, type UpdateUserDto } from '@/features/users/services';
+import { usersService, type CreateUserDto, type UpdateUserDto, type User } from '@/features/users/services';
 
 interface TeamMember {
   id: string;
   name: string;
   role: string;
+  roleLabel: string;
   territory: string;
   phone: string;
   email: string;
@@ -25,96 +26,57 @@ interface TeamMember {
   status: 'active' | 'inactive' | 'on_leave';
 }
 
-// Mock data
-const mockTeam: TeamMember[] = [
-  {
-    id: '1',
-    name: 'Jean Kouassi',
-    role: 'Vendeur Senior',
-    territory: 'Plateau',
-    phone: '+225 01 23 45 67',
-    email: 'jean.kouassi@example.com',
-    hireDate: '2023-01-15',
-    activeRoutes: 3,
-    pdvAssigned: 45,
-    lastActivity: '2025-10-07 14:30',
+// Fonction pour mapper un User en TeamMember
+const mapUserToTeamMember = (user: User): TeamMember => {
+  const roleLabels: Record<string, string> = {
+    REP: 'Vendeur',
+    ADMIN: 'Administrateur',
+    SUP: 'Manager',
+  };
+
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+    role: user.role,
+    roleLabel: roleLabels[user.role] || user.role,
+    territory: user.territoryName || user.territory || 'Non assigné',
+    phone: user.phone || 'N/A',
+    email: user.email,
+    hireDate: user.hireDate || new Date().toISOString(),
+    activeRoutes: 0, // À calculer via API performance
+    pdvAssigned: 0, // À calculer via API performance
+    lastActivity: user.lastLogin || 'Jamais connecté',
     performance: {
-      coverage: 92,
-      strikeRate: 78,
-      sales: 45000,
+      coverage: 0, // À charger via API performance
+      strikeRate: 0,
+      sales: 0,
     },
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Marie Diallo',
-    role: 'Vendeur',
-    territory: 'Cocody',
-    phone: '+225 07 89 01 23',
-    email: 'marie.diallo@example.com',
-    hireDate: '2023-06-20',
-    activeRoutes: 2,
-    pdvAssigned: 38,
-    lastActivity: '2025-10-07 13:15',
-    performance: {
-      coverage: 87,
-      strikeRate: 72,
-      sales: 38000,
-    },
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Paul Bamba',
-    role: 'Vendeur Senior',
-    territory: 'Adjamé',
-    phone: '+225 05 67 89 01',
-    email: 'paul.bamba@example.com',
-    hireDate: '2022-09-10',
-    activeRoutes: 4,
-    pdvAssigned: 52,
-    lastActivity: '2025-10-07 15:45',
-    performance: {
-      coverage: 95,
-      strikeRate: 85,
-      sales: 52000,
-    },
-    status: 'active',
-  },
-  {
-    id: '4',
-    name: 'Aïcha Traoré',
-    role: 'Vendeur Junior',
-    territory: 'Yopougon',
-    phone: '+225 09 12 34 56',
-    email: 'aicha.traore@example.com',
-    hireDate: '2024-03-01',
-    activeRoutes: 2,
-    pdvAssigned: 28,
-    lastActivity: '2025-10-06 16:20',
-    performance: {
-      coverage: 64,
-      strikeRate: 55,
-      sales: 28000,
-    },
-    status: 'active',
-  },
-];
+    status: user.status === 'ACTIVE' ? 'active' : 'inactive',
+  };
+};
 
 export default function TeamPage() {
-  const [team] = useState<TeamMember[]>(mockTeam);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
   // ✅ Hook réutilisable pour le modal
   const [isModalOpen, , setIsModalOpen] = useToggle(false);
   const [modalMode] = useState<'create' | 'edit'>('create');
 
+  // ✅ Charger les utilisateurs REP et ADMIN depuis le backend
+  const { data: users, loading: isLoading, refetch } = useQuery(
+    () => usersService.getTeamMembers()
+  );
+
+  // Mapper les utilisateurs en TeamMember
+  const allUsers: User[] = (users as User[]) || [];
+  const team = allUsers.map(mapUserToTeamMember);
+
   const activeMembers = team.filter((m) => m.status === 'active').length;
   const totalPDV = team.reduce((sum, m) => sum + m.pdvAssigned, 0);
   const totalRoutes = team.reduce((sum, m) => sum + m.activeRoutes, 0);
-  const avgCoverage = Math.round(
-    team.reduce((sum, m) => sum + m.performance.coverage, 0) / team.length
-  );
+  const avgCoverage = team.length > 0 
+    ? Math.round(team.reduce((sum, m) => sum + m.performance.coverage, 0) / team.length)
+    : 0;
 
   // ✅ Hook réutilisable pour les mutations
   const createUserMutation = useMutation(
@@ -122,6 +84,7 @@ export default function TeamPage() {
     {
       onSuccess: () => {
         alert('Utilisateur créé avec succès!');
+        refetch(); // Recharger la liste
         setIsModalOpen(false);
       },
       onError: () => {
@@ -134,11 +97,22 @@ export default function TeamPage() {
     await createUserMutation.mutateAsync(data as CreateUserDto);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement de l'équipe...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
         title="Mon Équipe"
-        description={`${team.length} vendeurs • ${activeMembers} actifs`}
+        description={`${team.length} membres • ${activeMembers} actifs (Vendeurs & Administrateurs)`}
         actions={
           <Button variant="primary" size="md" onClick={() => setIsModalOpen(true)}>
             <UserPlus className="w-4 h-4 mr-2" />
@@ -150,7 +124,7 @@ export default function TeamPage() {
       {/* KPIs */}
       <DashboardGrid columns={4} gap="md">
         <StatCard
-          title="Vendeurs Actifs"
+          title="Membres Actifs"
           value={activeMembers}
           icon={Users}
           color="success"
@@ -197,7 +171,7 @@ export default function TeamPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                    <p className="text-sm text-gray-500">{member.role}</p>
+                    <p className="text-sm text-gray-500">{member.roleLabel}</p>
                   </div>
                 </div>
                 <Badge
@@ -294,7 +268,7 @@ export default function TeamPage() {
                 {selectedMember.name.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <p className="text-gray-600">{selectedMember.role}</p>
+                <p className="text-gray-600">{selectedMember.roleLabel}</p>
                 <Badge variant="success" size="sm" className="mt-1">
                   {selectedMember.status === 'active' ? 'Actif' : 'Inactif'}
                 </Badge>

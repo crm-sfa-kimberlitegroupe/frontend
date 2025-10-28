@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { TerritoryDrawMap } from '../components/TerritoryDrawMap';
 import Button from '../../../core/ui/Button';
+import TagInput from '../../../core/ui/TagInput';
 
 export default function CreateTerritoryWithMap() {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    region: '',
-    ville: '',
+    regions: [] as string[],
+    communes: [] as string[],
+    villes: [] as string[],
+    quartiers: [] as string[],
+    codesPostaux: [] as string[],
     potentielCommercial: 'MOYEN',
     nombrePDVEstime: 0,
     notes: ''
@@ -100,29 +104,51 @@ export default function CreateTerritoryWithMap() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Région
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      placeholder="Centre"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  {/* Section Géographique avec TagInput */}
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                      🗺️ Informations Géographiques
+                    </h3>
+                    
+                    <TagInput
+                      label="Régions"
+                      value={formData.regions}
+                      onChange={(regions) => setFormData({ ...formData, regions })}
+                      placeholder="Appuyez sur Entrée pour ajouter"
+                      helperText="Ex: Littoral, Centre, Ouest"
                     />
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ville
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.ville}
-                      onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
-                      placeholder="Yaoundé"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    <TagInput
+                      label="Communes"
+                      value={formData.communes}
+                      onChange={(communes) => setFormData({ ...formData, communes })}
+                      placeholder="Appuyez sur Entrée pour ajouter"
+                      helperText="Ex: Douala 1er, Douala 2e, Yaoundé 3e"
+                    />
+
+                    <TagInput
+                      label="Villes"
+                      value={formData.villes}
+                      onChange={(villes) => setFormData({ ...formData, villes })}
+                      placeholder="Appuyez sur Entrée pour ajouter"
+                      helperText="Ex: Douala, Yaoundé, Bafoussam"
+                    />
+
+                    <TagInput
+                      label="Quartiers"
+                      value={formData.quartiers}
+                      onChange={(quartiers) => setFormData({ ...formData, quartiers })}
+                      placeholder="Appuyez sur Entrée pour ajouter"
+                      helperText="Ex: Akwa, Bonanjo, Bali, Deido"
+                    />
+
+                    <TagInput
+                      label="Codes Postaux"
+                      value={formData.codesPostaux}
+                      onChange={(codesPostaux) => setFormData({ ...formData, codesPostaux })}
+                      placeholder="Appuyez sur Entrée pour ajouter"
+                      helperText="Ex: 00237, 12345"
+                      maxTags={10}
                     />
                   </div>
 

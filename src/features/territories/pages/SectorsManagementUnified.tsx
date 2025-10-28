@@ -4,7 +4,7 @@ import SectorsCreateTab from '../components/SectorsCreateTab';
 import SectorsListTab from '../components/SectorsListTab';
 import SectorsAssignTab from '../components/SectorsAssignTab';
 import SectorsOverviewTab from '../components/SectorsOverviewTab';
-import territoriesService, { type Territory } from '../services/territoriesService';
+import territoriesService, { type Territory, type TerritoryGeoInfo } from '../services/territoriesService';
 import outletsService, { type Outlet, OutletStatusEnum } from '../../pdv/services/outletsService';
 import usersService from '../../users/services/usersService';
 import { useAuthStore } from '@/core/auth';
@@ -22,6 +22,7 @@ export default function SectorsManagementUnified() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [userTerritory, setUserTerritory] = useState<Territory | null>(null);
+  const [territoryGeoInfo, setTerritoryGeoInfo] = useState<TerritoryGeoInfo | null>(null);
 
   useEffect(() => {
     loadData();
@@ -37,11 +38,12 @@ export default function SectorsManagementUnified() {
         return;
       }
 
-      const [sectorsData, territoriesData, outletsData, usersData] = await Promise.all([
+      const [sectorsData, territoriesData, outletsData, usersData, geoInfo] = await Promise.all([
         territoriesService.getAllSectors({ level: 'SECTEUR' }),
         territoriesService.getAll(),
         outletsService.getMyTerritoryOutlets({ status: OutletStatusEnum.APPROVED }),
         usersService.getAll(),
+        territoriesService.getTerritoryGeoInfo(user.territoryId),
       ]);
 
       const myTerritory = territoriesData.find(t => t.id === user.territoryId);
@@ -54,6 +56,7 @@ export default function SectorsManagementUnified() {
       setSectors(sectorsData.filter(s => s.parentId === myTerritory.id));
       setOutlets(outletsData);
       setVendors(usersData.filter((u: any) => u.role === 'REP' && u.status === 'ACTIVE'));
+      setTerritoryGeoInfo(geoInfo);
     } catch (error) {
       console.error('Erreur chargement:', error);
       showError('Impossible de charger les données');
@@ -116,6 +119,7 @@ export default function SectorsManagementUnified() {
         <SectorsCreateTab
           outlets={outlets}
           userTerritory={userTerritory}
+          territoryGeoInfo={territoryGeoInfo}
           onSuccess={loadData}
         />
       )}

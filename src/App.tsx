@@ -25,6 +25,7 @@ import TeamPage from './features/team/pages/TeamPage';
 import VisitsADMIN from './features/visits/pages/VisitsADMIN';
 import UsersManagement from './features/users/pages/UsersManagement';
 import SectorsManagementUnified from './features/territories/pages/SectorsManagementUnified';
+import SectorsAssignment from './features/territories/pages/SectorsAssignment';
 import TerritoriesManagement from './features/territories/pages/TerritoriesManagement';
 import CreateTerritoryWithMap from './features/territories/pages/CreateTerritoryWithMap';
 
@@ -83,6 +84,7 @@ function App() {
           <Route path="users" element={<UsersManagement />} />
           <Route path="pdv" element={<VisitsADMIN />} />
           <Route path="sectors" element={<SectorsManagementUnified />} />
+          <Route path="sectors/assignment" element={<SectorsAssignment />} />
           {/*         <Route path="routes" element={<RoutesManagement />} /> */}
           <Route path="products" element={<UnderConstruction />} />
           <Route path="tasks" element={<UnderConstruction />} />

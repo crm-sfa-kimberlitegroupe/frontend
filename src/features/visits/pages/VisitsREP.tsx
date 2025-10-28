@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, PageLayout } from '@/core/ui';
 import { useToggle } from '@/core/hooks';
 import type { Visit } from '../types/pdv.types';
+import { useVendorOutlets } from '../hooks/useVendorOutlets';
 import VisitsHeader from '../components/VisitsHeader';
 import ActiveVisitCTA from '../components/ActiveVisitCTA';
 import PDVFormWizard from '../components/PDVFormWizard';
@@ -12,19 +13,69 @@ export default function VisitsREP() {
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
   // ✅ Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
+  
+  // 🏪 Récupérer les PDV du vendeur connecté
+  const { outlets, sector, loading, error } = useVendorOutlets();
 
-  const visits: Visit[] = [
-    { id: '1', pdvName: 'Supermarché Plateau', status: 'COMPLETED', scheduledTime: '08:00', checkInTime: '08:05', checkOutTime: '08:45' },
-    { id: '2', pdvName: 'Boutique Cocody', status: 'COMPLETED', scheduledTime: '09:30', checkInTime: '09:35', checkOutTime: '10:10' },
-    { id: '3', pdvName: 'Épicerie Marcory', status: 'IN_PROGRESS', scheduledTime: '11:00', checkInTime: '11:05' },
-    { id: '4', pdvName: 'Mini-market Yopougon', status: 'PLANNED', scheduledTime: '13:00' },
-    { id: '5', pdvName: 'Superette Abobo', status: 'PLANNED', scheduledTime: '14:30' },
-  ];
+  // 📝 Convertir les PDV en visites (pour l'instant, toutes planifiées)
+  // TODO: Intégrer avec un vrai système de planification de visites
+  const visits: Visit[] = outlets.map((outlet, index) => ({
+    id: outlet.id,
+    pdvName: outlet.name,
+    status: index === 0 ? 'IN_PROGRESS' : index < 2 ? 'COMPLETED' : 'PLANNED' as const,
+    scheduledTime: `${8 + index * 2}:00`,
+    checkInTime: index < 2 ? `${8 + index * 2}:05` : undefined,
+    checkOutTime: index < 2 ? `${8 + index * 2}:45` : undefined,
+  }));
 
   const activeVisit = visits.find(v => v.status === 'IN_PROGRESS');
   const completedCount = visits.filter(v => v.status === 'COMPLETED').length;
   const inProgressCount = visits.filter(v => v.status === 'IN_PROGRESS').length;
   const plannedCount = visits.filter(v => v.status === 'PLANNED').length;
+
+  // 🔄 État de chargement
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement de vos PDV...</p>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // ❌ État d'erreur
+  if (error) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-2xl mb-4">❌</p>
+            <p className="text-lg font-semibold text-red-600 mb-2">Erreur</p>
+            <p className="text-sm text-gray-600">{error}</p>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // 🚫 Pas de secteur assigné
+  if (!sector) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-5xl mb-4">🏢</p>
+            <p className="text-lg font-semibold text-gray-900 mb-2">Aucun secteur assigné</p>
+            <p className="text-sm text-gray-600">Contactez votre manager pour vous assigner un secteur.</p>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -35,6 +86,19 @@ export default function VisitsREP() {
       />
 
       <div className="p-4">
+        {/* Informations du secteur */}
+        {sector && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h3 className="font-medium text-blue-900 mb-1">Votre secteur</h3>
+            <p className="text-sm text-blue-800">
+              <strong>{sector.name}</strong> ({sector.code})
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              {outlets.length} PDV assignés
+            </p>
+          </div>
+        )}
+
         {/* Boutons d'action principaux */}
         {!selectedVisit && !showPDVForm && (
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -73,13 +137,21 @@ export default function VisitsREP() {
         {/* Liste des visites */}
         {!selectedVisit && !showPDVForm && (
           <div className="space-y-3">
-            {visits.map((visit) => (
-              <VisitCard 
-                key={visit.id}
-                visit={visit}
-                onSelect={setSelectedVisit}
-              />
-            ))}
+            {visits.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-4xl mb-4">🏪</p>
+                <p className="text-lg font-semibold text-gray-900 mb-2">Aucun PDV dans votre secteur</p>
+                <p className="text-sm text-gray-600">Contactez votre manager pour ajouter des PDV à votre secteur.</p>
+              </div>
+            ) : (
+              visits.map((visit) => (
+                <VisitCard 
+                  key={visit.id}
+                  visit={visit}
+                  onSelect={setSelectedVisit}
+                />
+              ))
+            )}
           </div>
         )}
 

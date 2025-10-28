@@ -15,13 +15,21 @@ export interface Territory {
   };
   outletsSector?: Outlet[];
   assignedUsers?: User[];
+  assignedVendorId?: string;
+  assignedVendor?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  outletsCount?: number;
   
-  // Informations géographiques
-  region?: string;
-  commune?: string;
-  ville?: string;
-  quartier?: string;
-  codePostal?: string;
+  // Informations géographiques (tableaux)
+  regions?: string[];
+  communes?: string[];
+  villes?: string[];
+  quartiers?: string[];
+  codesPostaux?: string[];
   lat?: number;
   lng?: number;
   
@@ -39,6 +47,12 @@ export interface Territory {
   
   // Métadonnées
   adminId?: string;
+  admin?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   createdBy?: string;
   notes?: string;
   isActive?: boolean;
@@ -114,6 +128,14 @@ export interface VendorWithSector extends User {
     name: string;
     outletsSector?: Outlet[];
   };
+}
+
+export interface TerritoryGeoInfo {
+  regions: string[];
+  communes: string[];
+  villes: string[];
+  quartiers: string[];
+  codesPostaux: string[];
 }
 
 // Axios instance
@@ -214,9 +236,22 @@ export const territoriesService = {
     await api.delete(`/territories/${id}`);
   },
 
-  // Supprimer un secteur
-  async deleteSector(id: string): Promise<void> {
-    await api.delete(`/territories/sectors/${id}`);
+  // Désassigner un vendeur d'un secteur
+  unassignSectorVendor: async (sectorId: string): Promise<void> => {
+    await api.delete(`/territories/sectors/${sectorId}/unassign-vendor`);
+  },
+
+  // Récupérer le secteur assigné à un vendeur
+  getVendorAssignedSector: async (vendorId: string): Promise<Territory | null> => {
+    try {
+      const response = await api.get(`/territories/vendors/${vendorId}/assigned-sector`);
+      return response.data;
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return null; // Pas de secteur assigné
+      }
+      throw error;
+    }
   },
 
   // Retirer des PDV d'un secteur
@@ -241,6 +276,62 @@ export const territoriesService = {
   async getAllVendorsWithSectors(): Promise<VendorWithSector[]> {
     const response = await api.get<{ success: boolean; data: VendorWithSector[]; message: string }>('/territories/vendors/with-sectors');
     return response.data.data || [];
+  },
+
+  // 🗺️ Récupérer les informations géographiques d'un territoire
+  async getTerritoryGeoInfo(territoryId: string): Promise<TerritoryGeoInfo> {
+    const response = await api.get<{ success: boolean; data: TerritoryGeoInfo; message: string }>(`/territories/${territoryId}/geo-info`);
+    return response.data.data;
+  },
+
+  // 👤 Récupérer la liste des administrateurs disponibles
+  async getAvailableAdmins(excludeTerritoryId?: string): Promise<User[]> {
+    const params = excludeTerritoryId ? `?excludeTerritoryId=${excludeTerritoryId}` : '';
+    const response = await api.get<{ success: boolean; data: User[]; message: string }>(`/territories/admins/available${params}`);
+    return response.data.data || [];
+  },
+
+  // 👤 Assigner un administrateur à un territoire
+  async assignAdmin(territoryId: string, adminId: string): Promise<Territory> {
+    const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
+      `/territories/${territoryId}/assign-admin`,
+      { adminId }
+    );
+    return response.data.data;
+  },
+
+  // 👤 Réassigner un administrateur à un territoire (changement)
+  async reassignAdmin(territoryId: string, adminId: string): Promise<Territory> {
+    const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
+      `/territories/${territoryId}/reassign-admin`,
+      { adminId }
+    );
+    return response.data.data;
+  },
+
+  // 👤 Retirer l'administrateur d'un territoire
+  async removeAdmin(territoryId: string): Promise<Territory> {
+    const response = await api.delete<{ success: boolean; data: Territory; message: string }>(
+      `/territories/${territoryId}/remove-admin`
+    );
+    return response.data.data;
+  },
+
+  // 🏢 Réassigner un vendeur à un secteur (changement)
+  async reassignSectorVendor(sectorId: string, vendorId: string): Promise<Territory> {
+    const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
+      `/territories/sectors/${sectorId}/reassign-vendor`,
+      { vendorId }
+    );
+    return response.data.data;
+  },
+
+  // 🏢 Désassigner un vendeur d'un secteur
+  async unassignSectorVendor(sectorId: string): Promise<Territory> {
+    const response = await api.delete<{ success: boolean; data: Territory; message: string }>(
+      `/territories/sectors/${sectorId}/unassign-vendor`
+    );
+    return response.data.data;
   },
 };
 

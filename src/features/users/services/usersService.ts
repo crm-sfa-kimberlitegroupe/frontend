@@ -101,6 +101,12 @@ export const usersService = {
     return response.data.data || [];
   },
 
+  // Récupérer tous les membres de l'équipe (REP + ADMIN)
+  async getTeamMembers(): Promise<User[]> {
+    const response = await api.get<UsersResponse>('/team/all');
+    return response.data.data || [];
+  },
+
   // Récupérer un utilisateur par ID
   async getById(id: string): Promise<User> {
     const response = await api.get<UserResponse>(`/${id}`);

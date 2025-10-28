@@ -4,10 +4,12 @@ import { Icon } from '../../../core/ui/Icon';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import Modal from '../../../core/ui/feedback/Modal';
+import TagInput from '../../../core/ui/TagInput';
 import { GoogleTerritoryMap } from '../components/GoogleTerritoryMap';
 import GoogleMapsService from '../services/googleMapsService';
 import territoriesService from '../services/territoriesService';
-import type { Territory } from '../services/territoriesService';
+import type { Territory, User } from '../services/territoriesService';
+import AssignAdminModal from '../components/AssignAdminModal';
 
 const showSuccess = (message: string) => alert(message);
 const showError = (message: string) => alert(message);
@@ -16,12 +18,12 @@ interface CreateTerritoryForm {
   code: string;
   name: string;
   level: 'ZONE';
-  // Géographique
-  region?: string;
-  commune?: string;
-  ville?: string;
-  quartier?: string;
-  codePostal?: string;
+  // Géographique (tableaux)
+  regions?: string[];
+  communes?: string[];
+  villes?: string[];
+  quartiers?: string[];
+  codesPostaux?: string[];
   lat?: number;
   lng?: number;
   // Démographique
@@ -50,6 +52,12 @@ export default function TerritoriesManagement() {
     level: 'ZONE',
   });
 
+  // États pour la gestion des administrateurs
+  const [availableAdmins, setAvailableAdmins] = useState<User[]>([]);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [selectedTerritoryForAdmin, setSelectedTerritoryForAdmin] = useState<Territory | null>(null);
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
+
   // États pour la carte
   const [drawnGeometry, setDrawnGeometry] = useState<any>(null);
   const [showMap, setShowMap] = useState(false);
@@ -62,6 +70,7 @@ export default function TerritoriesManagement() {
 
   useEffect(() => {
     loadTerritories();
+    loadAvailableAdmins();
   }, []);
 
   const loadTerritories = async () => {
@@ -75,6 +84,15 @@ export default function TerritoriesManagement() {
       showError('Impossible de charger les territoires');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableAdmins = async () => {
+    try {
+      const admins = await territoriesService.getAvailableAdmins();
+      setAvailableAdmins(admins);
+    } catch {
+      // Erreur silencieuse, les admins ne sont pas critiques pour l'affichage
     }
   };
 
@@ -117,6 +135,40 @@ export default function TerritoriesManagement() {
       showError(error?.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenAdminModal = (territory: Territory) => {
+    setSelectedTerritoryForAdmin(territory);
+    setIsAdminModalOpen(true);
+  };
+
+  const handleAssignAdmin = async (adminId: string) => {
+    if (!selectedTerritoryForAdmin) return;
+
+    try {
+      setLoadingAdmin(true);
+      
+      // Si le territoire a déjà un admin, on fait une réassignation
+      if (selectedTerritoryForAdmin.adminId) {
+        await territoriesService.reassignAdmin(selectedTerritoryForAdmin.id, adminId);
+        showSuccess('Administrateur changé avec succès ! Les vendeurs ont été mis à jour.');
+      } else {
+        await territoriesService.assignAdmin(selectedTerritoryForAdmin.id, adminId);
+        showSuccess('Administrateur assigné avec succès !');
+      }
+
+      // Recharger les données
+      await loadTerritories();
+      await loadAvailableAdmins();
+      
+      // Fermer le modal
+      setIsAdminModalOpen(false);
+      setSelectedTerritoryForAdmin(null);
+    } catch (error: any) {
+      showError(error?.response?.data?.message || 'Erreur lors de l\'assignation');
+    } finally {
+      setLoadingAdmin(false);
     }
   };
 
@@ -185,7 +237,7 @@ export default function TerritoriesManagement() {
     (territory) =>
       territory.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       territory.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      territory.region?.toLowerCase().includes(searchTerm.toLowerCase())
+      territory.regions?.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const calculateDensity = (pop?: number, surf?: number) => {
@@ -261,6 +313,13 @@ export default function TerritoriesManagement() {
                     <p className="text-sm text-gray-500">{territory.code}</p>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleOpenAdminModal(territory)}
+                    >
+                      👤 {territory.admin ? 'Changer Admin' : 'Assigner Admin'}
+                    </Button>
                     <button
                       onClick={() => setSelectedTerritory(territory)}
                       className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -277,12 +336,47 @@ export default function TerritoriesManagement() {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  {territory.region && (
+                  {/* Administrateur assigné */}
+                  {territory.admin ? (
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                      <Icon name="user" size="sm" variant="grey" />
+                      <div className="flex-1">
+                        <span className="text-xs text-gray-500">Admin:</span>
+                        <span className="ml-1 font-medium text-gray-900">
+                          {territory.admin.firstName} {territory.admin.lastName}
+                        </span>
+                      </div>
+                      <Badge variant="success" size="sm">Assigné</Badge>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                      <Icon name="user" size="sm" variant="grey" />
+                      <span className="text-xs text-gray-500 flex-1">Aucun administrateur</span>
+                      <Badge variant="gray" size="sm">Non assigné</Badge>
+                    </div>
+                  )}
+
+                  {(territory.regions && territory.regions.length > 0) && (
                     <div className="flex items-center gap-2">
                       <Icon name="locationMarker" size="sm" variant="grey" />
-                      <span className="text-gray-700">
-                        {territory.region} • {territory.commune || 'N/A'}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {territory.regions.map((region, i) => (
+                          <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                            {region}
+                          </span>
+                        ))}
+                        {territory.quartiers && territory.quartiers.length > 0 && (
+                          <span className="text-gray-400">•</span>
+                        )}
+                        {territory.quartiers?.slice(0, 2).map((quartier, i) => (
+                          <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                            {quartier}
+                          </span>
+                        ))}
+                        {territory.quartiers && territory.quartiers.length > 2 && (
+                          <span className="text-xs text-gray-500">+{territory.quartiers.length - 2}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                   
@@ -369,59 +463,47 @@ export default function TerritoriesManagement() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Région</label>
-                <input
-                  type="text"
-                  value={formData.region || ''}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  placeholder="Ex: Abidjan"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                <TagInput
+                  label="Régions"
+                  value={formData.regions || []}
+                  onChange={(regions) => setFormData({ ...formData, regions })}
+                  placeholder="Appuyez sur Entrée pour ajouter"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Commune</label>
-                <input
-                  type="text"
-                  value={formData.commune || ''}
-                  onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
-                  placeholder="Ex: Plateau"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                <TagInput
+                  label="Communes"
+                  value={formData.communes || []}
+                  onChange={(communes) => setFormData({ ...formData, communes })}
+                  placeholder="Appuyez sur Entrée pour ajouter"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
-                <input
-                  type="text"
-                  value={formData.ville || ''}
-                  onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
-                  placeholder="Ex: Abidjan"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                <TagInput
+                  label="Villes"
+                  value={formData.villes || []}
+                  onChange={(villes) => setFormData({ ...formData, villes })}
+                  placeholder="Appuyez sur Entrée pour ajouter"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quartier</label>
-                <input
-                  type="text"
-                  value={formData.quartier || ''}
-                  onChange={(e) => setFormData({ ...formData, quartier: e.target.value })}
-                  placeholder="Ex: Plateau Dokui"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                <TagInput
+                  label="Quartiers"
+                  value={formData.quartiers || []}
+                  onChange={(quartiers) => setFormData({ ...formData, quartiers })}
+                  placeholder="Appuyez sur Entrée pour ajouter"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Code Postal
-                </label>
-                <input
-                  type="text"
-                  value={formData.codePostal || ''}
-                  onChange={(e) => setFormData({ ...formData, codePostal: e.target.value })}
-                  placeholder="Ex: 01 BP 1234"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                <TagInput
+                  label="Codes Postaux"
+                  value={formData.codesPostaux || []}
+                  onChange={(codesPostaux) => setFormData({ ...formData, codesPostaux })}
+                  placeholder="Appuyez sur Entrée pour ajouter"
                 />
               </div>
 
@@ -775,53 +857,73 @@ export default function TerritoriesManagement() {
             </div>
 
             {/* Localisation */}
-            {(selectedTerritory.region || selectedTerritory.commune || selectedTerritory.ville) && (
+            {(selectedTerritory.regions?.length || selectedTerritory.communes?.length || selectedTerritory.villes?.length) && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Icon name="locationMarker" size="sm" variant="grey" />
                   <h3 className="text-sm font-semibold text-gray-900">Localisation</h3>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    {selectedTerritory.region && (
-                      <>
-                        <span className="text-gray-600">Région:</span>
-                        <span className="font-medium text-gray-900">{selectedTerritory.region}</span>
-                      </>
-                    )}
-                    {selectedTerritory.commune && (
-                      <>
-                        <span className="text-gray-600">Commune:</span>
-                        <span className="font-medium text-gray-900">{selectedTerritory.commune}</span>
-                      </>
-                    )}
-                    {selectedTerritory.ville && (
-                      <>
-                        <span className="text-gray-600">Ville:</span>
-                        <span className="font-medium text-gray-900">{selectedTerritory.ville}</span>
-                      </>
-                    )}
-                    {selectedTerritory.quartier && (
-                      <>
-                        <span className="text-gray-600">Quartier:</span>
-                        <span className="font-medium text-gray-900">{selectedTerritory.quartier}</span>
-                      </>
-                    )}
-                    {selectedTerritory.codePostal && (
-                      <>
-                        <span className="text-gray-600">Code Postal:</span>
-                        <span className="font-medium text-gray-900">{selectedTerritory.codePostal}</span>
-                      </>
-                    )}
-                    {selectedTerritory.lat && selectedTerritory.lng && (
-                      <>
-                        <span className="text-gray-600">GPS:</span>
-                        <span className="font-medium text-gray-900">
-                          {selectedTerritory.lat}, {selectedTerritory.lng}
-                        </span>
-                      </>
-                    )}
-                  </div>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  {selectedTerritory.regions && selectedTerritory.regions.length > 0 && (
+                    <div>
+                      <span className="text-xs text-gray-600">Régions:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedTerritory.regions.map((region, i) => (
+                          <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                            {region}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedTerritory.communes && selectedTerritory.communes.length > 0 && (
+                    <div>
+                      <span className="text-xs text-gray-600">Communes:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedTerritory.communes.map((commune, i) => (
+                          <span key={i} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                            {commune}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedTerritory.villes && selectedTerritory.villes.length > 0 && (
+                    <div>
+                      <span className="text-xs text-gray-600">Villes:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedTerritory.villes.map((ville, i) => (
+                          <span key={i} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">
+                            {ville}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedTerritory.quartiers && selectedTerritory.quartiers.length > 0 && (
+                    <div>
+                      <span className="text-xs text-gray-600">Quartiers:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedTerritory.quartiers.map((quartier, i) => (
+                          <span key={i} className="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded-full font-medium">
+                            {quartier}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedTerritory.codesPostaux && selectedTerritory.codesPostaux.length > 0 && (
+                    <div>
+                      <span className="text-xs text-gray-600">Codes Postaux:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedTerritory.codesPostaux.map((code, i) => (
+                          <span key={i} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+                            {code}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -941,6 +1043,20 @@ export default function TerritoriesManagement() {
           </div>
         </Modal>
       )}
+
+      {/* Modal d'assignation d'administrateur */}
+      <AssignAdminModal
+        isOpen={isAdminModalOpen}
+        onClose={() => {
+          setIsAdminModalOpen(false);
+          setSelectedTerritoryForAdmin(null);
+        }}
+        onConfirm={handleAssignAdmin}
+        availableAdmins={availableAdmins}
+        currentAdmin={selectedTerritoryForAdmin?.admin}
+        territoryName={selectedTerritoryForAdmin?.name || ''}
+        loading={loadingAdmin}
+      />
     </div>
   );
 }
