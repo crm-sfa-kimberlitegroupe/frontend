@@ -1,6 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import sharp from 'sharp';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const iconsDir = path.join(__dirname, '..', 'public', 'icons');
 const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
@@ -10,7 +14,7 @@ async function convertSvgToPng() {
   
   // Vérifier si sharp est installé
   try {
-    require('sharp');
+    await import('sharp');
   } catch (error) {
     console.error('❌ Sharp n\'est pas installé. Exécutez: npm install sharp --save-dev');
     process.exit(1);
