@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Edit, Settings } from 'lucide-react';
+import { UserPlus, Edit } from 'lucide-react';
 import { Icon } from '../../../core/ui/Icon';
 import Badge from '../../../core/ui/Badge';
 import Button from '../../../core/ui/Button';
@@ -164,7 +164,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
 
     try {
       setDeleting(true);
-      await territoriesService.deleteSector(sectorId);
+      await territoriesService.delete(sectorId);
       showSuccess('Secteur supprimé avec succès');
       onDelete();
     } catch (error: any) {
@@ -259,7 +259,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
                           className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
                           title="Désassigner vendeur"
                         >
-                          <Icon name="userMinus" size="sm" />
+                          <Icon name="minus" size="sm" />
                         </button>
                       )}
                       

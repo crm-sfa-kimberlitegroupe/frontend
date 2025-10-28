@@ -103,7 +103,7 @@ function AssignVendorModal({ isOpen, onClose, sector, availableVendors, onAssign
 export default function SectorsAssignment() {
   const [sectors, setSectors] = useState<Territory[]>([]);
   const [availableVendors, setAvailableVendors] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modal states
@@ -284,7 +284,7 @@ export default function SectorsAssignment() {
         {unassignedSectors.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Icon name="alertCircle" size="sm" variant="orange" />
+              <Icon name="warning" size="sm" variant="red" />
               Secteurs sans Vendeur ({unassignedSectors.length})
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -320,7 +320,7 @@ export default function SectorsAssignment() {
                     <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                       <Icon name="user" size="sm" variant="grey" />
                       <span className="text-xs text-gray-500 flex-1">Aucun vendeur assigné</span>
-                      <Badge variant="orange" size="sm">Non assigné</Badge>
+                      <Badge variant="warning" size="sm">Non assigné</Badge>
                     </div>
 
                     {sector.outletsCount !== undefined && (
@@ -374,7 +374,7 @@ export default function SectorsAssignment() {
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                         title="Désassigner"
                       >
-                        <Icon name="userMinus" size="sm" />
+                        <Icon name="minus" size="sm" />
                       </button>
                     </div>
                   </div>

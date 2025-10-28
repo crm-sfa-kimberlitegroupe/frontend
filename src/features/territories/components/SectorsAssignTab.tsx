@@ -190,14 +190,14 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
     if (!confirm('Êtes-vous sûr de vouloir désassigner ce vendeur ?')) return;
 
     try {
-      setLoading(true);
+      setLoadingAssign(true);
       await territoriesService.unassignSectorVendor(sectorId);
       showSuccess('Vendeur désassigné avec succès');
       onSuccess();
     } catch (error: any) {
       showError(error?.response?.data?.message || 'Erreur lors de la désassignation');
     } finally {
-      setLoading(false);
+      setLoadingAssign(false);
     }
   };
 
@@ -389,7 +389,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
             {unassignedSectors.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Icon name="alertCircle" size="sm" variant="warning" />
+                  <Icon name="warning" size="sm" variant="red" />
                   Secteurs sans Vendeur ({unassignedSectors.length})
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -447,7 +447,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
             {assignedSectors.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Icon name="check" size="sm" variant="success" />
+                  <Icon name="check" size="sm" variant="green" />
                   Secteurs Assignés ({assignedSectors.length})
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -479,7 +479,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                             title="Désassigner"
                           >
-                            <Icon name="userMinus" size="sm" />
+                            <Icon name="minus" size="sm" />
                           </button>
                         </div>
                       </div>

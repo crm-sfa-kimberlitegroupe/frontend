@@ -236,8 +236,8 @@ export const territoriesService = {
     await api.delete(`/territories/${id}`);
   },
 
-  // Désassigner un vendeur d'un secteur
-  unassignSectorVendor: async (sectorId: string): Promise<void> => {
+  // Désassigner un vendeur d'un secteur (legacy method - kept for compatibility)
+  unassignSectorVendorLegacy: async (sectorId: string): Promise<void> => {
     await api.delete(`/territories/sectors/${sectorId}/unassign-vendor`);
   },
 

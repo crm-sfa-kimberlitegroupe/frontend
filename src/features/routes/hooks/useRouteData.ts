@@ -95,8 +95,7 @@ export function useRouteData(): UseRouteDataReturn {
       if (user?.role === 'REP' && user?.id) {
         try {
           // Récupérer le secteur assigné au vendeur
-          const assignedSectorResponse = await territoriesService.getVendorAssignedSector(user.id);
-          const assignedSector = assignedSectorResponse?.data;
+          const assignedSector = await territoriesService.getVendorAssignedSector(user.id);
           
           if (assignedSector && assignedSector.outletsSector) {
             // Extraire les PDV du secteur assigné
@@ -104,11 +103,14 @@ export function useRouteData(): UseRouteDataReturn {
               id: outletSector.outlet.id,
               name: outletSector.outlet.name,
               code: outletSector.outlet.code,
+              channel: outletSector.outlet.channel || 'UNKNOWN',
               address: outletSector.outlet.address,
               lat: outletSector.outlet.lat,
               lng: outletSector.outlet.lng,
-              status: 'APPROVED' as any,
-              territoryId: user.territoryId,
+              status: outletSector.outlet.status || 'APPROVED',
+              territoryId: outletSector.outlet.territoryId || user.territoryId || '',
+              createdAt: outletSector.outlet.createdAt || new Date().toISOString(),
+              updatedAt: outletSector.outlet.updatedAt || new Date().toISOString(),
               sectorId: assignedSector.id,
             }));
             

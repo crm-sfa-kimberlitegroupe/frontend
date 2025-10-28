@@ -120,7 +120,7 @@ export default function SectorsManagement() {
 
     try {
       setLoading(true);
-      await territoriesService.deleteSector(sectorId);
+      await territoriesService.delete(sectorId);
       showSuccess('Secteur supprimé avec succès');
       loadData();
     } catch (error: any) {
