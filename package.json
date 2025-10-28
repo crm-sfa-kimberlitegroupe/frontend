@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run convert-icons && tsc -b && vite build",
-    "build:prod": "npm run convert-icons && tsc -b && vite build --mode production",
+    "build": "npm run convert-icons && tsc -b && vite build && npm run fix-mime",
+    "build:prod": "npm run convert-icons && tsc -b && vite build --mode production && npm run fix-mime",
     "convert-icons": "node scripts/convert-icons.js",
+    "fix-mime": "node scripts/fix-mime-types.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

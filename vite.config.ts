@@ -43,7 +43,12 @@ export default defineConfig({
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
+        // Forcer le format ES modules
+        format: 'es',
       },
     },
+    // Assurer la compatibilité ES modules
+    target: 'es2020',
+    minify: 'esbuild',
   },
 })

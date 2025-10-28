@@ -1,0 +1,20 @@
+/*    /index.html   200
+
+# Headers for JavaScript files
+/*.js
+  Content-Type: application/javascript; charset=utf-8
+  Cache-Control: public, max-age=31536000
+
+/*.mjs
+  Content-Type: application/javascript; charset=utf-8
+  Cache-Control: public, max-age=31536000
+
+/*.css
+  Content-Type: text/css; charset=utf-8
+  Cache-Control: public, max-age=31536000
+
+/*.json
+  Content-Type: application/json; charset=utf-8
+
+/manifest.json
+  Content-Type: application/manifest+json; charset=utf-8
