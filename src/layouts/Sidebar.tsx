@@ -101,7 +101,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (

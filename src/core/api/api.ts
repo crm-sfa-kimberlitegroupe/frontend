@@ -123,7 +123,7 @@ const api = {
       if (response.status === 401) {
         console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expirée. Veuillez vous reconnecter.');
       }
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));

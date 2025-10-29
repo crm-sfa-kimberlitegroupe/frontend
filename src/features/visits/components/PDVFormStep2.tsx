@@ -15,7 +15,7 @@ export default function PDVFormStep2({ formData, onChange, userRole = 'REP' }: P
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [isCapturingGPS, setIsCapturingGPS] = useState(false);
   const [gpsAttempts, setGpsAttempts] = useState(0);
-  const MAX_ACCURACY = 1000; // Précision maximale acceptée en mètres
+  const MAX_ACCURACY = 100000; // Précision maximale acceptée en mètres
   const DESIRED_ACCURACY = 20; // Précision idéale en mètres
   const MAX_WAIT_TIME = 30000; // Temps maximum d'attente (30 secondes)
 

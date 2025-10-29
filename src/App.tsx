@@ -51,6 +51,7 @@ function RoutePageRoute() {
   return null;
 }
 
+
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
 
@@ -58,13 +59,10 @@ function App() {
     loadUser();
   }, [loadUser]);
 
-  // Mock role à remplacer par user?.role quand le backend sera prêt
-
   return (
     <Router>
       <Routes>
         {/* Routes publiques */}
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -108,9 +106,9 @@ function App() {
           <Route path="sessions" element={<UnderConstruction />} />
         </Route>
 
-        {/* Redirection par défaut */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Page de connexion sur la racine */}
+        <Route path="/" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

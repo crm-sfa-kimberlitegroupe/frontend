@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
     try {
       await authService.resetPassword(token, password);
       alert('Mot de passe réinitialisé avec succès !');
-      navigate('/login');
+      navigate('/');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
         const error = err as { response?: { data?: { message?: string } } };
@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
           </Button>
 
           <div className="text-center">
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/" className="font-medium text-blue-600 hover:text-blue-500">
               Retour à la connexion
             </Link>
           </div>

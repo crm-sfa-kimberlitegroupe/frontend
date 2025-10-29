@@ -95,20 +95,20 @@ export const apiClient = {
             // Refresh a échoué, déconnecter l'utilisateur
             console.error('❌ Refresh token invalide, déconnexion...');
             localStorage.clear();
-            window.location.href = '/login';
+            window.location.href = '/';
             throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
           }
         } catch (refreshError) {
           console.error('❌ Erreur lors du refresh:', refreshError);
           localStorage.clear();
-          window.location.href = '/login';
+          window.location.href = '/';
           throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
         }
       } else {
         // Pas de refresh token, déconnecter
         console.error('❌ Pas de refresh token, déconnexion...');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new ApiError('Non autorisé', 401);
       }
     }

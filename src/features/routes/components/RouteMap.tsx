@@ -59,7 +59,7 @@ const createCustomIcon = (status: 'completed' | 'in_progress' | 'planned' | 'ter
     completed: '#10b981', // green
     in_progress: '#f59e0b', // orange
     planned: '#9ca3af', // gray
-    territory: '#d1d5db', // light gray (PDV du territoire)
+    territory: '#6b7280', // gray plus visible (au lieu de light gray)
     user: '#3b82f6', // blue
   };
 
@@ -100,6 +100,13 @@ export default function RouteMap({
   showRoute = true,
 }: RouteMapProps) {
   const [center, setCenter] = useState<[number, number]>([5.3600, -4.0083]); // Abidjan par défaut
+
+  // Debug: Logs pour voir les données reçues
+  console.log('🗺️ RouteMap - Données reçues:', {
+    stops: stops.length,
+    allOutlets: allOutlets.length,
+    outletsData: allOutlets.map(o => ({ name: o.name, lat: o.latitude, lng: o.longitude }))
+  });
 
   useEffect(() => {
     if (stops.length > 0) {
@@ -164,24 +171,42 @@ export default function RouteMap({
           </Marker>
         )}
 
-        {/* Marqueurs de TOUS les PDV du territoire (en arrière-plan) */}
-        {allOutlets.map((outlet) => (
-          <Marker
-            key={`outlet-${outlet.id}`}
-            position={[outlet.latitude, outlet.longitude]}
-            icon={createCustomIcon('territory')}
-            zIndexOffset={-1000} // En arrière-plan
-          >
-            <Popup>
-              <div className="min-w-[200px]">
-                <p className="font-medium text-gray-900 mb-1">{outlet.name}</p>
-                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-800">
-                  PDV du territoire
-                </span>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {/* MARQUEUR DE TEST - Pour vérifier que la carte fonctionne */}
+        <Marker
+          position={[5.308416, -4.040294]}
+          icon={createCustomIcon('territory')}
+        >
+          <Popup>
+            <div className="min-w-[200px]">
+              <p className="font-medium text-red-600 mb-1">🔴 MARQUEUR DE TEST</p>
+              <p className="text-xs">Si vous voyez ceci, la carte fonctionne</p>
+            </div>
+          </Popup>
+        </Marker>
+
+        {/* Marqueurs de TOUS les PDV du territoire - VERSION SIMPLE POUR TEST */}
+        {allOutlets.map((outlet) => {
+          console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}]`);
+          return (
+            <Marker
+              key={`outlet-${outlet.id}`}
+              position={[outlet.latitude, outlet.longitude]}
+              // Utilisation de l'icône par défaut de Leaflet pour le test
+            >
+              <Popup>
+                <div className="min-w-[200px]">
+                  <p className="font-medium text-gray-900 mb-1">🏪 {outlet.name}</p>
+                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                    PDV du territoire
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Coordonnées: [{outlet.latitude.toFixed(6)}, {outlet.longitude.toFixed(6)}]
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {/* Marqueurs des arrêts de la route (au premier plan) */}
         {stops.map((stop, index) => (

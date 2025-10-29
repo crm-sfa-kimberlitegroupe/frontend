@@ -42,6 +42,7 @@ export default function RouteREP() {
 
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">
+      
       {/* Chargement */}
       {routeLoading && (
         <div className="flex items-center justify-center min-h-screen">
@@ -219,6 +220,33 @@ export default function RouteREP() {
               <Icon name="refresh" size="sm" className="mr-2" />
               Ma position
             </Button>
+          </div>
+
+          {/* Debug info - Temporaire */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">🔍 Debug Info</h4>
+            <div className="text-xs text-blue-800 space-y-1">
+              <div>PDV trouvés: {allOutlets.length}</div>
+              <div>Arrêts de route: {routeStops.length}</div>
+              {allOutlets.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium">PDV détectés:</p>
+                  {allOutlets.map((outlet, index) => (
+                    <div key={outlet.id} className="ml-2">
+                      {index + 1}. {outlet.name} [{outlet.latitude.toFixed(6)}, {outlet.longitude.toFixed(6)}]
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshRoute}
+                className="mt-2"
+              >
+                Recharger les données
+              </Button>
+            </div>
           </div>
 
           {/* Arrêts à proximité */}

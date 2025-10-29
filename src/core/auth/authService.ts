@@ -78,7 +78,7 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         return Promise.reject(refreshError);
       }
     }
