@@ -46,10 +46,23 @@ export default defineConfig({
         assetFileNames: 'assets/[name].[hash].[ext]',
         // Forcer le format ES modules
         format: 'es',
+        // Code splitting pour réduire la taille des bundles
+        manualChunks: {
+          // Séparer les dépendances React
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Séparer les librairies de cartes
+          'maps-vendor': ['leaflet', '@react-google-maps/api'],
+          // Séparer les utilitaires
+          'utils-vendor': ['date-fns', 'lucide-react', 'clsx'],
+          // Séparer Redux
+          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+        },
       },
     },
     // Assurer la compatibilité ES modules
     target: 'es2020',
     minify: 'esbuild',
+    // Augmenter la limite d'avertissement à 800kb
+    chunkSizeWarningLimit: 800,
   },
 })
