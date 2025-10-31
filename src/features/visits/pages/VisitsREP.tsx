@@ -51,13 +51,12 @@ export default function VisitsREP() {
   if (error) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <p className="text-2xl mb-4">❌</p>
-            <p className="text-lg font-semibold text-red-600 mb-2">Erreur</p>
-            <p className="text-sm text-gray-600">{error}</p>
-          </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-slate-600">Chargement...</p>
         </div>
+      </div>
       </PageLayout>
     );
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../core/auth';
-import { usersService, type UserPerformance } from '@/features/users/services';
+import { usersService, type UserPerformance, type ManagerInfo } from '@/features/users/services';
 import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
 
@@ -8,6 +8,7 @@ import Button from '../../../core/ui/Button';
 import ProfileHeader from '../components/ProfileHeader';
 import PersonalInfoSection from '../components/PersonalInfoSection';
 import ProfessionalInfoSection from '../components/ProfessionalInfoSection';
+import ManagerInfoSection from '../components/ManagerInfoSection';
 import PerformanceSection from '../components/PerformanceSection';
 import SettingsSection from '../components/SettingsSection';
 import SyncSection from '../components/SyncSection';
@@ -71,6 +72,8 @@ export default function ProfilePage() {
     averageOrderValue: 0,
   });
 
+  const [managerInfo, setManagerInfo] = useState<ManagerInfo | null>(null);
+
   // Charger les données utilisateur au montage
   useEffect(() => {
     const loadUserData = async () => {
@@ -101,6 +104,15 @@ export default function ProfilePage() {
             } catch {
               // Erreur silencieuse pour les performances
             }
+          }
+
+          // Charger les informations du manager (pour tous les rôles sauf SUP qui n'ont généralement pas de manager)
+          try {
+            const manager = await usersService.getManager(user.id);
+            setManagerInfo(manager);
+          } catch {
+            // Erreur silencieuse si pas de manager
+            setManagerInfo(null);
           }
         } catch {
           alert('Erreur lors du chargement des données');
@@ -210,6 +222,14 @@ export default function ProfilePage() {
           manager={profileData.manager}
         />
 
+        {/* Section 2.5: Informations du supérieur hiérarchique */}
+        {managerInfo && (
+          <ManagerInfoSection
+            manager={managerInfo}
+            userRole={userRole}
+          />
+        )}
+
         {/* Section 3: Performances (seulement pour REP) */}
         {userRole === 'REP' && (
           <PerformanceSection performance={performanceKPIs} />
@@ -254,13 +274,6 @@ export default function ProfilePage() {
           >
             Déconnexion
           </Button>
-
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full text-sm text-red-600 hover:text-red-700 py-2"
-          >
-            Supprimer mon compte
-          </button>
         </div>
       </div>
 

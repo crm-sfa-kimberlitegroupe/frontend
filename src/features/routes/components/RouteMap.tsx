@@ -191,7 +191,7 @@ export default function RouteMap({
             <Marker
               key={`outlet-${outlet.id}`}
               position={[outlet.latitude, outlet.longitude]}
-              // Utilisation de l'icône par défaut de Leaflet pour le test
+              icon={createCustomIcon('territory')}
             >
               <Popup>
                 <div className="min-w-[200px]">

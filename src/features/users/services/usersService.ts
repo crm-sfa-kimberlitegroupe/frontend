@@ -17,9 +17,20 @@ export interface User {
   employeeId?: string | null;
   hireDate?: string | null;
   manager?: string | null;
+  managerId?: string | null; // ID du manager
   isActive: boolean;
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'; // Ajout du status
   lastLogin?: string;
+}
+
+export interface ManagerInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  role: 'REP' | 'ADMIN' | 'SUP';
+  photoUrl?: string | null;
 }
 
 export interface CreateUserDto {
@@ -157,6 +168,17 @@ export const usersService = {
       }
     );
     return response.data.data.photoUrl;
+  },
+
+  // Récupérer les informations du manager d'un utilisateur
+  async getManager(userId: string): Promise<ManagerInfo | null> {
+    try {
+      const response = await api.get<{ success: boolean; data: ManagerInfo; message: string }>(`/${userId}/manager`);
+      return response.data.data;
+    } catch {
+      // Si l'utilisateur n'a pas de manager ou si une erreur survient, retourner null
+      return null;
+    }
   },
 };
 
