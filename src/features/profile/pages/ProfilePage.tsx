@@ -36,7 +36,7 @@ export default function ProfilePage() {
     phone: user?.phone || '',
     photo: user?.photo || user?.photo || null,
     territory: user?.territory || '',
-    employeeId: user?.employeeId || '',
+    matricule: user?.matricule || '',
     hireDate: user?.hireDate || '',
     manager: user?.manager || '',
     isActive: user?.isActive ?? true,
@@ -90,7 +90,7 @@ export default function ProfilePage() {
             phone: userData.phone || '',
             photo: userData.photoUrl || userData.photo || null,
             territory: userData.territoryName || userData.territory || '',
-            employeeId: userData.employeeId || '',
+            matricule: userData.matricule || '',
             hireDate: userData.hireDate || '',
             manager: userData.manager || '',
             isActive: userData.isActive,
@@ -135,8 +135,8 @@ export default function ProfilePage() {
       await usersService.update(user.id, {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
-        phone: profileData.phone || undefined,
-        employeeId: profileData.employeeId || undefined,
+        phone: profileData.phone || '',
+        matricule: profileData.matricule || undefined,
         hireDate: profileData.hireDate || undefined,
       });
       alert('Modifications enregistrées avec succès');
@@ -217,7 +217,7 @@ export default function ProfilePage() {
         {/* Section 2: Informations professionnelles */}
         <ProfessionalInfoSection
           territory={profileData.territory}
-          employeeId={profileData.employeeId}
+          matricule={profileData.matricule}
           hireDate={profileData.hireDate}
           manager={profileData.manager}
         />

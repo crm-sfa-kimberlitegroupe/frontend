@@ -9,12 +9,14 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'REP' | 'ADMIN' | 'SUP';
-  phone?: string | null;
+  phone: string;
   photo?: string | null; // Alias pour photoUrl (compatibilité)
   photoUrl?: string | null; // Nom du backend
   territory?: string | null; // Nom du territoire (ou ID en fallback)
   territoryName?: string | null; // Nom du territoire
-  employeeId?: string | null;
+  territoryId?: string | null; // ID du territoire
+  assignedSectorId?: string | null; // ID du secteur assigné
+  matricule: string;
   hireDate?: string | null;
   manager?: string | null;
   managerId?: string | null; // ID du manager
@@ -40,8 +42,8 @@ export interface CreateUserDto {
   lastName: string;
   role: 'REP' | 'ADMIN' | 'SUP';
   territoryId?: string;
-  phone?: string;
-  employeeId?: string;
+  phone: string;
+  matricule: string;
   hireDate?: string;
   managerId?: string;
 }
@@ -53,8 +55,8 @@ export interface UpdateUserDto {
   lastName?: string;
   role?: 'REP' | 'ADMIN' | 'SUP';
   territoryId?: string;
-  phone?: string;
-  employeeId?: string;
+  phone: string;
+  matricule: string;
   hireDate?: string;
   managerId?: string;
   isActive?: boolean;

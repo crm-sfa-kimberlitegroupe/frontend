@@ -21,7 +21,7 @@ export interface RouteStop {
   name: string;
   latitude: number;
   longitude: number;
-  status: 'completed' | 'in_progress' | 'planned' | 'territory';
+  status: 'completed' | 'in_progress' | 'planned' | 'territory' | 'route_planned';
   time: string;
   distance: string;
 }
@@ -54,13 +54,14 @@ function FitBounds({ stops, userLocation }: { stops: RouteStop[]; userLocation?:
 }
 
 // Créer des icônes personnalisées pour chaque statut
-const createCustomIcon = (status: 'completed' | 'in_progress' | 'planned' | 'territory' | 'user') => {
+const createCustomIcon = (status: 'completed' | 'in_progress' | 'planned' | 'territory' | 'user' | 'route_planned') => {
   const colors = {
     completed: '#10b981', // green
     in_progress: '#f59e0b', // orange
     planned: '#9ca3af', // gray
-    territory: '#6b7280', // gray plus visible (au lieu de light gray)
-    user: '#3b82f6', // blue
+    territory: '#d1d5db', // light gray pour PDV du territoire
+    route_planned: '#3b82f6', // blue pour PDV de la route planifiée
+    user: '#ef4444', // red pour position utilisateur
   };
 
   const color = colors[status];
@@ -82,7 +83,7 @@ const createCustomIcon = (status: 'completed' | 'in_progress' | 'planned' | 'ter
         font-weight: bold;
         font-size: 14px;
       ">
-        ${status === 'user' ? '📍' : status === 'completed' ? '✓' : status === 'in_progress' ? '⏱' : status === 'territory' ? '●' : '○'}
+        ${status === 'user' ? '📍' : status === 'completed' ? '✓' : status === 'in_progress' ? '⏱' : status === 'route_planned' ? '🎯' : status === 'territory' ? '●' : '○'}
       </div>
     `,
     iconSize: [32, 32],
@@ -184,20 +185,27 @@ export default function RouteMap({
           </Popup>
         </Marker>
 
-        {/* Marqueurs de TOUS les PDV du territoire - VERSION SIMPLE POUR TEST */}
+        {/* Marqueurs de TOUS les PDV du territoire */}
         {allOutlets.map((outlet) => {
-          console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}]`);
+          console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}] - Status: ${outlet.status}`);
+          const isRouteOutlet = outlet.status === 'route_planned';
           return (
             <Marker
               key={`outlet-${outlet.id}`}
               position={[outlet.latitude, outlet.longitude]}
-              icon={createCustomIcon('territory')}
+              icon={createCustomIcon(outlet.status as any)}
             >
               <Popup>
                 <div className="min-w-[200px]">
-                  <p className="font-medium text-gray-900 mb-1">🏪 {outlet.name}</p>
-                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                    PDV du territoire
+                  <p className="font-medium text-gray-900 mb-1">
+                    {isRouteOutlet ? '🎯' : '🏪'} {outlet.name}
+                  </p>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    isRouteOutlet 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {isRouteOutlet ? 'PDV de ma route' : 'PDV du territoire'}
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
                     Coordonnées: [{outlet.latitude.toFixed(6)}, {outlet.longitude.toFixed(6)}]

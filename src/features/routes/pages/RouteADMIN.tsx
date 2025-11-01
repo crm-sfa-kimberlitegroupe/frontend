@@ -4,19 +4,37 @@ import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import RoutePlanningModal from '../components/RoutePlanningModal';
-import routesService, { type RoutePlan } from '../services/routesService';
+import routesService, { type RoutePlan, type RouteMetrics } from '../services/routesService';
+import Modal from '../../../core/ui/feedback/Modal';
+import usersService, { type User } from '../../users/services/usersService';
 export default function RouteADMIN() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMultiDayModalOpen, setIsMultiDayModalOpen] = useState(false);
   const [routes, setRoutes] = useState<RoutePlan[]>([]);
+  const [routeMetrics, setRouteMetrics] = useState<Map<string, RouteMetrics>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'PLANNED' | 'IN_PROGRESS' | 'DONE'>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  
+  // Multi-day modal state
+  const [reps, setReps] = useState<User[]>([]);
+  const [selectedRep, setSelectedRep] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [numberOfDays, setNumberOfDays] = useState<number>(5);
+  const [outletsPerDay, setOutletsPerDay] = useState<number>(8);
+  const [multiDayLoading, setMultiDayLoading] = useState(false);
 
   useEffect(() => {
     loadRoutes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedFilter]);
+
+  useEffect(() => {
+    if (isMultiDayModalOpen) {
+      loadReps();
+    }
+  }, [isMultiDayModalOpen]);
 
   const loadRoutes = async () => {
     try {
@@ -33,12 +51,44 @@ export default function RouteADMIN() {
       }
 
       const data = await routesService.getAll(filters);
+      console.log('Routes chargées:', data);
+      console.log('Nombre de routes:', data?.length || 0);
+      
+      // Vérifier que data est un tableau
+      if (!data || !Array.isArray(data)) {
+        console.error('Les données reçues ne sont pas un tableau:', data);
+        setRoutes([]);
+        return;
+      }
+      
       setRoutes(data);
+      
+      // Charger les métriques pour chaque route
+      const metricsMap = new Map<string, RouteMetrics>();
+      for (const route of data) {
+        try {
+          const metrics = await routesService.getRouteMetrics(route.id);
+          metricsMap.set(route.id, metrics);
+        } catch (err) {
+          console.error(`Erreur chargement métriques route ${route.id}:`, err);
+        }
+      }
+      setRouteMetrics(metricsMap);
     } catch (err) {
       console.error('Erreur chargement routes:', err);
       setError('Impossible de charger les routes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReps = async () => {
+    try {
+      const allUsers = await usersService.getAll();
+      const repUsers = allUsers.filter(u => u.role === 'REP' && u.status === 'ACTIVE');
+      setReps(repUsers);
+    } catch (err) {
+      console.error('Erreur chargement REPs:', err);
     }
   };
 
@@ -53,6 +103,51 @@ export default function RouteADMIN() {
     } catch (err) {
       console.error('Erreur suppression route:', err);
       alert('Erreur lors de la suppression de la route');
+    }
+  };
+
+  const handleOptimizeRoute = async (routeId: string) => {
+    if (!confirm('Voulez-vous optimiser cette route ? L\'ordre des arrêts sera recalculé pour minimiser la distance.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await routesService.optimizeRoute(routeId);
+      await loadRoutes();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error('Erreur optimisation route:', err);
+      alert(err?.response?.data?.message || 'Erreur lors de l\'optimisation de la route');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateMultiDay = async () => {
+    if (!selectedRep) {
+      alert('Veuillez sélectionner un représentant');
+      return;
+    }
+
+    try {
+      setMultiDayLoading(true);
+      await routesService.generateMultiDayRoutes({
+        userId: selectedRep,
+        startDate,
+        numberOfDays,
+        outletsPerDay,
+        optimize: true,
+      });
+      
+      setIsMultiDayModalOpen(false);
+      await loadRoutes();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error('Erreur génération multi-jours:', err);
+      alert(err?.response?.data?.message || 'Erreur lors de la génération des routes');
+    } finally {
+      setMultiDayLoading(false);
     }
   };
 
@@ -102,10 +197,16 @@ export default function RouteADMIN() {
             <Icon name="map" size="lg" variant="primary" />
             Planification des Routes
           </h1>
-          <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
-            <Icon name="plus" size="sm" className="mr-2" />
-            Nouvelle route
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
+              <Icon name="plus" size="sm" className="mr-2" />
+              Nouvelle route
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setIsMultiDayModalOpen(true)}>
+              <Icon name="calendar" size="sm" className="mr-2" />
+              Multi-jours
+            </Button>
+          </div>
         </div>
 
         {/* Sélecteur de date */}
@@ -151,8 +252,8 @@ export default function RouteADMIN() {
               onClick={() => setSelectedFilter(filter.key as typeof selectedFilter)}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 selectedFilter === filter.key
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {filter.label} ({filter.count})
@@ -240,29 +341,66 @@ export default function RouteADMIN() {
                       )}
                     </div>
 
+                    {/* Métriques */}
+                    {routeMetrics.get(route.id) && (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-blue-50 rounded-lg p-2 text-center">
+                          <p className="text-xs text-blue-600">Distance</p>
+                          <p className="text-sm font-bold text-blue-900">
+                            {routeMetrics.get(route.id)!.totalDistance.toFixed(1)} km
+                          </p>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-2 text-center">
+                          <p className="text-xs text-green-600">Temps</p>
+                          <p className="text-sm font-bold text-green-900">
+                            {Math.floor(routeMetrics.get(route.id)!.estimatedTime / 60)}h
+                            {routeMetrics.get(route.id)!.estimatedTime % 60}m
+                          </p>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-2 text-center">
+                          <p className="text-xs text-purple-600">Visités</p>
+                          <p className="text-sm font-bold text-purple-900">
+                            {routeMetrics.get(route.id)!.numberOfVisited || 0}/{routeMetrics.get(route.id)!.numberOfOutlets}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Liste des arrêts */}
-                    {route.routeStops && route.routeStops.length > 0 && (
+                    {route.routeStops && route.routeStops.length > 0 ? (
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
                         <p className="text-xs font-semibold text-gray-700 mb-2">
                           Points de vente ({route.routeStops.length})
                         </p>
-                        <div className="space-y-1">
-                          {route.routeStops.slice(0, 3).map((stop, index) => (
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          {route.routeStops.map((stop, index) => (
                             <div key={stop.id} className="flex items-center gap-2 text-sm">
-                              <span className="w-5 h-5 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xs font-medium">
+                              <span className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xs font-medium flex-shrink-0">
                                 {index + 1}
                               </span>
-                              <span className="text-gray-700">{stop.outlet?.name}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-gray-900 font-medium truncate">{stop.outlet?.name || 'PDV sans nom'}</p>
+                                {stop.outlet?.address && (
+                                  <p className="text-xs text-gray-500 truncate">{stop.outlet.address}</p>
+                                )}
+                              </div>
                               {stop.status === 'VISITED' && (
-                                <Icon name="checkCircle" size="xs" variant="green" />
+                                <Icon name="checkCircle" size="xs" variant="green" className="flex-shrink-0" />
+                              )}
+                              {stop.status === 'SKIPPED' && (
+                                <Icon name="x" size="xs" variant="red" className="flex-shrink-0" />
                               )}
                             </div>
                           ))}
-                          {route.routeStops.length > 3 && (
-                            <p className="text-xs text-gray-500 ml-7">
-                              +{route.routeStops.length - 3} autres...
-                            </p>
-                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Icon name="warning" size="sm" variant="yellow" />
+                          <p className="text-sm text-yellow-800">
+                            Aucun point de vente dans cette route
+                          </p>
                         </div>
                       </div>
                     )}
@@ -275,9 +413,14 @@ export default function RouteADMIN() {
                       </Button>
                       {route.status === 'PLANNED' && (
                         <>
-                          <Button variant="outline" size="sm" fullWidth>
-                            <Icon name="edit" size="xs" className="mr-1" />
-                            Modifier
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            fullWidth
+                            onClick={() => handleOptimizeRoute(route.id)}
+                          >
+                            <Icon name="refresh" size="xs" className="mr-1" />
+                            Optimiser
                           </Button>
                           <Button 
                             variant="danger" 
@@ -303,6 +446,144 @@ export default function RouteADMIN() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={loadRoutes}
       />
+
+      {/* Modal planification multi-jours */}
+      <Modal
+        isOpen={isMultiDayModalOpen}
+        onClose={() => setIsMultiDayModalOpen(false)}
+        title="Planification Multi-Jours"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <Icon name="warning" size="sm" variant="primary" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Génération automatique</p>
+                <p>
+                  Créez plusieurs routes optimisées automatiquement pour un vendeur sur plusieurs jours.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Représentant
+            </label>
+            <select
+              value={selectedRep}
+              onChange={(e) => setSelectedRep(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Sélectionner un REP...</option>
+              {reps.map(rep => (
+                <option key={rep.id} value={rep.id}>
+                  {rep.firstName} {rep.lastName} - {rep.email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date de début
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nombre de jours: {numberOfDays}
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="14"
+              value={numberOfDays}
+              onChange={(e) => setNumberOfDays(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <span>1 jour</span>
+              <span>14 jours</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Points de vente par jour: {outletsPerDay}
+            </label>
+            <input
+              type="range"
+              min="3"
+              max="15"
+              value={outletsPerDay}
+              onChange={(e) => setOutletsPerDay(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <span>3 PDV</span>
+              <span>15 PDV</span>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <h4 className="font-medium text-gray-900 mb-2">Résumé</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Période:</span>
+                <span className="font-medium">
+                  {new Date(startDate).toLocaleDateString('fr-FR')} - 
+                  {new Date(new Date(startDate).getTime() + (numberOfDays - 1) * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Routes à créer:</span>
+                <span className="font-medium">{numberOfDays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total PDV:</span>
+                <span className="font-medium">{numberOfDays * outletsPerDay}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsMultiDayModalOpen(false)} 
+              fullWidth
+              disabled={multiDayLoading}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="success" 
+              onClick={handleGenerateMultiDay} 
+              fullWidth
+              disabled={!selectedRep || multiDayLoading}
+            >
+              {multiDayLoading ? (
+                <>
+                  <Icon name="refresh" size="sm" className="mr-2 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Icon name="check" size="sm" className="mr-2" />
+                  Générer les routes
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

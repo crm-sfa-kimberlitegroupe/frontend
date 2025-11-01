@@ -6,11 +6,12 @@ import Modal from '../../../core/ui/feedback/Modal';
 import { Icon } from '../../../core/ui/Icon';
 import territoriesService, { type Territory, type Outlet } from '../services/territoriesService';
 import { useAssignment } from '../hooks/useAssignment';
+import { useVendorsStore } from '../../users/store/vendorsStore';
 
 const showSuccess = (message: string) => alert(message);
 const showError = (message: string) => alert(`Erreur: ${message}`);
 
-type SubTab = 'vendor-assignment' | 'outlets-to-sector' | 'vendor-to-sector' | 'outlets-to-vendor';
+type SubTab = 'vendor-assignment' | 'outlets-to-sector';
 
 interface Props {
   sectors: Territory[];
@@ -109,7 +110,7 @@ function AssignVendorModal({ isOpen, onClose, sector, availableVendors, onAssign
 }
 
 export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess }: Props) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('vendor-to-sector');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>("vendor-to-sector");
   const [searchTerm, setSearchTerm] = useState('');
   
   // Hook pour gérer les assignations
@@ -161,11 +162,15 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
     try {
       setLoadingAssign(true);
       
-      // Si le secteur a déjà un vendeur, on fait une réassignation
-      if (selectedSectorForAssign.assignedVendorId) {
+      // Vérifier si un vendeur est déjà assigné via le store
+      const currentVendor = getVendorBySectorId(selectedSectorForAssign.id);
+      
+      if (currentVendor) {
+        // Réassigner
         await territoriesService.reassignSectorVendor(selectedSectorForAssign.id, vendorId);
         showSuccess('Vendeur changé avec succès !');
       } else {
+        // Première assignation
         await territoriesService.assignSectorToVendor({
           vendorId,
           sectorId: selectedSectorForAssign.id,
@@ -179,8 +184,9 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
       // Fermer le modal
       setIsAssignModalOpen(false);
       setSelectedSectorForAssign(null);
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Erreur lors de l\'assignation');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'assignation';
+      showError(errorMessage);
     } finally {
       setLoadingAssign(false);
     }
@@ -194,59 +200,12 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
       await territoriesService.unassignSectorVendor(sectorId);
       showSuccess('Vendeur désassigné avec succès');
       onSuccess();
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Erreur lors de la désassignation');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la désassignation';
+      showError(errorMessage);
     } finally {
       setLoadingAssign(false);
     }
-  };
-
-  // Assigner vendeur à un secteur (ancienne méthode)
-  const handleAssignVendorToSector = async () => {
-    if (!selectedVendorId) {
-      showError('Veuillez sélectionner un vendeur');
-      return;
-    }
-    if (!selectedSectorId) {
-      showError('Veuillez sélectionner un secteur');
-      return;
-    }
-
-    await executeAssignment(
-      () => territoriesService.assignSectorToVendor({
-        vendorId: selectedVendorId,
-        sectorId: selectedSectorId,
-      }),
-      'Vendeur assigné au secteur avec succès',
-      () => {
-        setSelectedVendorId('');
-        setSelectedSectorId('');
-      }
-    );
-  };
-
-  // Assigner PDV directement à un vendeur
-  const handleAssignOutletsToVendor = async () => {
-    if (selectedOutlets.length === 0) {
-      showError('Veuillez sélectionner au moins un PDV');
-      return;
-    }
-    if (!selectedVendorId) {
-      showError('Veuillez sélectionner un vendeur');
-      return;
-    }
-
-    await executeAssignment(
-      () => territoriesService.assignOutletsToVendor({
-        vendorId: selectedVendorId,
-        outletIds: selectedOutlets,
-      }),
-      `${selectedOutlets.length} PDV assignés au vendeur`,
-      () => {
-        setSelectedOutlets([]);
-        setSelectedVendorId('');
-      }
-    );
   };
 
   const toggleOutletSelection = (outletId: string) => {
@@ -255,20 +214,28 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
     );
   };
 
+  // Utilisation du store Zustand pour les vendeurs
+  const getVendorBySectorId = useVendorsStore((state) => state.getVendorBySectorId);
+  const vendorsFromStore = useVendorsStore((state) => state.vendors);
+
   // Filtrer les données
   const availableOutlets = outlets.filter(o => !(o as any).sectorId);
-  const availableVendors = vendors.filter((v: any) => !v.assignedSectorId);
+  const availableVendors = vendorsFromStore.filter((v) => !v.assignedSectorId);
   
   const filteredSectors = sectors.filter(
-    (sector) =>
-      sector.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sector.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sector.assignedVendor?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sector.assignedVendor?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+    (sector) => {
+      const assignedVendor = getVendorBySectorId(sector.id);
+      return (
+        sector.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sector.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        assignedVendor?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        assignedVendor?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
   );
 
-  const assignedSectors = filteredSectors.filter(s => s.assignedVendorId);
-  const unassignedSectors = filteredSectors.filter(s => !s.assignedVendorId);
+  const assignedSectors = filteredSectors.filter(s => getVendorBySectorId(s.id));
+  const unassignedSectors = filteredSectors.filter(s => !getVendorBySectorId(s.id));
 
   return (
     <div className="space-y-6">
@@ -285,17 +252,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
           <UserPlus className="w-4 h-4 inline mr-2" />
           Assignation Vendeurs
         </button>
-        <button
-          onClick={() => setActiveSubTab('vendor-to-sector')}
-          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition ${
-            activeSubTab === 'vendor-to-sector'
-              ? 'bg-white text-primary shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Vendeur → Secteur
-        </button>
-        <button
+                <button
           onClick={() => setActiveSubTab('outlets-to-sector')}
           className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition ${
             activeSubTab === 'outlets-to-sector'
@@ -305,17 +262,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
         >
           PDV → Secteur
         </button>
-        <button
-          onClick={() => setActiveSubTab('outlets-to-vendor')}
-          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition ${
-            activeSubTab === 'outlets-to-vendor'
-              ? 'bg-white text-primary shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          PDV → Vendeur
-        </button>
-      </div>
+              </div>
 
       {/* Onglet Assignation des Vendeurs */}
       {activeSubTab === 'vendor-assignment' && (
@@ -451,7 +398,11 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
                   Secteurs Assignés ({assignedSectors.length})
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {assignedSectors.map((sector) => (
+                  {assignedSectors.map((sector) => {
+                    // Récupérer le vendeur assigné depuis le store
+                    const assignedVendor = getVendorBySectorId(sector.id);
+                    
+                    return (
                     <div
                       key={sector.id}
                       className="bg-white rounded-lg shadow-sm border border-green-200 p-6 hover:shadow-md transition"
@@ -485,13 +436,13 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
                       </div>
 
                       <div className="space-y-2 text-sm">
-                        {sector.assignedVendor ? (
+                        {assignedVendor ? (
                           <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                             <Icon name="user" size="sm" variant="grey" />
                             <div className="flex-1">
                               <span className="text-xs text-gray-500">Vendeur:</span>
                               <span className="ml-1 font-medium text-gray-900">
-                                {sector.assignedVendor.firstName} {sector.assignedVendor.lastName}
+                                {assignedVendor.firstName} {assignedVendor.lastName}
                               </span>
                             </div>
                             <Badge variant="success" size="sm">Assigné</Badge>
@@ -514,7 +465,8 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -529,72 +481,7 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
         </div>
       )}
 
-      {/* Contenu Vendeur → Secteur (Interface Simple) */}
-      {activeSubTab === 'vendor-to-sector' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Assigner un Vendeur à un Secteur
-          </h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sélectionner un Vendeur *
-              </label>
-              <select
-                value={selectedVendorId}
-                onChange={(e) => setSelectedVendorId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Choisir un vendeur</option>
-                {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.firstName} {vendor.lastName} ({vendor.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sélectionner un Secteur *
-              </label>
-              <select
-                value={selectedSectorId}
-                onChange={(e) => setSelectedSectorId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Choisir un secteur</option>
-                {sectors.map((sector) => (
-                  <option key={sector.id} value={sector.id}>
-                    {sector.name} - {sector.parent?.name || 'Sans parent'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handleAssignVendorToSector}
-              disabled={!selectedVendorId || !selectedSectorId || loading}
-            >
-              {loading ? (
-                <>
-                  <Icon name="refresh" size="sm" className="mr-2 animate-spin" />
-                  Assignation...
-                </>
-              ) : (
-                <>
-                  <Icon name="check" size="sm" className="mr-2" />
-                  Assigner au Secteur
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-
+      
       {/* Contenu PDV → Secteur */}
       {activeSubTab === 'outlets-to-sector' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -664,87 +551,6 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
                 <>
                   <Icon name="check" size="sm" className="mr-2" />
                   Assigner {selectedOutlets.length} PDV
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-
-
-      {/* Contenu PDV → Vendeur */}
-      {activeSubTab === 'outlets-to-vendor' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Assigner des PDV directement à un Vendeur
-          </h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Le vendeur doit avoir un secteur assigné. Les PDV seront automatiquement ajoutés à son secteur.
-          </p>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sélectionner un Vendeur *
-              </label>
-              <select
-                value={selectedVendorId}
-                onChange={(e) => setSelectedVendorId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Choisir un vendeur</option>
-                {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.firstName} {vendor.lastName}
-                    {(vendor as any).assignedSector && ` - ${(vendor as any).assignedSector.name}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sélectionner des PDV ({selectedOutlets.length} sélectionnés)
-              </label>
-              <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
-                {availableOutlets.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">Aucun PDV disponible</div>
-                ) : (
-                  <div className="divide-y divide-gray-200">
-                    {availableOutlets.map((outlet) => (
-                      <label key={outlet.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedOutlets.includes(outlet.id)}
-                          onChange={() => toggleOutletSelection(outlet.id)}
-                          className="w-4 h-4 text-primary border-gray-300 rounded"
-                        />
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">{outlet.name}</p>
-                          <p className="text-xs text-gray-500">{outlet.code}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handleAssignOutletsToVendor}
-              disabled={!selectedVendorId || selectedOutlets.length === 0 || loading}
-            >
-              {loading ? (
-                <>
-                  <Icon name="refresh" size="sm" className="mr-2 animate-spin" />
-                  Assignation...
-                </>
-              ) : (
-                <>
-                  <Icon name="check" size="sm" className="mr-2" />
-                  Assigner {selectedOutlets.length} PDV au Vendeur
                 </>
               )}
             </Button>

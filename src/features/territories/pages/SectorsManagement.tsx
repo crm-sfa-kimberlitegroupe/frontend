@@ -1,21 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Icon } from '../../../core/ui/Icon';
+import { Icon, RefreshCw } from '../../../core/ui/Icon';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import Modal from '../../../core/ui/feedback/Modal';
-import territoriesService, { type Territory, type CreateSectorDto, type Outlet } from '../services/territoriesService';
-import outletsService from '../../pdv/services/outletsService';
+import territoriesService, { type Territory, type CreateSectorDto } from '../services/territoriesService';
 import { useAuthStore } from '@/core/auth';
+import { useOutletsStore } from '@/features/outlets/store/outletsStore';
+import { useSectorsStore } from '@/features/territories/store/sectorsStore';
 
 const showSuccess = (message: string) => alert(message);
 const showError = (message: string) => alert(`Erreur: ${message}`);
 
 export default function SectorsManagement() {
   const user = useAuthStore((s) => s.user);
-  const [sectors, setSectors] = useState<Territory[]>([]);
   const [userTerritory, setUserTerritory] = useState<Territory | null>(null);
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Utilisation des stores Zustand
+  const validatedOutlets = useOutletsStore((state) => state.validatedOutlets);
+  const allSectors = useSectorsStore((state) => state.sectors);
+  const allTerritories = useSectorsStore((state) => state.territories);
+  const loadingSectors = useSectorsStore((state) => state.loading);
+  const refreshingSectors = useSectorsStore((state) => state.refreshing);
+  const refreshSectors = useSectorsStore((state) => state.refreshSectors);
+
+  // Filtrer les secteurs du territoire de l'utilisateur
+  const sectors = userTerritory 
+    ? allSectors.filter(s => s.parentId === userTerritory.id)
+    : [];
   const [selectedSector, setSelectedSector] = useState<Territory | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOutlets, setSelectedOutlets] = useState<string[]>([]);
@@ -37,7 +49,7 @@ export default function SectorsManagement() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allTerritories]);
 
   const loadData = async () => {
     try {
@@ -50,14 +62,8 @@ export default function SectorsManagement() {
         return;
       }
 
-      const [sectorsData, territoriesData, outletsData] = await Promise.all([
-        territoriesService.getAllSectors({ level: 'SECTEUR' }),
-        territoriesService.getAll(),
-        outletsService.getAll({ status: 'APPROVED' }),
-      ]);
-
       // Trouver le territoire de l'utilisateur (peut être un ID ou un nom)
-      const myTerritory = territoriesData.find(
+      const myTerritory = allTerritories.find(
         t => t.id === user.territory || t.name === user.territory || t.code === user.territory
       );
 
@@ -68,17 +74,6 @@ export default function SectorsManagement() {
       }
 
       setUserTerritory(myTerritory);
-
-      // Filtrer les secteurs du territoire de l'admin uniquement
-      const mySectors = sectorsData.filter(s => s.parentId === myTerritory.id);
-      setSectors(mySectors);
-
-      // Filtrer les PDV du territoire de l'admin uniquement
-      const myOutlets = outletsData.filter(o => 
-        o.territoryId === myTerritory.id || 
-        (o as any).territory?.id === myTerritory.id
-      );
-      setOutlets(myOutlets);
 
       // Pré-remplir le territoire parent dans le formulaire
       setFormData(prev => ({ ...prev, parentId: myTerritory.id }));
@@ -107,7 +102,7 @@ export default function SectorsManagement() {
       showSuccess(`Secteur créé avec ${selectedOutlets.length} point(s) de vente`);
       setFormData({ code: '', name: '', level: 'SECTEUR', parentId: '' });
       setSelectedOutlets([]);
-      loadData();
+      refreshSectors();
     } catch (error: any) {
       showError(error?.response?.data?.message || 'Erreur lors de la création');
     } finally {
@@ -122,7 +117,7 @@ export default function SectorsManagement() {
       setLoading(true);
       await territoriesService.delete(sectorId);
       showSuccess('Secteur supprimé avec succès');
-      loadData();
+      refreshSectors();
     } catch (error: any) {
       showError(error?.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
@@ -136,7 +131,7 @@ export default function SectorsManagement() {
     );
   };
 
-  const availableOutlets = outlets.filter((o) => !(o as any).sectorId);
+  const availableOutlets = validatedOutlets.filter((o) => !(o as any).sectorId);
   
   // 🗺️ Filtrage géographique optimisé
   const filteredOutlets = availableOutlets.filter((o) => {
@@ -172,12 +167,20 @@ export default function SectorsManagement() {
               Sélectionnez des points de vente pour créer un secteur
             </p>
           </div>
-          {userTerritory && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              <p className="text-xs text-blue-600 font-medium">Votre zone</p>
-              <p className="text-sm font-semibold text-blue-900">{userTerritory.name}</p>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {refreshingSectors && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Mise à jour...
+              </div>
+            )}
+            {userTerritory && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                <p className="text-xs text-blue-600 font-medium">Votre zone</p>
+                <p className="text-sm font-semibold text-blue-900">{userTerritory.name}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

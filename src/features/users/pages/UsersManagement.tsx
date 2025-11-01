@@ -1,10 +1,34 @@
-import { useState } from 'react';
-import { UserPlus, Edit, Trash2, CheckCircle, XCircle, MapPin, Phone, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserPlus, Edit, Trash2, CheckCircle, XCircle, MapPin, Phone, Mail, RefreshCw } from 'lucide-react';
 import { PageHeader, FilterBar, DashboardGrid, StatCard } from '../../../core/components/desktop';
 import { Button, Badge, LoadingSpinner, Alert, Select, Card, Modal } from '@/core/ui';
-import { useQuery, useMutation, useFilters, useToggle } from '@/core/hooks';
+import { useMutation, useFilters, useToggle } from '@/core/hooks';
 import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '@/features/users/services';
+import { useUsersStore } from '@/features/users/store/usersStore';
 import UserModal from '../../../core/components/modals/UserModal';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
+
+// Instance axios configurée avec authentification
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Intercepteur pour ajouter le token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const roleLabels = {
   REP: 'Vendeur',
@@ -12,13 +36,64 @@ const roleLabels = {
   SUP: 'Manager',
 };
 
+// Interface pour les données enrichies du secteur
+interface SectorInfo {
+  name: string;
+  outletsCount: number;
+}
+
 export default function UsersManagement() {
-  // ✅ Hook réutilisable pour charger les données
-  const { data: users = [], loading, error, refetch } = useQuery(async () => {
-    const data = await usersService.getAll();
-    // Filtrer pour afficher seulement les vendeurs (REP)
-    return data.filter(user => user.role === 'REP');
-  });
+  // ✅ Utilisation du store Zustand pour tous les utilisateurs
+  const users = useUsersStore((state) => state.users);
+  const loading = useUsersStore((state) => state.loading);
+  const refreshing = useUsersStore((state) => state.refreshing);
+  const error = useUsersStore((state) => state.error);
+  const refreshUsers = useUsersStore((state) => state.refreshUsers);
+
+  // État pour stocker les informations des secteurs
+  const [sectorsInfo, setSectorsInfo] = useState<Record<string, SectorInfo>>({});
+
+  // Charger les informations des secteurs pour chaque utilisateur
+  useEffect(() => {
+    const fetchSectorsInfo = async () => {
+      if (!users || users.length === 0) return;
+      
+      const sectorsData: Record<string, SectorInfo> = {};
+      
+      for (const user of users) {
+        if (user.assignedSectorId) {
+          try {
+            // Récupérer les informations du secteur
+            const response = await api.get(`/territories/${user.assignedSectorId}`);
+            const sector = response.data?.data || response.data;
+
+            
+            // Compter les PDV dans ce secteur
+            const outletsResponse = await api.get(`/outlets`, {
+              params: { sectorId: user.assignedSectorId }
+            });
+            
+            const outletsData = outletsResponse.data?.data || outletsResponse.data;
+            
+            sectorsData[user.assignedSectorId] = {
+              name: sector?.name || 'Secteur inconnu',
+              outletsCount: Array.isArray(outletsData) ? outletsData.length : 0
+            };
+          } catch (error) {
+            console.error(`Erreur lors du chargement du secteur ${user.assignedSectorId}:`, error);
+            sectorsData[user.assignedSectorId] = {
+              name: 'Secteur inconnu',
+              outletsCount: 0
+            };
+          }
+        }
+      }
+      
+      setSectorsInfo(sectorsData);
+    };
+
+    fetchSectorsInfo();
+  }, [users]);
 
   // ✅ Hook réutilisable pour les filtres
   const { filters, setFilter } = useFilters({
@@ -35,7 +110,7 @@ export default function UsersManagement() {
   const deleteMutation = useMutation(
     (userId: string) => usersService.delete(userId),
     {
-      onSuccess: () => refetch(),
+      onSuccess: () => refreshUsers(),
       onError: () => alert('Erreur lors de la suppression'),
     }
   );
@@ -50,7 +125,7 @@ export default function UsersManagement() {
   const toggleStatusMutation = useMutation(
     (userId: string) => usersService.toggleStatus(userId),
     {
-      onSuccess: () => refetch(),
+      onSuccess: () => refreshUsers(),
       onError: () => alert('Erreur lors de la modification du statut'),
     }
   );
@@ -83,7 +158,7 @@ export default function UsersManagement() {
     },
     {
       onSuccess: () => {
-        refetch();
+        refreshUsers();
         setIsModalOpen(false);
       },
     }
@@ -112,18 +187,6 @@ export default function UsersManagement() {
   const activeVendors = (users || []).filter(u => u.isActive).length;
   const totalVendors = (users || []).length;
 
-  // Générer des données mockées stables pour chaque utilisateur
-  const getMockData = (userId: string) => {
-    // Utiliser l'ID pour générer des valeurs cohérentes
-    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const pdv = 25 + (seed % 30);
-    const routes = 2 + (seed % 3);
-    const coverage = 65 + (seed % 30);
-    const strikeRate = 60 + (seed % 25);
-    
-    return { pdv, routes, coverage, strikeRate };
-  };
-
   // ✅ Composant LoadingSpinner réutilisable
   if (loading) {
     return <LoadingSpinner size="lg" text="Chargement des utilisateurs..." />;
@@ -136,10 +199,10 @@ export default function UsersManagement() {
         <Alert
           variant="error"
           title="Erreur"
-          message={error.message || 'Erreur lors du chargement des utilisateurs'}
+          message={error || 'Erreur lors du chargement des utilisateurs'}
         >
           <button
-            onClick={refetch}
+            onClick={refreshUsers}
             className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
           >
             Réessayer
@@ -151,10 +214,18 @@ export default function UsersManagement() {
         title="Gestion des Vendeurs"
         description="Gérer les vendeurs (REP) de votre équipe"
         actions={
-          <Button variant="primary" size="md" onClick={handleOpenCreateModal}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Nouveau Vendeur
-          </Button>
+          <div className="flex items-center gap-3">
+            {refreshing && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Mise à jour...
+              </div>
+            )}
+            <Button variant="primary" size="md" onClick={handleOpenCreateModal}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Nouveau Vendeur
+            </Button>
+          </div>
         }
       />
 
@@ -232,7 +303,7 @@ export default function UsersManagement() {
                   variant={user.isActive ? 'success' : 'gray'}
                   size="sm"
                 >
-                  {user.isActive ? 'Actif' : 'Inactif'}
+                  {user.status}
                 </Badge>
               </div>
 
@@ -240,7 +311,11 @@ export default function UsersManagement() {
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <MapPin className="w-4 h-4" />
-                  <span>{user.territory || 'Non assigné'}</span>
+                  <span>
+                    {user.assignedSectorId && sectorsInfo[user.assignedSectorId]
+                      ? sectorsInfo[user.assignedSectorId].name
+                      : 'Non assigné'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Phone className="w-4 h-4" />
@@ -252,69 +327,40 @@ export default function UsersManagement() {
                 </div>
               </div>
 
-              {/* Stats - Mêmes que TeamPage */}
-              {(() => {
-                const mockData = getMockData(user.id);
-                const coverage = user.isActive ? mockData.coverage : 0;
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200">
-                      <div>
-                        <p className="text-xs text-gray-500">PDV</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {mockData.pdv}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Routes</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {mockData.routes}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Couverture</p>
-                        <p
-                          className={`text-lg font-bold ${
-                            coverage >= 90
-                              ? 'text-success'
-                              : coverage >= 70
-                              ? 'text-warning'
-                              : 'text-gray-400'
-                          }`}
-                        >
-                          {coverage}%
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Strike Rate</p>
-                        <p className="text-lg font-bold text-primary">
-                          {user.isActive ? mockData.strikeRate : 0}%
-                        </p>
-                      </div>
-                    </div>
+              {/* Stats - Valeurs fixes */}
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-xs text-gray-500">PDV</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {user.assignedSectorId && sectorsInfo[user.assignedSectorId]
+                      ? sectorsInfo[user.assignedSectorId].outletsCount
+                      : 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Routes</p>
+                  <p className="text-lg font-bold text-gray-900">0</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Taux de couverture</p>
+                  <p className="text-lg font-bold text-gray-900">0%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Strike Rate</p>
+                  <p className="text-lg font-bold text-primary">0%</p>
+                </div>
+              </div>
 
-                    {/* Performance Bar */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <span>Performance</span>
-                        <span className="font-medium">{coverage}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            coverage >= 90
-                              ? 'bg-success'
-                              : coverage >= 70
-                              ? 'bg-warning'
-                              : 'bg-danger'
-                          }`}
-                          style={{ width: `${coverage}%` }}
-                        />
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
+              {/* Performance Bar */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <span>Performance</span>
+                  <span className="font-medium">0%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 rounded-full bg-gray-400" style={{ width: '0%' }} />
+                </div>
+              </div>
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t border-gray-200">

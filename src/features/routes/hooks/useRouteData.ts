@@ -165,7 +165,18 @@ export function useRouteData(): UseRouteDataReturn {
         hasCoords: !!(o.lat && o.lng)
       })));
 
-      // Convertir tous les PDV en format carte (statut 'territory' pour les distinguer)
+      // Créer un Set des IDs de PDV dans la route planifiée pour identification rapide
+      const routeOutletIds = new Set<string>();
+      if (route && route.routeStops) {
+        route.routeStops.forEach(stop => {
+          if (stop.outletId) {
+            routeOutletIds.add(stop.outletId);
+          }
+        });
+      }
+      console.log(`🎯 PDV dans la route planifiée: ${routeOutletIds.size}`, Array.from(routeOutletIds));
+
+      // Convertir tous les PDV en format carte
       const allOutletsConverted: RouteStop[] = outlets
         .map((outlet, index) => {
           let lat = outlet.lat;
@@ -184,12 +195,16 @@ export function useRouteData(): UseRouteDataReturn {
             lng = Number(lng) + offset;
           }
 
+          // Déterminer le statut : 'route_planned' si dans la route, 'territory' sinon
+          const isInRoute = routeOutletIds.has(outlet.id);
+          const status = isInRoute ? 'route_planned' : 'territory';
+
           return {
             id: parseInt(outlet.id) || index + 1000,
             name: outlet.name,
             latitude: lat,
             longitude: lng,
-            status: 'territory' as any, // Nouveau statut pour les PDV du territoire
+            status: status as any,
             time: '',
             distance: '',
           };

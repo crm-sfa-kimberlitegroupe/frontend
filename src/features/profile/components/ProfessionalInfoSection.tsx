@@ -2,14 +2,14 @@ import Card from '../../../core/ui/Card';
 
 interface ProfessionalInfoSectionProps {
   territory: string;
-  employeeId: string;
+  matricule: string;
   hireDate: string;
   manager: string;
 }
 
 export default function ProfessionalInfoSection({ 
   territory, 
-  employeeId, 
+  matricule, 
   hireDate, 
   manager 
 }: ProfessionalInfoSectionProps) {
@@ -28,7 +28,7 @@ export default function ProfessionalInfoSection({
           <div className="flex items-center justify-between py-2 border-b border-slate-100">
             <span className="text-sm text-slate-600">Matricule</span>
             <span className="text-sm font-medium text-slate-900">
-              {employeeId || <span className="text-slate-400 italic">Non renseigné</span>}
+              {matricule || <span className="text-slate-400 italic">Non renseigné</span>}
             </span>
           </div>
           <div className="flex items-center justify-between py-2 border-b border-slate-100">

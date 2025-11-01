@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Grid3x3, Plus, MapIcon, UserPlus, BarChart3 } from 'lucide-react';
+import { Grid3x3, Plus, MapIcon, UserPlus, BarChart3, RefreshCw } from 'lucide-react';
 import SectorsCreateTab from '../components/SectorsCreateTab';
 import SectorsListTab from '../components/SectorsListTab';
 import SectorsAssignTab from '../components/SectorsAssignTab';
 import SectorsOverviewTab from '../components/SectorsOverviewTab';
 import territoriesService, { type Territory, type TerritoryGeoInfo } from '../services/territoriesService';
-import outletsService, { type Outlet, OutletStatusEnum } from '../../pdv/services/outletsService';
 import usersService from '../../users/services/usersService';
 import { useAuthStore } from '@/core/auth';
+import { useOutletsStore } from '@/features/outlets/store/outletsStore';
+import { useSectorsStore } from '@/features/territories/store/sectorsStore';
 
 const showError = (message: string) => alert(`Erreur: ${message}`);
 
@@ -18,16 +19,27 @@ export default function SectorsManagementUnified() {
   const [activeTab, setActiveTab] = useState<MainTab>('create');
   const [loading, setLoading] = useState(false);
   
-  const [sectors, setSectors] = useState<Territory[]>([]);
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [userTerritory, setUserTerritory] = useState<Territory | null>(null);
   const [territoryGeoInfo, setTerritoryGeoInfo] = useState<TerritoryGeoInfo | null>(null);
+  
+  // Utilisation des stores Zustand
+  const validatedOutlets = useOutletsStore((state) => state.validatedOutlets);
+  const sectors = useSectorsStore((state) => state.sectors);
+  const territories = useSectorsStore((state) => state.territories);
+  const loadingSectors = useSectorsStore((state) => state.loading);
+  const refreshingSectors = useSectorsStore((state) => state.refreshing);
+  const refreshSectors = useSectorsStore((state) => state.refreshSectors);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Filtrer les secteurs du territoire de l'utilisateur
+  const mySectors = userTerritory 
+    ? sectors.filter(s => s.parentId === userTerritory.id)
+    : [];
 
   const loadData = async () => {
     try {
@@ -38,23 +50,21 @@ export default function SectorsManagementUnified() {
         return;
       }
 
-      const [sectorsData, territoriesData, outletsData, usersData, geoInfo] = await Promise.all([
-        territoriesService.getAllSectors({ level: 'SECTEUR' }),
-        territoriesService.getAll(),
-        outletsService.getMyTerritoryOutlets({ status: OutletStatusEnum.APPROVED }),
-        usersService.getAll(),
-        territoriesService.getTerritoryGeoInfo(user.territoryId),
-      ]);
-
-      const myTerritory = territoriesData.find(t => t.id === user.territoryId);
+      // Avec persist, les territoires sont disponibles immédiatement
+      const myTerritory = territories.find(t => t.id === user.territoryId);
       if (!myTerritory) {
+        console.log('❌ [SectorsManagement] Territoire non trouvé:', user.territoryId);
+        console.log('📊 [SectorsManagement] Territoires disponibles:', territories.map(t => ({ id: t.id, name: t.name })));
         showError('Territoire introuvable');
         return;
       }
 
+      const [usersData, geoInfo] = await Promise.all([
+        usersService.getAll(),
+        territoriesService.getTerritoryGeoInfo(user.territoryId),
+      ]);
+
       setUserTerritory(myTerritory);
-      setSectors(sectorsData.filter(s => s.parentId === myTerritory.id));
-      setOutlets(outletsData);
       setVendors(usersData.filter((u: any) => u.role === 'REP' && u.status === 'ACTIVE'));
       setTerritoryGeoInfo(geoInfo);
     } catch (error) {
@@ -67,7 +77,7 @@ export default function SectorsManagementUnified() {
 
   const tabs = [
     { id: 'create' as MainTab, label: 'Créer', icon: Plus },
-    { id: 'list' as MainTab, label: `Mes Secteurs (${sectors.length})`, icon: MapIcon },
+    { id: 'list' as MainTab, label: `Mes Secteurs (${mySectors.length})`, icon: MapIcon },
     { id: 'assign' as MainTab, label: 'Assignations', icon: UserPlus },
     { id: 'overview' as MainTab, label: 'Vue d\'ensemble', icon: BarChart3 },
   ];
@@ -78,17 +88,24 @@ export default function SectorsManagementUnified() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            <Grid3x3 className="inline w-6 h-6 mr-2" />
             Gestion des Secteurs
           </h1>
           <p className="text-sm text-gray-600 mt-1">Créez et gérez vos secteurs commerciaux</p>
         </div>
-        {userTerritory && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-            <p className="text-xs text-blue-600 font-medium">Votre zone</p>
-            <p className="text-sm font-semibold text-blue-900">{userTerritory.name}</p>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {refreshingSectors && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Mise à jour...
+            </div>
+          )}
+          {userTerritory && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+              <p className="text-xs text-blue-600 font-medium">Votre zone</p>
+              <p className="text-sm font-semibold text-blue-900">{userTerritory.name}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -117,7 +134,7 @@ export default function SectorsManagementUnified() {
       {/* Contenu */}
       {activeTab === 'create' && (
         <SectorsCreateTab
-          outlets={outlets}
+          outlets={validatedOutlets}
           userTerritory={userTerritory}
           territoryGeoInfo={territoryGeoInfo}
           onSuccess={loadData}
@@ -126,18 +143,18 @@ export default function SectorsManagementUnified() {
 
       {activeTab === 'list' && (
         <SectorsListTab
-          sectors={sectors}
-          loading={loading}
-          onDelete={loadData}
+          sectors={mySectors}
+          loading={loadingSectors}
+          onDelete={refreshSectors}
         />
       )}
 
       {activeTab === 'assign' && (
         <SectorsAssignTab
-          sectors={sectors}
-          outlets={outlets}
+          sectors={mySectors}
+          outlets={validatedOutlets}
           vendors={vendors}
-          onSuccess={loadData}
+          onSuccess={refreshSectors}
         />
       )}
 

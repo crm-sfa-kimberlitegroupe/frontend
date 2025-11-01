@@ -5,7 +5,7 @@ import Badge from '../../../core/ui/Badge';
 import Button from '../../../core/ui/Button';
 import Modal from '../../../core/ui/feedback/Modal';
 import territoriesService, { type Territory } from '../services/territoriesService';
-import usersService from '../../users/services/usersService';
+import { useVendorsStore } from '../../users/store/vendorsStore';
 import outletsService, { type Outlet } from '../../pdv/services/outletsService';
 
 const showSuccess = (message: string) => alert(message);
@@ -23,9 +23,12 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   
+  // Utilisation du store Zustand pour les vendeurs
+  const vendors = useVendorsStore((state) => state.vendors);
+  const getVendorBySectorId = useVendorsStore((state) => state.getVendorBySectorId);
+  
   // États pour la gestion des vendeurs
   const [showVendorModal, setShowVendorModal] = useState(false);
-  const [availableVendors, setAvailableVendors] = useState<any[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [loadingVendor, setLoadingVendor] = useState(false);
   
@@ -36,19 +39,8 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   useEffect(() => {
-    loadVendors();
     loadOutlets();
   }, []);
-
-  const loadVendors = async () => {
-    try {
-      const users = await usersService.getAll();
-      const vendors = users.filter((u: any) => u.role === 'REP' && u.status === 'ACTIVE');
-      setAvailableVendors(vendors);
-    } catch (error) {
-      console.error('Erreur chargement vendeurs:', error);
-    }
-  };
 
   const loadOutlets = async () => {
     try {
@@ -62,7 +54,8 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
   // Gestion des vendeurs
   const handleOpenVendorModal = (sector: Territory) => {
     setSelectedSector(sector);
-    setSelectedVendorId(sector.assignedVendor?.id || '');
+    const assignedVendor = getVendorBySectorId(sector.id);
+    setSelectedVendorId(assignedVendor?.id || '');
     setShowVendorModal(true);
   };
 
@@ -72,7 +65,10 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
     try {
       setLoadingVendor(true);
       
-      if (selectedSector.assignedVendorId) {
+      // Vérifier si un vendeur est déjà assigné via le store
+      const currentVendor = getVendorBySectorId(selectedSector.id);
+      
+      if (currentVendor) {
         // Réassigner
         await territoriesService.reassignSectorVendor(selectedSector.id, selectedVendorId);
         showSuccess('Vendeur changé avec succès !');
@@ -87,8 +83,9 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
 
       onDelete(); // Recharger les données
       setShowVendorModal(false);
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Erreur lors de l\'assignation');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'assignation';
+      showError(errorMessage);
     } finally {
       setLoadingVendor(false);
     }
@@ -102,8 +99,9 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
       await territoriesService.unassignSectorVendor(sectorId);
       showSuccess('Vendeur désassigné avec succès');
       onDelete();
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Erreur lors de la désassignation');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la désassignation';
+      showError(errorMessage);
     } finally {
       setLoadingVendor(false);
     }
@@ -112,7 +110,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
   // Gestion des PDV
   const handleOpenEditModal = (sector: Territory) => {
     setSelectedSector(sector);
-    const currentOutlets = sector.outletsSector?.map((o: any) => o.id) || [];
+    const currentOutlets = sector.outletsSector?.map((o) => o.id) || [];
     setSelectedOutlets(currentOutlets);
     setShowEditModal(true);
   };
@@ -123,7 +121,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
     try {
       setLoadingEdit(true);
       
-      const currentOutlets = selectedSector.outletsSector?.map((o: any) => o.id) || [];
+      const currentOutlets = selectedSector.outletsSector?.map((o) => o.id) || [];
       const toAdd = selectedOutlets.filter(id => !currentOutlets.includes(id));
       const toRemove = currentOutlets.filter(id => !selectedOutlets.includes(id));
 
@@ -146,8 +144,9 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
       showSuccess('PDV mis à jour avec succès !');
       onDelete(); // Recharger les données
       setShowEditModal(false);
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Erreur lors de la mise à jour');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la mise à jour';
+      showError(errorMessage);
     } finally {
       setLoadingEdit(false);
     }
@@ -167,9 +166,10 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
       await territoriesService.delete(sectorId);
       showSuccess('Secteur supprimé avec succès');
       onDelete();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur suppression secteur:', error);
-      showError(error?.response?.data?.message || 'Erreur lors de la suppression');
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la suppression';
+      showError(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -216,7 +216,11 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredSectors.map((sector) => (
+              {filteredSectors.map((sector) => {
+                // Récupérer le vendeur assigné depuis le store
+                const assignedVendor = getVendorBySectorId(sector.id);
+                
+                return (
                 <tr key={sector.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{sector.name}</div>
@@ -231,10 +235,10 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
                     <Badge variant="primary" size="sm">{sector.outletsSector?.length || 0} PDV</Badge>
                   </td>
                   <td className="px-6 py-4">
-                    {sector.assignedVendor ? (
+                    {assignedVendor ? (
                       <div className="flex items-center gap-2">
                         <Badge variant="success" size="sm">
-                          {sector.assignedVendor.firstName} {sector.assignedVendor.lastName}
+                          {assignedVendor.firstName} {assignedVendor.lastName}
                         </Badge>
                       </div>
                     ) : (
@@ -247,13 +251,13 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
                       <button
                         onClick={() => handleOpenVendorModal(sector)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                        title={sector.assignedVendor ? "Changer vendeur" : "Assigner vendeur"}
+                        title={assignedVendor ? "Changer vendeur" : "Assigner vendeur"}
                       >
                         <UserPlus className="w-4 h-4" />
                       </button>
                       
                       {/* Bouton Désassigner Vendeur */}
-                      {sector.assignedVendor && (
+                      {assignedVendor && (
                         <button
                           onClick={() => handleUnassignVendor(sector.id)}
                           className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
@@ -296,7 +300,8 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -330,7 +335,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
               <div className="bg-gray-50 rounded-lg p-4 max-h-40 overflow-y-auto">
                 {selectedSector.outletsSector && selectedSector.outletsSector.length > 0 ? (
                   <ul className="space-y-2">
-                    {selectedSector.outletsSector.map((outlet: any) => (
+                    {selectedSector.outletsSector.map((outlet) => (
                       <li key={outlet.id} className="text-sm">
                         <span className="font-medium">{outlet.name}</span>
                         <span className="text-gray-500"> - {outlet.code}</span>
@@ -380,7 +385,7 @@ export default function SectorsListTab({ sectors, loading, onDelete }: Props) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
               >
                 <option value="">Choisir un vendeur</option>
-                {availableVendors.map((vendor) => (
+                {vendors.map((vendor) => (
                   <option key={vendor.id} value={vendor.id}>
                     {vendor.firstName} {vendor.lastName} ({vendor.email})
                   </option>

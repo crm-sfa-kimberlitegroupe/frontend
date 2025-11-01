@@ -12,7 +12,7 @@ export interface User {
   photo?: string;
   territory?: string;       // Nom du territoire
   territoryId?: string;     // ID du territoire (ajouté pour le filtrage)
-  employeeId?: string;
+  matricule?: string;       // Matricule de l'employé
   hireDate?: string;
   manager?: string;
   isActive: boolean;

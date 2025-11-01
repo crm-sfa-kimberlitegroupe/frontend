@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Plus, CheckCircle, XCircle, Edit, Trash2, Clock } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, Edit, Trash2, Clock, RefreshCw } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
 import { Button, Badge, LoadingSpinner } from '@/core/ui';
 import { useFilters } from '@/core/hooks';
-import { outletsService } from '../services';
 import type { Outlet } from '../services/outletsService';
+import { useOutletsStore } from '@/features/outlets/store/outletsStore';
 
 // Supprimer les mock data - on utilise maintenant l'API réelle
 
@@ -24,10 +23,12 @@ const statusColors: Record<string, 'warning' | 'success' | 'danger' | 'gray'> = 
 };
 
 export default function PDVManagement() {
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Utilisation du store Zustand pour les PDV
+  const outlets = useOutletsStore((state) => state.outlets);
+  const loading = useOutletsStore((state) => state.loading);
+  const refreshing = useOutletsStore((state) => state.refreshing);
+  const refreshOutlets = useOutletsStore((state) => state.refreshOutlets);
 
-  
   // ✅ Hook réutilisable pour les filtres
   const { filters, setFilter, resetFilters } = useFilters({
     status: 'all',
@@ -41,25 +42,6 @@ export default function PDVManagement() {
   const setChannelFilter = (value: string) => setFilter('channel', value);
   const setSegmentFilter = (value: string) => setFilter('segment', value);
 
-  // 🔄 Charger les PDV depuis l'API (filtré automatiquement par le backend)
-  useEffect(() => {
-    loadOutlets();
-  }, []);
-
-  const loadOutlets = async () => {
-    try {
-      setLoading(true);
-      
-      // ✅ Le backend filtre automatiquement par territoire selon le rôle de l'utilisateur
-      const data = await outletsService.getAll();
-      setOutlets(data);
-    } catch {
-      // Erreur silencieuse
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredPDVs = outlets.filter((outlet) => {
     if (filters.status !== 'all' && outlet.status !== filters.status) return false;
     if (filters.channel !== 'all' && outlet.channel !== filters.channel) return false;
@@ -68,15 +50,19 @@ export default function PDVManagement() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleApprove = (_pdvId: string) => {
+  const handleApprove = async (_pdvId: string) => {
     // TODO: Implémenter l'approbation
     alert('Fonction d\'approbation à implémenter');
+    // Après l'approbation, rafraîchir les données
+    await refreshOutlets();
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleReject = (_pdvId: string) => {
+  const handleReject = async (_pdvId: string) => {
     // TODO: Implémenter le rejet
     alert('Fonction de rejet à implémenter');
+    // Après le rejet, rafraîchir les données
+    await refreshOutlets();
   };
 
   const columns: Column<Outlet>[] = [
@@ -187,9 +173,9 @@ export default function PDVManagement() {
   const pendingCount = outlets.filter((o) => o.status === 'PENDING').length;
   const activeFiltersCount = (filters.status !== 'all' ? 1 : 0) + (filters.channel !== 'all' ? 1 : 0) + (filters.segment !== 'all' ? 1 : 0);
 
-  // Affichage du loading
+  // Affichage du loading uniquement pour le premier chargement
   if (loading) {
-    return <LoadingSpinner size="lg" text="Chargement des PDV..." />;
+    return <LoadingSpinner size="lg" text="Chargement des points de vente..." />;
   }
 
   return (
@@ -198,10 +184,18 @@ export default function PDVManagement() {
         title="Gestion des Points de Vente"
         description={`${outlets.length} PDV au total • ${pendingCount} en attente de validation`}
         actions={
-          <Button variant="primary" size="md">
-            <Plus className="w-4 h-4 mr-2" />
-            Nouveau PDV
-          </Button>
+          <div className="flex items-center gap-2">
+            {refreshing && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Mise à jour...
+              </div>
+            )}
+            <Button variant="primary" size="md">
+              <Plus className="w-4 h-4 mr-2" />
+              Nouveau PDV
+            </Button>
+          </div>
         }
       />
 

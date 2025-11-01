@@ -22,7 +22,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
     role: 'REP' as 'REP' | 'ADMIN' | 'SUP',
     territoryId: '',
     phone: '',
-    employeeId: '',
+    matricule: '',
     hireDate: '',
     managerId: '',
   });
@@ -48,7 +48,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
         role: user.role,
         territoryId: user.territory || '',
         phone: user.phone || '',
-        employeeId: user.employeeId || '',
+        matricule: user.matricule || '',
         hireDate: user.hireDate || '',
         managerId: user.manager || '',
       });
@@ -62,7 +62,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
         role: 'REP',
         territoryId: '',
         phone: '',
-        employeeId: '',
+        matricule: '',
         hireDate: '',
         managerId: '',
       });
@@ -78,7 +78,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
     try {
       if (mode === 'create') {
         // Validation pour la création
-        if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+        if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.phone) {
           setError('Tous les champs obligatoires doivent être remplis');
           setLoading(false);
           return;
@@ -92,6 +92,10 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
           lastName: formData.lastName,
           role: formData.role,
           territoryId: formData.territoryId || undefined,
+          phone: formData.phone,
+          matricule: formData.matricule,
+          hireDate: formData.hireDate,
+          managerId: formData.managerId,
         };
 
         // Ajouter le mot de passe seulement s'il est fourni
@@ -282,8 +286,8 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
             </label>
             <input
               type="text"
-              value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              value={formData.matricule}
+              onChange={(e) => setFormData({ ...formData, matricule: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Ex: REP-2024-001"
             />
