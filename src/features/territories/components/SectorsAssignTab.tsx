@@ -109,8 +109,8 @@ function AssignVendorModal({ isOpen, onClose, sector, availableVendors, onAssign
   );
 }
 
-export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess }: Props) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>("vendor-to-sector");
+export default function SectorsAssignTab({ sectors, outlets, onSuccess }: Props) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>("vendor-assignment");
   const [searchTerm, setSearchTerm] = useState('');
   
   // Hook pour gérer les assignations
@@ -119,7 +119,6 @@ export default function SectorsAssignTab({ sectors, outlets, vendors, onSuccess 
   // États pour assignations
   const [selectedOutlets, setSelectedOutlets] = useState<string[]>([]);
   const [selectedSectorId, setSelectedSectorId] = useState<string>('');
-  const [selectedVendorId, setSelectedVendorId] = useState<string>('');
   
   // Modal states
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);

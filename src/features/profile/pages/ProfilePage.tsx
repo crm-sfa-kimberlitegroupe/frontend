@@ -136,8 +136,8 @@ export default function ProfilePage() {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         phone: profileData.phone || '',
-        matricule: profileData.matricule || undefined,
-        hireDate: profileData.hireDate || undefined,
+        matricule: profileData.matricule || '',
+        hireDate: profileData.hireDate || '',
       });
       alert('Modifications enregistrées avec succès');
     } catch {

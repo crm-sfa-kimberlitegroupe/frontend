@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Icon, RefreshCw } from '../../../core/ui/Icon';
+import { RefreshCw } from 'lucide-react';
+import { Icon } from '../../../core/ui/Icon';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import Modal from '../../../core/ui/feedback/Modal';
@@ -20,7 +21,6 @@ export default function SectorsManagement() {
   const validatedOutlets = useOutletsStore((state) => state.validatedOutlets);
   const allSectors = useSectorsStore((state) => state.sectors);
   const allTerritories = useSectorsStore((state) => state.territories);
-  const loadingSectors = useSectorsStore((state) => state.loading);
   const refreshingSectors = useSectorsStore((state) => state.refreshing);
   const refreshSectors = useSectorsStore((state) => state.refreshSectors);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Grid3x3, Plus, MapIcon, UserPlus, BarChart3, RefreshCw } from 'lucide-react';
+import { Plus, MapIcon, UserPlus, BarChart3, RefreshCw } from 'lucide-react';
 import SectorsCreateTab from '../components/SectorsCreateTab';
 import SectorsListTab from '../components/SectorsListTab';
 import SectorsAssignTab from '../components/SectorsAssignTab';
@@ -17,7 +17,6 @@ type MainTab = 'create' | 'list' | 'assign' | 'overview';
 export default function SectorsManagementUnified() {
   const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState<MainTab>('create');
-  const [loading, setLoading] = useState(false);
   
   const [vendors, setVendors] = useState<any[]>([]);
   const [userTerritory, setUserTerritory] = useState<Territory | null>(null);
@@ -43,8 +42,6 @@ export default function SectorsManagementUnified() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
-
       if (!user?.territoryId) {
         showError('Aucun territoire assigné');
         return;
@@ -70,8 +67,6 @@ export default function SectorsManagementUnified() {
     } catch (error) {
       console.error('Erreur chargement:', error);
       showError('Impossible de charger les données');
-    } finally {
-      setLoading(false);
     }
   };
 
