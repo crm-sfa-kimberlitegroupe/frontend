@@ -18,8 +18,8 @@ export default function PDVFormStep1({ formData, onChange }: PDVFormStep1Props) 
   // Charger les données géographiques du territoire/secteur du vendeur
   useEffect(() => {
     const loadGeoData = async () => {
-      // Récupérer le secteur assigné au vendeur (assignedSectorId)
-      const sectorId = user?.assignedSectorId || user?.territoryId;
+      // Récupérer le secteur assigné au vendeur (territoryId)
+      const sectorId = user?.territoryId;
       
       if (!sectorId) {
         setGeoError('Aucun secteur assigné. Contactez votre administrateur.');
@@ -44,7 +44,7 @@ export default function PDVFormStep1({ formData, onChange }: PDVFormStep1Props) 
 
     loadGeoData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.assignedSectorId, user?.territoryId]);
+  }, [user?.territoryId]);
 
   return (
     <div>
