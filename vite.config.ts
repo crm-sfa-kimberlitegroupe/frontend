@@ -36,6 +36,10 @@ export default defineConfig({
     headers: {
       'Cache-Control': 'no-store',
     },
+    // Désactiver l'overlay HMR
+    hmr: {
+      overlay: false
+    }
   },
   build: {
     // Générer des noms de fichiers avec hash pour éviter le cache
@@ -44,8 +48,6 @@ export default defineConfig({
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
-        // Forcer le format ES modules
-        format: 'es',
         // Code splitting pour réduire la taille des bundles
         manualChunks: {
           // Séparer les dépendances React

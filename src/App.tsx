@@ -28,6 +28,7 @@ import SectorsManagementUnified from './features/territories/pages/SectorsManage
 import SectorsAssignment from './features/territories/pages/SectorsAssignment';
 import TerritoriesManagement from './features/territories/pages/TerritoriesManagement';
 import CreateTerritoryWithMap from './features/territories/pages/CreateTerritoryWithMap';
+import ProductsManagement from './features/products/pages/ProductsManagement';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -78,13 +79,13 @@ function App() {
           {/* Page d'accueil (affiche le bon dashboard selon le rôle) */}
           <Route index element={<HomePage />} />
           
-          {/* Routes Desktop - ADMIN */}
+          {/* Routes Desktop - ADMIN */}-
           <Route path="users" element={<UsersManagement />} />
           <Route path="pdv" element={<VisitsADMIN />} />
           <Route path="sectors" element={<SectorsManagementUnified />} />
           <Route path="sectors/assignment" element={<SectorsAssignment />} />
           {/*         <Route path="routes" element={<RoutesManagement />} /> */}
-          <Route path="products" element={<UnderConstruction />} />
+          <Route path="products" element={<ProductsManagement />} />
           <Route path="tasks" element={<UnderConstruction />} />
           
           {/* Routes Desktop - SUP */}

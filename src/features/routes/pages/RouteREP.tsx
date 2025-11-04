@@ -8,9 +8,13 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useRouteData } from '../hooks/useRouteData';
 import NavigationCard from '../components/NavigationCard';
 import RouteStatsCard from '../components/RouteStatsCard';
+import PDVFormWizard from '../../visits/components/PDVFormWizard';
 
 export default function RouteREP() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [showDirections, setShowDirections] = useState(false);
+  const [directionsUrl, setDirectionsUrl] = useState<string>('');
+  const [showPDVForm, setShowPDVForm] = useState(false);
   const { latitude, longitude, error: geoError, loading: geoLoading, refresh: refreshLocation } = useGeolocation({ watch: true });
   const { routeStops, allOutlets, loading: routeLoading, error: routeError, refresh: refreshRoute, stats: routeStats } = useRouteData();
 
@@ -133,16 +137,59 @@ export default function RouteREP() {
                         distance: nextStop.distance,
                         time: '8 min',
                         estimatedArrival: nextStop.time,
+                        latitude: nextStop.latitude,
+                        longitude: nextStop.longitude,
                       }}
                       onStartNavigation={() => {
-                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${nextStop.latitude},${nextStop.longitude}`, '_blank');
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${nextStop.latitude},${nextStop.longitude}`;
+                        setDirectionsUrl(url);
+                        setShowDirections(!showDirections);
                       }}
+                      showDirections={showDirections}
                     />
                   ) : (
                     <NavigationCard />
                   );
                 })()}
               </div>
+
+              {/* Iframe Google Maps pour l'itinéraire */}
+              {showDirections && directionsUrl && (
+                <Card className="mb-4 overflow-hidden">
+                  <div className="bg-blue-50 px-4 py-2 flex items-center justify-between border-b border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <Icon name="map" size="sm" variant="primary" />
+                      <span className="text-sm font-medium text-gray-900">Itinéraire Google Maps</span>
+                    </div>
+                    <button
+                      onClick={() => setShowDirections(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <Icon name="x" size="sm" />
+                    </button>
+                  </div>
+                  <iframe
+                    src={directionsUrl}
+                    width="100%"
+                    height="400"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Google Maps Directions"
+                  />
+                  <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      onClick={() => window.open(directionsUrl, '_blank')}
+                    >
+                      <Icon name="arrowRight" size="xs" className="mr-2" />
+                      Ouvrir dans une nouvelle fenêtre
+                    </Button>
+                  </div>
+                </Card>
+              )}
 
               {/* Statistiques de la route */}
               <div className="mb-4">
@@ -186,50 +233,64 @@ export default function RouteREP() {
                 />
                 
                 {/* Légende */}
-                <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[1000] border border-gray-200">
                   <p className="text-xs font-semibold text-gray-900 mb-2">Légende</p>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-4 h-4 flex items-center justify-center text-red-500">📍</div>
                       <span>Votre position</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-success" />
-                      <span>Visité</span>
+                      <div className="w-4 h-4 flex items-center justify-center text-green-500">✓</div>
+                      <span>PDV visité</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-4 h-4 flex items-center justify-center text-blue-500">🎯</div>
+                      <span>PDV de ma route</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-warning" />
-                      <span>En cours</span>
+                      <div className="w-4 h-4 flex items-center justify-center text-gray-300">●</div>
+                      <span>Autres PDV du territoire</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-gray-400" />
-                      <span>Planifié</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <span>🎯 PDV de ma route</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-gray-300" />
-                      <span>Autres PDV</span>
-                    </div>
+
                   </div>
                 </div>
               </Card>
 
+              {/* Formulaire d'enregistrement de PDV */}
+              {showPDVForm && (
+                <div className="mb-4">
+                  <PDVFormWizard onClose={() => setShowPDVForm(false)} userRole="REP" />
+                </div>
+              )}
+
               {/* Actions rapides */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <Button variant="outline" fullWidth>
-                  <Icon name="plus" size="sm" className="mr-2" />
-                  Visite hors route
-                </Button>
-                <Button variant="outline" fullWidth onClick={refreshLocation}>
-                  <Icon name="refresh" size="sm" className="mr-2" />
-                  Ma position
-                </Button>
-              </div>
+              {!showPDVForm && (
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button variant="outline" fullWidth>
+                      <Icon name="plus" size="sm" className="mr-2" />
+                      Visite hors route
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={refreshLocation}>
+                      <Icon name="refresh" size="sm" className="mr-2" />
+                      Ma position
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    fullWidth
+                    onClick={() => setShowPDVForm(true)}
+                  >
+                    <Icon name="plus" size="sm" className="mr-2" />
+                    Enregistrer point de vente
+                  </Button>
+                </div>
+              )}
 
               {/* Arrêts à proximité */}
+              {!showPDVForm && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 px-1">Prochains arrêts</h3>
                 <div className="space-y-2">
@@ -262,7 +323,11 @@ export default function RouteREP() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`, '_blank')}
+                            onClick={() => {
+                              const url = `https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`;
+                              setDirectionsUrl(url);
+                              setShowDirections(true);
+                            }}
                           >
                             <Icon name="map" size="xs" />
                           </Button>
@@ -274,7 +339,11 @@ export default function RouteREP() {
                           size="sm" 
                           fullWidth 
                           className="mt-3"
-                          onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`, '_blank')}
+                          onClick={() => {
+                            const url = `https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`;
+                            setDirectionsUrl(url);
+                            setShowDirections(true);
+                          }}
                         >
                           <Icon name="map" size="xs" className="mr-1" />
                           Voir l'itinéraire
@@ -284,6 +353,7 @@ export default function RouteREP() {
                   ))}
                 </div>
               </div>
+              )}
             </div>
           ) : (
             <div className="p-4">

@@ -9,11 +9,11 @@ interface ActiveVisitCTAProps {
 
 export default function ActiveVisitCTA({ pdvName, onContinue }: ActiveVisitCTAProps) {
   return (
-    <Card className="p-4 mb-4 bg-gradient-to-br from-success to-secondary text-white">
+    <Card className="p-5 mb-4 bg-gradient-to-br from-success to-secondary text-white">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-sm opacity-90">Visite en cours</p>
-          <p className="text-lg font-bold">{pdvName}</p>
+          <p className="text-base opacity-90">Visite en cours</p>
+          <p className="text-xl font-bold">{pdvName}</p>
         </div>
         <Icon name="locationMarker" size="2xl" variant="white" />
       </div>

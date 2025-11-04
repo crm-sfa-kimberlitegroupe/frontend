@@ -6,6 +6,12 @@ export interface PDVFormData {
   channel: string; // Optionnel - valeur par défaut appliquée
   segment: string; // Optionnel
   territoryId: string; // Optionnel
+  sectorId?: string; // Secteur du vendeur
+  region?: string; // Région géographique
+  commune?: string; // Commune
+  ville?: string; // Ville
+  quartier?: string; // Quartier
+  codePostal?: string; // Code postal
   latitude: string;
   longitude: string;
   notes: string;

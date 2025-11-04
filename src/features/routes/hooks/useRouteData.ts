@@ -1,4 +1,4 @@
-     import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import routesService, { type RoutePlan, type RouteStop as BackendRouteStop } from '../services/routesService';
 import outletsService, { type Outlet } from '../../pdv/services/outletsService';
 import territoriesService from '../../territories/services/territoriesService';

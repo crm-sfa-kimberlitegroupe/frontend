@@ -8,12 +8,12 @@ interface VisitsHeaderProps {
 
 export default function VisitsHeader({ completedCount, inProgressCount, plannedCount }: VisitsHeaderProps) {
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-      <h1 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+    <div className="bg-white border-b border-gray-200 px-4 py-5 sticky top-0 z-10">
+      <h1 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
         Mes Visites
-        <Icon name="locationMarker" size="lg" variant="primary" />
+        <Icon name="locationMarker" size="xl" variant="primary" />
       </h1>
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-base">
         <span className="text-gray-600">
           <span className="font-semibold text-success">{completedCount}</span> terminées
         </span>

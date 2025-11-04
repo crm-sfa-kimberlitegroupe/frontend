@@ -54,9 +54,9 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
   );
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-0.5">
       <div className="max-w-md mx-auto">
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-around items-center h-20">
           {filteredItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -68,16 +68,16 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
                 <Icon 
                   name={item.icon}
                   variant={isActive ? 'primary' : 'grey'}
-                  size="xl"
-                  className="mb-1"
+                  size="2xl"
+                  className="mb-1.5"
                 />
-                <span className={`text-xs font-medium transition-colors ${
+                <span className={`text-sm font-medium transition-colors ${
                   isActive ? 'text-primary' : 'text-gray-500'
                 }`}>
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="absolute bottom-0 w-12 h-1 bg-primary rounded-t-full" />
+                  <div className="absolute bottom-0 w-14 h-1 bg-primary rounded-t-full" />
                 )}
               </Link>
             );

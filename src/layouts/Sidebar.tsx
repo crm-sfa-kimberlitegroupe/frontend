@@ -5,7 +5,8 @@ import {
   LogOut,
   MapPin,
   Map,
-  Grid3x3
+  Grid3x3,
+  Package
 } from 'lucide-react';
 import type { UserRole } from '@/core/types';
 import { useAuthStore } from '@/core/auth';
@@ -48,12 +49,12 @@ const navItems: NavItem[] = [
      path: '/dashboard/route',
      roles: ['ADMIN', 'SUP'],
    },
-  // {
-  //   label: 'Produits',
-  //   icon: Package,
-  //   path: '/dashboard/products',
-  //   roles: ['ADMIN'],
-  // },
+  {
+    label: 'Produits',
+    icon: Package,
+    path: '/dashboard/products',
+    roles: ['SUP'],
+  },
   // {
   //   label: 'Tâches',
   //   icon: ClipboardList,

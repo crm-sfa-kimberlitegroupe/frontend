@@ -102,6 +102,13 @@ export default function PDVFormWizard({ onClose, userRole = 'REP' }: PDVFormWiza
       },
       status: OutletStatusEnum.PENDING,
       territoryId: formData.territoryId, // Récupéré automatiquement de l'utilisateur
+      sectorId: formData.sectorId || undefined, // Secteur du vendeur
+      // Informations géographiques
+      region: formData.region || undefined,
+      commune: formData.commune || undefined,
+      ville: formData.ville || undefined,
+      quartier: formData.quartier || undefined,
+      codePostal: formData.codePostal || undefined,
       osmMetadata: {
         phone: formData.phone,
         contactPerson: formData.contactPerson,
