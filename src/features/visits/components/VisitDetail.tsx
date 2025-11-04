@@ -12,21 +12,21 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
     <div>
       <button 
         onClick={onBack}
-        className="flex items-center gap-2 text-primary mb-4 text-base"
+        className="flex items-center gap-2 text-primary mb-4 text-lg"
       >
-        <Icon name="arrowLeft" size="md" /> Retour à la liste
+        <Icon name="arrowLeft" size="sm" /> Retour à la liste
       </button>
 
-      <Card className="p-5 mb-4">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Épicerie Marcory</h2>
-        <p className="text-base text-gray-600 mb-3">123 Rue de Marcory, Abidjan</p>
+      <Card className="p-4 mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Épicerie Marcory</h2>
+        <p className="text-lg text-gray-600 mb-3">123 Rue de Marcory, Abidjan</p>
         <Badge variant="warning">En cours</Badge>
       </Card>
 
       {/* Photos merchandising */}
-      <Card className="p-5 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="camera" size="lg" variant="primary" />
+      <Card className="p-4 mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Icon name="camera" size="md" variant="primary" />
           Photos merchandising
         </h3>
         <div className="grid grid-cols-3 gap-2 mb-3">
@@ -43,9 +43,9 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
       </Card>
 
       {/* Checklist Perfect Store */}
-      <Card className="p-5 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="checkCircle" size="lg" variant="green" />
+      <Card className="p-4 mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Icon name="checkCircle" size="md" variant="green" />
           Checklist Perfect Store
         </h3>
         <div className="space-y-2">
@@ -56,18 +56,18 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
             'Stock suffisant',
             'Propreté du rayon'
           ].map((item, i) => (
-            <label key={i} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded">
-              <input type="checkbox" className="w-6 h-6 text-primary rounded" />
-              <span className="text-base text-gray-700">{item}</span>
+            <label key={i} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+              <input type="checkbox" className="w-5 h-5 text-primary rounded" />
+              <span className="text-lg text-gray-700">{item}</span>
             </label>
           ))}
         </div>
       </Card>
 
       {/* Gestion stock */}
-      <Card className="p-5 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="package" size="lg" variant="primary" />
+      <Card className="p-4 mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Icon name="package" size="md" variant="primary" />
           Gestion stock
         </h3>
         <Button variant="outline" size="sm" fullWidth>
@@ -77,9 +77,9 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
       </Card>
 
       {/* Prendre commande */}
-      <Card className="p-5 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="cart" size="lg" variant="primary" />
+      <Card className="p-4 mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Icon name="cart" size="md" variant="primary" />
           Commande
         </h3>
         <Button variant="primary" size="sm" fullWidth>
@@ -89,13 +89,13 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
       </Card>
 
       {/* Notes */}
-      <Card className="p-5 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="note" size="lg" variant="primary" />
+      <Card className="p-4 mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Icon name="note" size="md" variant="primary" />
           Notes
         </h3>
         <textarea 
-          className="w-full border border-gray-300 rounded-lg p-3 text-base"
+          className="w-full border border-gray-300 rounded-lg p-3 text-lg"
           rows={4}
           placeholder="Ajouter des notes sur cette visite..."
         />

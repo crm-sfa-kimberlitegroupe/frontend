@@ -39,8 +39,8 @@ export default function VisitsREP() {
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-base text-gray-600">Chargement de vos PDV...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Chargement de vos PDV...</p>
           </div>
         </div>
       </PageLayout>
@@ -53,8 +53,8 @@ export default function VisitsREP() {
       <PageLayout>
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-base text-slate-600">Chargement...</p>
+          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-lg text-slate-600">Chargement...</p>
         </div>
       </div>
       </PageLayout>
@@ -68,8 +68,8 @@ export default function VisitsREP() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-6xl mb-4">🏬</p>
-            <p className="text-2xl font-semibold text-gray-900 mb-2">Aucun secteur assigné</p>
-            <p className="text-lg text-gray-600">Contactez votre manager pour vous assigner un secteur.</p>
+            <p className="text-xl font-semibold text-gray-900 mb-2">Aucun secteur assigné</p>
+            <p className="text-base text-gray-600">Contactez votre manager pour vous assigner un secteur.</p>
           </div>
         </div>
       </PageLayout>
@@ -87,12 +87,12 @@ export default function VisitsREP() {
       <div className="p-4">
         {/* Informations du secteur */}
         {sector && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <h3 className="text-lg font-medium text-blue-900 mb-1">Votre secteur</h3>
-            <p className="text-base text-blue-800">
+            <p className="text-lg text-blue-800">
               <strong>{sector.name}</strong> ({sector.code})
             </p>
-            <p className="text-sm text-blue-600 mt-1">
+            <p className="text-base text-blue-600 mt-1">
               {outlets.length} PDV assignés
             </p>
           </div>
@@ -139,8 +139,8 @@ export default function VisitsREP() {
             {visits.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-6xl mb-4">🏪</p>
-                <p className="text-xl font-semibold text-gray-900 mb-2">Aucun PDV dans votre secteur</p>
-                <p className="text-base text-gray-600">Contactez votre manager pour ajouter des PDV à votre secteur.</p>
+                <p className="text-2xl font-semibold text-gray-900 mb-2">Aucun PDV dans votre secteur</p>
+                <p className="text-lg text-gray-600">Contactez votre manager pour ajouter des PDV à votre secteur.</p>
               </div>
             ) : (
               visits.map((visit) => (
