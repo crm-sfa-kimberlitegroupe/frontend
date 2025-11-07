@@ -20,6 +20,7 @@ import DataPage from './features/data/pages/DataPage';
 import RouteREP from './features/routes/pages/RouteREP';
 import RouteSUP from './features/routes/pages/RouteSUP';
 import RouteADMIN from './features/routes/pages/RouteADMIN';
+import StockManagement from './features/vendor-stock/pages/StockManagement';
 // Pages Desktop (ADMIN/SUP)
 import TeamPage from './features/team/pages/TeamPage';
 import VisitsADMIN from './features/visits/pages/VisitsADMIN';
@@ -102,6 +103,7 @@ function App() {
           <Route path="visits" element={<VisitsPageRoute />} />
           <Route path="data" element={<DataPageRoute />} />
           <Route path="route" element={<RoutePageRoute />} />
+          <Route path="stock" element={<StockManagement />} />
           
           {/* Pages anciennes - TEMPORAIREMENT DÉSACTIVÉES */}
           <Route path="sessions" element={<UnderConstruction />} />
