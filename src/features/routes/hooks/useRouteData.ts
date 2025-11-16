@@ -167,14 +167,20 @@ export function useRouteData(): UseRouteDataReturn {
 
       // Créer un Set des IDs de PDV dans la route planifiée pour identification rapide
       const routeOutletIds = new Set<string>();
+      const visitedOutletIds = new Set<string>(); // PDV visités
       if (route && route.routeStops) {
         route.routeStops.forEach(stop => {
           if (stop.outletId) {
             routeOutletIds.add(stop.outletId);
+            // Si le stop est visité, l'ajouter au set des visités
+            if (stop.status === 'VISITED') {
+              visitedOutletIds.add(stop.outletId);
+            }
           }
         });
       }
       console.log(`🎯 PDV dans la route planifiée: ${routeOutletIds.size}`, Array.from(routeOutletIds));
+      console.log(`✅ PDV visités: ${visitedOutletIds.size}`, Array.from(visitedOutletIds));
 
       // Convertir tous les PDV en format carte
       const allOutletsConverted: RouteStop[] = outlets
@@ -195,9 +201,19 @@ export function useRouteData(): UseRouteDataReturn {
             lng = Number(lng) + offset;
           }
 
-          // Déterminer le statut : 'route_planned' si dans la route, 'territory' sinon
-          const isInRoute = routeOutletIds.has(outlet.id);
-          const status = isInRoute ? 'route_planned' : 'territory';
+          // Déterminer le statut selon la légende :
+          // - 'completed' (✓ vert) si le PDV a été visité
+          // - 'route_planned' (🎯 bleu) si le PDV est dans la route mais pas encore visité
+          // - 'territory' (● gris) si le PDV n'est pas dans la route
+          let status: 'completed' | 'route_planned' | 'territory';
+          
+          if (visitedOutletIds.has(outlet.id)) {
+            status = 'completed'; // PDV visité (✓ vert)
+          } else if (routeOutletIds.has(outlet.id)) {
+            status = 'route_planned'; // PDV de la route non visité (🎯 bleu)
+          } else {
+            status = 'territory'; // Autres PDV du territoire (● gris)
+          }
 
           return {
             id: parseInt(outlet.id) || index + 1000,

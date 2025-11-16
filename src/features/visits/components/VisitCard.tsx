@@ -48,7 +48,7 @@ export default function VisitCard({ visit, onSelect }: VisitCardProps) {
             size="md" 
             className="mr-2" 
           />
-          {visit.status === 'COMPLETED' ? 'Visité ✓' : 'Visiter'}
+          {visit.status === 'COMPLETED' ? 'Visité ✓' : 'A visiter'}
         </Button>
       </div>
     </Card>
