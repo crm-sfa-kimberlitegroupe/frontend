@@ -25,7 +25,7 @@ export default function PortfolioList({ items }: PortfolioListProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-20">
       {items.map((item) => {
         const status = getStockStatus(item.quantity);
         

@@ -6,6 +6,7 @@ import KPICard from '../../../core/ui/KPICard';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { useAuthStore } from '@/core/auth';
+import { vendorStockService, type LowStockItem } from '../../vendor-stock/services/vendorStockService';
 
 export default function HomeREP() {
   const navigate = useNavigate();
@@ -15,10 +16,30 @@ export default function HomeREP() {
     isOnline: true,
     lastSync: new Date(),
   });
+  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [isLoadingStock, setIsLoadingStock] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Charger les alertes de stock faible
+  useEffect(() => {
+    const loadLowStockAlerts = async () => {
+      try {
+        setIsLoadingStock(true);
+        const lowStock = await vendorStockService.getLowStockItems(10); // Seuil de 10
+        setLowStockItems(lowStock);
+      } catch (error) {
+        console.error('Erreur lors du chargement des alertes de stock:', error);
+        setLowStockItems([]);
+      } finally {
+        setIsLoadingStock(false);
+      }
+    };
+
+    loadLowStockAlerts();
   }, []);
 
   const todayStats = {
@@ -37,10 +58,14 @@ export default function HomeREP() {
     avgOrderValue: '180k',
   };
 
-  const notifications = [
-    { id: 1, type: 'warning', message: 'Rupture de stock signalée sur 2 produits', time: '10 min' },
-    { id: 2, type: 'info', message: 'Nouvelle promotion disponible jusqu\'au 30 Oct', time: '2h' },
-  ];
+  // Créer les notifications à partir des alertes de stock
+  const notifications = lowStockItems.map((item, index) => ({
+    id: index + 1,
+    type: 'warning' as const,
+    message: `Stock faible: ${item.sku.name} (${item.quantity} restant${item.quantity > 1 ? 's' : ''})`,
+    time: 'maintenant',
+    skuId: item.id
+  }));
 
   const progressPercentage = Math.round((todayStats.pdvVisited / todayStats.pdvToVisit) * 100);
 
@@ -126,15 +151,26 @@ export default function HomeREP() {
       </Card>
 
       {/* CTA Principal sobre */}
-      <Button 
-        variant="primary" 
-        size="lg" 
-        fullWidth 
-        className="mb-6"
-      >
-        <Icon name="map" size="lg" className="mr-2" />
-        <span className="font-medium">Démarrer ma tournée</span>
-      </Button>
+      <div className="space-y-3 mb-6">
+        <Button 
+          variant="primary" 
+          size="lg" 
+          fullWidth
+          onClick={() => navigate('/dashboard/stock')}
+        >
+          <Icon name="package" size="lg" className="mr-2" />
+          <span className="font-medium">Créer stock pour ma journée</span>
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="lg" 
+          fullWidth
+        >
+          <Icon name="map" size="lg" className="mr-2" />
+          <span className="font-medium">Démarrer ma tournée</span>
+        </Button>
+      </div>
 
       {/* KPI Cards - Performance de la semaine */}
       <div className="mb-6">
@@ -176,29 +212,69 @@ export default function HomeREP() {
         </div>
       </div>
 
-      {/* Notifications sobres */}
-      {notifications.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Alertes importantes</h3>
+      {/* Alertes de stock */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-gray-900">Alertes de stock</h3>
+          {!isLoadingStock && lowStockItems.length > 0 && (
+            <button
+              onClick={() => navigate('/dashboard/stock')}
+              className="text-sm text-primary hover:text-primary/80 font-medium"
+            >
+              Voir tout
+            </button>
+          )}
+        </div>
+        
+        {isLoadingStock ? (
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <Icon name="refresh" size="lg" variant="grey" className="animate-spin" />
+              <p className="text-sm text-gray-600">Chargement des alertes...</p>
+            </div>
+          </Card>
+        ) : notifications.length > 0 ? (
           <div className="space-y-2">
-            {notifications.map((notif) => (
-              <Card key={notif.id} className="p-3">
+            {notifications.slice(0, 3).map((notif) => (
+              <Card key={notif.id} className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigate('/dashboard/stock')}>
                 <div className="flex items-start gap-3">
                   <Icon 
-                    name={notif.type === 'warning' ? 'warning' : 'checkCircle'}
+                    name="warning"
                     size="lg"
-                    variant={notif.type === 'warning' ? 'yellow' : 'primary'}
+                    variant="yellow"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700">{notif.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">Il y a {notif.time}</p>
+                    <p className="text-xs text-gray-500 mt-1">Cliquez pour gérer votre stock</p>
                   </div>
+                  <Icon name="arrowRight" size="sm" variant="grey" />
                 </div>
               </Card>
             ))}
+            {notifications.length > 3 && (
+              <Card className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigate('/dashboard/stock')}>
+                <div className="text-center">
+                  <p className="text-sm text-primary font-medium">
+                    +{notifications.length - 3} autre{notifications.length - 3 > 1 ? 's' : ''} alerte{notifications.length - 3 > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </Card>
+            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <Icon name="checkCircle" size="lg" variant="green" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Aucune alerte de stock</p>
+                <p className="text-xs text-gray-600">Votre stock est en bon état</p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
 
       {/* Informations complémentaires */}
       <div className="grid grid-cols-2 gap-3 mb-6">

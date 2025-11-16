@@ -34,6 +34,13 @@ const navItems: NavItem[] = [
     roles: ['REP', 'ADMIN'],
   },
   {
+    id: 'stock',
+    label: 'Stock',
+    icon: 'package',
+    path: '/dashboard/stock',
+    roles: ['REP'],
+  },
+  {
     id: 'profile',
     label: 'Profil',
     icon: 'user',

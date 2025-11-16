@@ -106,7 +106,7 @@ class OutletsService {
   }
 
   /**
-   * 🔒 NOUVEAU : Récupérer les PDV de MON territoire (ADMIN/SUP uniquement)
+   * 🔒 NOUVEAU : Récupérer les PDV de MON territoire 
    * Utilise l'endpoint dédié /outlets/my-territory
    * Le backend extrait automatiquement le territoryId du JWT
    */
@@ -119,7 +119,15 @@ class OutletsService {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.channel) params.append('channel', filters.channel);
 
-    const response = await api.get(`/outlets/my-territory?${params.toString()}`);
+    const url = `/outlets/my-territory?${params.toString()}`;
+    console.log('🌐 [getMyTerritoryOutlets] Appel API:', url);
+    console.log('🔍 [getMyTerritoryOutlets] Filtres:', filters);
+
+    const response = await api.get(url);
+    console.log('📡 [getMyTerritoryOutlets] Réponse brute:', response);
+    console.log('📊 [getMyTerritoryOutlets] Type de réponse:', typeof response);
+    console.log('📊 [getMyTerritoryOutlets] Est un tableau?', Array.isArray(response));
+    
     return response; // Backend retourne directement le tableau filtré
   }
 

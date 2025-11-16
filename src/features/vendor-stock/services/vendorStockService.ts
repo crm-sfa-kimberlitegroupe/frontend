@@ -76,8 +76,11 @@ export const vendorStockService = {
    * Ajouter du stock au portefeuille
    */
   async addStock(data: AddStockDto): Promise<any> {
+    console.log('📤 Envoi ajout stock:', data);
     const response = await api.post('/vendor-stock/add', data);
-    return response.data;
+    console.log('✅ Stock ajouté:', response);
+    // api.post() retourne directement les données
+    return response;
   },
 
   /**
@@ -85,7 +88,8 @@ export const vendorStockService = {
    */
   async getMyPortfolio(): Promise<VendorStockItem[]> {
     const response = await api.get('/vendor-stock/my-portfolio');
-    return response.data;
+    // api.get() retourne directement les données
+    return Array.isArray(response) ? response : (response.data || response);
   },
 
   /**
@@ -95,7 +99,7 @@ export const vendorStockService = {
     const response = await api.get('/vendor-stock/history', {
       params: filters,
     });
-    return response.data;
+    return Array.isArray(response) ? response : (response.data || response);
   },
 
   /**
@@ -105,7 +109,7 @@ export const vendorStockService = {
     const response = await api.get(`/vendor-stock/stock/${skuId}`, {
       params: { skuId },
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -115,7 +119,7 @@ export const vendorStockService = {
     const response = await api.get('/vendor-stock/low-stock', {
       params: { threshold },
     });
-    return response.data;
+    return Array.isArray(response) ? response : (response.data || response);
   },
 
   /**
@@ -123,6 +127,16 @@ export const vendorStockService = {
    */
   async getStats(): Promise<StockStats> {
     const response = await api.get('/vendor-stock/stats');
-    return response.data;
+    return response;
+  },
+
+  /**
+   * Décharger tout le stock (vider le portefeuille)
+   */
+  async unloadAllStock(): Promise<any> {
+    console.log('📤 Déchargement de tout le stock...');
+    const response = await api.delete('/vendor-stock/unload-all');
+    console.log('✅ Stock déchargé:', response);
+    return response;
   },
 };

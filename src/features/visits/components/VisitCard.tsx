@@ -11,6 +11,7 @@ interface VisitCardProps {
 }
 
 export default function VisitCard({ visit, onSelect }: VisitCardProps) {
+
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between mb-3">
@@ -34,39 +35,22 @@ export default function VisitCard({ visit, onSelect }: VisitCardProps) {
         </Badge>
       </div>
 
-      {visit.status === 'PLANNED' && (
+      <div>
         <Button 
-          variant="success" 
-          size="sm" 
+          variant={visit.status === 'COMPLETED' ? 'success' : 'primary'}
+          size="md" 
           fullWidth
           onClick={() => onSelect(visit.id)}
+          className={visit.status === 'COMPLETED' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
         >
-          <Icon name="locationMarker" size="sm" className="mr-2" />
-          CHECK-IN
+          <Icon 
+            name={visit.status === 'COMPLETED' ? 'checkCircle' : 'locationMarker'} 
+            size="md" 
+            className="mr-2" 
+          />
+          {visit.status === 'COMPLETED' ? 'Visité ✓' : 'Visiter'}
         </Button>
-      )}
-
-      {visit.status === 'IN_PROGRESS' && (
-        <Button 
-          variant="warning" 
-          size="sm" 
-          fullWidth
-          onClick={() => onSelect(visit.id)}
-        >
-          Continuer la visite
-        </Button>
-      )}
-
-      {visit.status === 'COMPLETED' && (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          fullWidth
-          onClick={() => onSelect(visit.id)}
-        >
-          Voir détails
-        </Button>
-      )}
+      </div>
     </Card>
   );
 }

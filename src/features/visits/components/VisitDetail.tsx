@@ -1,13 +1,24 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
+import api from '../../../core/api/api';
 
 interface VisitDetailProps {
   onBack: () => void;
+  visitId: string;
+  outletId: string;
+  pdvName?: string;
+  address?: string;
+  status?: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
-export default function VisitDetail({ onBack }: VisitDetailProps) {
+export default function VisitDetail({ onBack, visitId, outletId, pdvName = 'Épicerie Marcory', address = '123 Rue de Marcory, Abidjan', status = 'IN_PROGRESS' }: VisitDetailProps) {
+  const navigate = useNavigate();
+  const [isCreatingVisit, setIsCreatingVisit] = useState(false);
+  const [lastVisit] = useState('15 Oct 2024'); // Mock data - à remplacer par vraie donnée
   return (
     <div>
       <button 
@@ -17,75 +28,61 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
         <Icon name="arrowLeft" size="sm" /> Retour à la liste
       </button>
 
+      {/* Informations du point de vente */}
       <Card className="p-4 mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Épicerie Marcory</h2>
-        <p className="text-lg text-gray-600 mb-3">123 Rue de Marcory, Abidjan</p>
-        <Badge variant="warning">En cours</Badge>
-      </Card>
-
-      {/* Photos merchandising */}
-      <Card className="p-4 mb-4">
-        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="camera" size="md" variant="primary" />
-          Photos merchandising
-        </h3>
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
-              <Icon name="camera" size="2xl" variant="grey" />
-            </div>
-          ))}
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">{pdvName}</h2>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Icon name="locationMarker" size="sm" variant="grey" />
+            <p className="text-gray-600">{address}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Icon name="calendar" size="sm" variant="grey" />
+            <p className="text-gray-600">Dernière visite: {lastVisit}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Icon name="flag" size="sm" variant="grey" />
+            <Badge variant={status === 'COMPLETED' ? 'success' : status === 'IN_PROGRESS' ? 'warning' : 'gray'}>
+              {status === 'COMPLETED' ? 'Terminée' : status === 'IN_PROGRESS' ? 'En cours' : 'Planifiée'}
+            </Badge>
+          </div>
         </div>
-        <Button variant="outline" size="sm" fullWidth>
-          <Icon name="plus" size="sm" className="mr-2" />
-          Ajouter une photo
-        </Button>
-      </Card>
-
-      {/* Checklist Perfect Store */}
-      <Card className="p-4 mb-4">
-        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="checkCircle" size="md" variant="green" />
-          Checklist Perfect Store
-        </h3>
-        <div className="space-y-2">
-          {[
-            'Produits bien disposés',
-            'Prix affichés',
-            'PLV en place',
-            'Stock suffisant',
-            'Propreté du rayon'
-          ].map((item, i) => (
-            <label key={i} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
-              <input type="checkbox" className="w-5 h-5 text-primary rounded" />
-              <span className="text-lg text-gray-700">{item}</span>
-            </label>
-          ))}
+        
+        {/* Bouton d'action principal */}
+        <div className="grid grid-cols-1 gap-3">
+          <Button 
+            variant="primary" 
+            size="lg" 
+            fullWidth
+            onClick={() => navigate(`/dashboard/merchandising?outletId=${outletId}&visitId=${visitId}&pdvName=${encodeURIComponent(pdvName || '')}`)}
+            className="bg-sky-600 hover:bg-sky-700"
+          >
+            <Icon name="camera" size="md" className="mr-2" />
+            Enregistrer merchandising
+          </Button>
         </div>
       </Card>
 
-      {/* Gestion stock */}
-      <Card className="p-4 mb-4">
-        <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Icon name="package" size="md" variant="primary" />
-          Gestion stock
-        </h3>
-        <Button variant="outline" size="sm" fullWidth>
-          <Icon name="warning" size="sm" className="mr-2" />
-          Signaler une rupture
-        </Button>
-      </Card>
 
-      {/* Prendre commande */}
+      {/* Vendre */}
       <Card className="p-4 mb-4">
         <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Icon name="cart" size="md" variant="primary" />
-          Commande
+          Vente
         </h3>
-        <Button variant="primary" size="sm" fullWidth>
-          <Icon name="plus" size="sm" className="mr-2" />
-          Prendre une commande
+        <Button 
+          variant="primary" 
+          size="lg" 
+          fullWidth
+          onClick={() => navigate(`/dashboard/orders/create?outletId=${outletId}&visitId=${visitId}`)}
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
+          <Icon name="cart" size="md" className="mr-2" />
+          Enregistrer une vente
         </Button>
+        <p className="text-sm text-gray-600 mt-2">
+          Créez une nouvelle vente pour ce point de vente
+        </p>
       </Card>
 
       {/* Notes */}
@@ -101,20 +98,50 @@ export default function VisitDetail({ onBack }: VisitDetailProps) {
         />
       </Card>
 
-      {/* Bouton CHECK-OUT */}
+      {/* Bouton TERMINER */}
       <Button 
-        variant="danger" 
+        variant="success" 
         size="lg" 
         fullWidth
-        onClick={() => {
-          if (confirm('Terminer cette visite ?')) {
-            onBack();
-            alert('Visite terminée!');
+        disabled={isCreatingVisit}
+        onClick={async () => {
+          if (confirm('Terminer cette visite et créer l\'enregistrement ?')) {
+            try {
+              setIsCreatingVisit(true);
+              
+              // Créer la visite dans la base de données
+              const visitData = {
+                outletId: outletId,
+                status: 'COMPLETED',
+                visitDate: new Date().toISOString(),
+                notes: '', // À récupérer depuis le textarea si nécessaire
+              };
+              
+              await api.post('/visits', visitData);
+              
+              alert('Visite terminée et enregistrée avec succès!');
+              onBack();
+            } catch (error) {
+              console.error('Erreur lors de la création de la visite:', error);
+              alert('Erreur lors de l\'enregistrement de la visite. Veuillez réessayer.');
+            } finally {
+              setIsCreatingVisit(false);
+            }
           }
         }}
+        className="bg-emerald-600 hover:bg-emerald-700"
       >
-        <Icon name="flag" size="md" className="mr-2" />
-        CHECK-OUT
+        {isCreatingVisit ? (
+          <>
+            <Icon name="refresh" size="md" className="mr-2 animate-spin" />
+            Enregistrement...
+          </>
+        ) : (
+          <>
+            <Icon name="checkCircle" size="md" className="mr-2" />
+            TERMINER
+          </>
+        )}
       </Button>
     </div>
   );

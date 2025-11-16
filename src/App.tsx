@@ -29,7 +29,15 @@ import SectorsManagementUnified from './features/territories/pages/SectorsManage
 import SectorsAssignment from './features/territories/pages/SectorsAssignment';
 import TerritoriesManagement from './features/territories/pages/TerritoriesManagement';
 import CreateTerritoryWithMap from './features/territories/pages/CreateTerritoryWithMap';
+// Pages Produits
 import ProductsManagement from './features/products/pages/ProductsManagement';
+import ProductsHub from './features/products/pages/ProductsHub';
+import ProductHierarchy from './features/products/pages/ProductHierarchy';
+import SKUManagement from './features/products/pages/SKUManagement';
+// Pages Ventes (Orders)
+import { CreateOrderPage } from './features/orders/pages/CreateOrderPageWorking';
+import { OrdersListPage } from './features/orders/pages/OrdersListPage';
+import { OrderDetailPage } from './features/orders/pages/OrderDetailPage';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -86,7 +94,13 @@ function App() {
           <Route path="sectors" element={<SectorsManagementUnified />} />
           <Route path="sectors/assignment" element={<SectorsAssignment />} />
           {/*         <Route path="routes" element={<RoutesManagement />} /> */}
-          <Route path="products" element={<ProductsManagement />} />
+          
+          {/* Routes Produits - Nouvelles */}
+          <Route path="products" element={<ProductsHub />} />
+          <Route path="products/hierarchy" element={<ProductHierarchy />} />
+          <Route path="products/skus" element={<SKUManagement />} />
+          <Route path="products/old" element={<ProductsManagement />} />
+          
           <Route path="tasks" element={<UnderConstruction />} />
           
           {/* Routes Desktop - SUP */}
@@ -104,6 +118,11 @@ function App() {
           <Route path="data" element={<DataPageRoute />} />
           <Route path="route" element={<RoutePageRoute />} />
           <Route path="stock" element={<StockManagement />} />
+          
+          {/* Routes Ventes (Orders) - REP */}
+          <Route path="orders" element={<OrdersListPage />} />
+          <Route path="orders/create" element={<CreateOrderPage />} />
+          <Route path="orders/:orderId" element={<OrderDetailPage />} />
           
           {/* Pages anciennes - TEMPORAIREMENT DÉSACTIVÉES */}
           <Route path="sessions" element={<UnderConstruction />} />

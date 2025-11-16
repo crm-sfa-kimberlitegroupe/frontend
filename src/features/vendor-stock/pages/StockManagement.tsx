@@ -8,6 +8,8 @@ import { vendorStockService, type VendorStockItem, type StockStats, type LowStoc
 import AddStockModal from '../components/AddStockModal';
 import PortfolioList from '../components/PortfolioList';
 import LowStockAlerts from '../components/LowStockAlerts';
+import ConfirmModal from '../components/ConfirmModal';
+import SuccessModal from '../components/SuccessModal';
 
 export default function StockManagement() {
   const navigate = useNavigate();
@@ -18,6 +20,11 @@ export default function StockManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  
+  // États pour les modaux
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isUnloading, setIsUnloading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -46,22 +53,52 @@ export default function StockManagement() {
     loadData(); // Recharger les données
   };
 
+  const handleUnloadStock = () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmUnloadStock = async () => {
+    try {
+      setIsUnloading(true);
+      setShowConfirmModal(false);
+      
+      // Appel API pour vider le stock
+      await vendorStockService.unloadAllStock();
+      
+      setShowSuccessModal(true);
+      loadData(); // Recharger les données
+    } catch (error) {
+      console.error('Erreur lors du déchargement du stock:', error);
+      alert('Erreur lors du déchargement du stock. Veuillez réessayer.');
+    } finally {
+      setIsUnloading(false);
+    }
+  };
+
   // Filtrage du portefeuille
   const filteredPortfolio = portfolio?.filter((item) => {
-    const matchesSearch = item.sku.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.sku.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || item.sku.category === filterCategory;
+    // Vérifier que item.sku existe
+    if (!item.sku) return false;
+    
+    const skuName = item.sku.name || '';
+    const skuBrand = item.sku.brand || '';
+    const matchesSearch = skuName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         skuBrand.toLowerCase().includes(searchTerm.toLowerCase());
+    const skuCategory = item.sku.category;
+    const matchesCategory = filterCategory === 'all' || skuCategory === filterCategory;
     return matchesSearch && matchesCategory;
   }) || [];
 
   // Catégories uniques
-  const categories = Array.from(new Set(portfolio?.map(item => item.sku.category).filter(Boolean) || []));
+  const categories = Array.from(new Set(portfolio?.map(item => {
+    return item.sku?.category;
+  }).filter(Boolean) || []));
 
   if (isLoading) {
     return (
       <div className="pb-nav-safe px-4 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Icon name="refresh" size="3xl" variant="primary" className="animate-spin mb-4" />
+          <Icon name="refresh" size="2xl" variant="primary" className="animate-spin mb-4" />
           <p className="text-gray-600">Chargement du stock...</p>
         </div>
       </div>
@@ -117,17 +154,33 @@ export default function StockManagement() {
         </div>
       )}
 
-      {/* Bouton principal */}
-      <Button
-        variant="primary"
-        size="lg"
-        fullWidth
-        className="mb-6"
-        onClick={() => setShowAddModal(true)}
-      >
-        <Icon name="plus" size="lg" className="mr-2" />
-        <span className="font-medium">Créer stock pour ma journée</span>
-      </Button>
+      {/* Boutons d'action */}
+      <div className="space-y-3 mb-6">
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={() => setShowAddModal(true)}
+        >
+          <Icon name="plus" size="lg" className="mr-2" />
+          <span className="font-medium">Ajouter des produits</span>
+        </Button>
+        
+        {/* Bouton décharger stock - affiché seulement s'il y a du stock */}
+        {portfolio && portfolio.length > 0 && (
+          <Button
+            variant="danger"
+            size="md"
+            fullWidth
+            onClick={handleUnloadStock}
+            disabled={isLoading || isUnloading}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            <Icon name="trash" size="md" className="mr-2" />
+            <span className="font-medium">Décharger tout le stock</span>
+          </Button>
+        )}
+      </div>
 
       {/* Alertes stock faible */}
       {lowStock && lowStock.length > 0 && (
@@ -156,30 +209,45 @@ export default function StockManagement() {
 
           {/* Filtres catégories */}
           {categories && categories.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              <button
-                onClick={() => setFilterCategory('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterCategory === 'all'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Tous
-              </button>
-              {categories.map((cat) => (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filtrer par catégorie
+              </label>
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 <button
-                  key={cat}
-                  onClick={() => setFilterCategory(cat!)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    filterCategory === cat
-                      ? 'bg-primary text-white'
+                  onClick={() => setFilterCategory('all')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    filterCategory === 'all'
+                      ? 'bg-primary text-white shadow-md'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {cat}
+                  <Icon 
+                    name="package" 
+                    size="sm" 
+                    className={filterCategory === 'all' ? 'text-white' : 'text-gray-500'}
+                  />
+                  Tous
                 </button>
-              ))}
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setFilterCategory(cat!)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                      filterCategory === cat
+                        ? 'bg-primary text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Icon 
+                      name="package" 
+                      size="sm" 
+                      className={filterCategory === cat ? 'text-white' : 'text-gray-500'}
+                    />
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -203,8 +271,8 @@ export default function StockManagement() {
       {filteredPortfolio.length > 0 ? (
         <PortfolioList items={filteredPortfolio} onRefresh={loadData} />
       ) : (
-        <Card className="p-8 text-center">
-          <Icon name="package" size="3xl" variant="grey" className="mx-auto mb-4" />
+        <Card className="p-8 text-center mb-20">
+          <Icon name="package" size="2xl" variant="grey" className="mx-auto mb-4" />
           <p className="text-gray-600 mb-2">
             {searchTerm || filterCategory !== 'all'
               ? 'Aucun produit trouvé'
@@ -225,6 +293,35 @@ export default function StockManagement() {
           onSuccess={handleAddStockSuccess}
         />
       )}
+
+      {/* Modal de confirmation pour décharger le stock */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmUnloadStock}
+        title="Décharger tout le stock"
+        message={`Êtes-vous sûr de vouloir décharger tout votre stock ?
+
+Cette action va :
+• Vider complètement votre portefeuille
+• Supprimer tous les produits en stock
+• Cette action est IRRÉVERSIBLE
+
+Confirmez-vous cette action ?`}
+        confirmText="Oui, décharger"
+        cancelText="Annuler"
+        type="danger"
+        isLoading={isUnloading}
+      />
+
+      {/* Modal de succès */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Stock déchargé !"
+        message="Votre stock a été déchargé avec succès. Votre portefeuille est maintenant vide."
+        buttonText="Parfait !"
+      />
     </div>
   );
 }

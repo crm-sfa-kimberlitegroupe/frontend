@@ -5,6 +5,7 @@ import { Button, Badge, LoadingSpinner, Alert, Select, Card, Modal } from '@/cor
 import { useMutation, useFilters, useToggle } from '@/core/hooks';
 import { usersService, type User, type CreateUserDto, type UpdateUserDto } from '@/features/users/services';
 import { useUsersStore } from '@/features/users/store/usersStore';
+import { useAuthStore } from '@/core/auth/authStore';
 import UserModal from '../../../core/components/modals/UserModal';
 import axios from 'axios';
 
@@ -49,6 +50,9 @@ export default function UsersManagement() {
   const refreshing = useUsersStore((state) => state.refreshing);
   const error = useUsersStore((state) => state.error);
   const refreshUsers = useUsersStore((state) => state.refreshUsers);
+  
+  // ✅ Récupérer l'utilisateur connecté
+  const currentUser = useAuthStore((state) => state.user);
 
   // État pour stocker les informations des secteurs
   const [sectorsInfo, setSectorsInfo] = useState<Record<string, SectorInfo>>({});
@@ -95,18 +99,18 @@ export default function UsersManagement() {
     fetchSectorsInfo();
   }, [users]);
 
-  // ✅ Hook réutilisable pour les filtres
+  //  Hook réutilisable pour les filtres
   const { filters, setFilter } = useFilters({
     role: 'all',
     status: 'all',
   });
   
-  // ✅ Hook réutilisable pour le modal
+  //  Hook réutilisable pour le modal
   const [isModalOpen, , setIsModalOpen] = useToggle(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // ✅ Hook réutilisable pour les mutations
+  //  Hook réutilisable pour les mutations
   const deleteMutation = useMutation(
     (userId: string) => usersService.delete(userId),
     {
@@ -187,14 +191,14 @@ export default function UsersManagement() {
   const activeVendors = (users || []).filter(u => u.isActive).length;
   const totalVendors = (users || []).length;
 
-  // ✅ Composant LoadingSpinner réutilisable
+  //  Composant LoadingSpinner réutilisable
   if (loading) {
     return <LoadingSpinner size="lg" text="Chargement des utilisateurs..." />;
   }
 
   return (
     <div>
-      {/* ✅ Composant Alert réutilisable */}
+      {/*  Composant Alert réutilisable */}
       {error && (
         <Alert
           variant="error"
@@ -259,7 +263,7 @@ export default function UsersManagement() {
         onClear={handleClearFilters}
       >
         <div>
-          {/* ✅ Composant Select réutilisable */}
+          {/* Composant Select réutilisable */}
           <Select
             label="Statut"
             value={filters.status}
@@ -504,6 +508,7 @@ export default function UsersManagement() {
         onSubmit={handleSubmitUser}
         user={selectedUser}
         mode={modalMode}
+        currentUser={currentUser as User | null}
       />
     </div>
   );

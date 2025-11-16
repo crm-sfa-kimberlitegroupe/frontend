@@ -87,9 +87,25 @@ export const authApi = {
 
 // API client pour les requêtes authentifiées
 const api = {
-  async get(url: string) {
+  async get(url: string, options?: { params?: Record<string, any> }) {
     const token = localStorage.getItem('access_token') || localStorage.getItem('token');
-    const response = await fetch(`${API_URL}${url}`, {
+    
+    // Construire l'URL avec les paramètres
+    let fullUrl = `${API_URL}${url}`;
+    if (options?.params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        fullUrl += `?${queryString}`;
+      }
+    }
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -99,6 +115,12 @@ const api = {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        localStorage.clear();
+        window.location.href = '/';
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
       throw new Error(error.message || `Erreur HTTP ${response.status}`);
     }
@@ -109,8 +131,44 @@ const api = {
   async post(url: string, data?: any) {
     const token = localStorage.getItem('access_token') || localStorage.getItem('token');
     console.log('🔑 Token utilisé pour la requête:', token ? `${token.substring(0, 20)}...` : 'AUCUN TOKEN');
+    
+    // Détecter si c'est un FormData (pour l'upload de fichiers)
+    const isFormData = data instanceof FormData;
+    
+    const headers: Record<string, string> = {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+    
+    // Ne pas ajouter Content-Type pour FormData (le navigateur le fait automatiquement avec boundary)
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     const response = await fetch(`${API_URL}${url}`, {
       method: 'POST',
+      headers,
+      credentials: 'include',
+      body: isFormData ? data : JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        localStorage.clear();
+        window.location.href = '/';
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async put(url: string, data?: any) {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    const response = await fetch(`${API_URL}${url}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -146,6 +204,12 @@ const api = {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        localStorage.clear();
+        window.location.href = '/';
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
       throw new Error(error.message || `Erreur HTTP ${response.status}`);
     }
@@ -165,6 +229,12 @@ const api = {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        localStorage.clear();
+        window.location.href = '/';
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
       throw new Error(error.message || `Erreur HTTP ${response.status}`);
     }

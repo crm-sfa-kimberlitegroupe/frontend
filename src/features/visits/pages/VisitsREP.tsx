@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, PageLayout } from '@/core/ui';
+import { Icon } from '@/core/ui/Icon';
 import { useToggle } from '@/core/hooks';
 import type { Visit } from '../types/pdv.types';
 import { useVendorOutlets } from '../hooks/useVendorOutlets';
@@ -10,6 +12,7 @@ import VisitCard from '../components/VisitCard';
 import VisitDetail from '../components/VisitDetail';
 
 export default function VisitsREP() {
+  const navigate = useNavigate();
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
   // ✅ Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
@@ -100,23 +103,29 @@ export default function VisitsREP() {
 
         {/* Boutons d'action principaux */}
         {!selectedVisit && !showPDVForm && (
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <Button 
-              variant="primary" 
-              size="md"
-              onClick={() => alert('Fonctionnalité: Enregistrer une visite')}
-            >
-              <span className="mr-2">📍</span>
-              Enregistrer visite
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="md"
-              onClick={() => setShowPDVForm(true)}
-            >
-              <span className="mr-2">🏪</span>
-              Nouveau PDV
-            </Button>
+          <div className="space-y-3 mb-4">
+            {/* Actions hors routing */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                size="md"
+                onClick={() => alert('Fonctionnalité: Merchandising hors routing')}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Icon name="camera" size="sm" className="mr-2" />
+                <span className="text-sm">Merchandising hors routing</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="md"
+                onClick={() => navigate('/dashboard/orders/create')}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Icon name="cart" size="sm" className="mr-2" />
+                <span className="text-sm">Vente hors routing</span>
+              </Button>
+            </div>
+
           </div>
         )}
 
@@ -155,9 +164,22 @@ export default function VisitsREP() {
         )}
 
         {/* Détail de visite */}
-        {selectedVisit && !showPDVForm && (
-          <VisitDetail onBack={() => setSelectedVisit(null)} />
-        )}
+        {selectedVisit && !showPDVForm && (() => {
+          const visit = visits.find(v => v.id === selectedVisit);
+          const outlet = outlets.find(o => o.id === selectedVisit);
+          if (!visit || !outlet) return null;
+          
+          return (
+            <VisitDetail 
+              onBack={() => setSelectedVisit(null)}
+              visitId={visit.id}
+              outletId={outlet.id}
+              pdvName={outlet.name}
+              address={outlet.address || ''}
+              status={visit.status as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'}
+            />
+          );
+        })()}
       </div>
     </PageLayout>
   );

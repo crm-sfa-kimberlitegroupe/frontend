@@ -1,101 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '../../../core/components/desktop';
 import type { Column } from '../../../core/components/desktop/DataTable';
 import { Button, Badge } from '@/core/ui';
 import { useFilters } from '@/core/hooks';
+import SKUModal from '../components/SKUModal';
+import { skusService } from '../services/productsService';
+import type { SKU } from '../services/productsService';
 
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  category: string;
-  price: number;
-  stock: number;
-  isActive: boolean;
-  photo?: string;
-}
-
-// Mock data
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Coca-Cola 33cl',
-    sku: 'COCA-33',
-    category: 'Boissons',
-    price: 500,
-    stock: 1250,
-    isActive: true,
-  },
-  {
-    id: '2',
-    name: 'Fanta Orange 33cl',
-    sku: 'FANTA-33',
-    category: 'Boissons',
-    price: 500,
-    stock: 980,
-    isActive: true,
-  },
-  {
-    id: '3',
-    name: 'Eau Minérale 1.5L',
-    sku: 'EAU-15',
-    category: 'Boissons',
-    price: 300,
-    stock: 2100,
-    isActive: true,
-  },
-  {
-    id: '4',
-    name: 'Biscuits Choco',
-    sku: 'BISC-CHOCO',
-    category: 'Snacks',
-    price: 250,
-    stock: 450,
-    isActive: true,
-  },
-  {
-    id: '5',
-    name: 'Chips Nature 50g',
-    sku: 'CHIPS-NAT',
-    category: 'Snacks',
-    price: 200,
-    stock: 0,
-    isActive: false,
-  },
-];
 
 export default function ProductsManagement() {
-  const [products] = useState<Product[]>(mockProducts);
+  const [skus, setSkus] = useState<SKU[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedSKU, setSelectedSKU] = useState<SKU | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   
-  // ✅ Hook réutilisable pour les filtres
+  // Charger les SKU au montage
+  useEffect(() => {
+    loadSKUs();
+  }, []);
+
+  const loadSKUs = async () => {
+    try {
+      setLoading(true);
+      const data = await skusService.getAll();
+      setSkus(data);
+    } catch (error) {
+      console.error('Erreur chargement SKU:', error);
+      alert('Erreur lors du chargement des produits');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtres
   const { filters, setFilter, resetFilters } = useFilters({
     category: 'all',
     status: 'all',
-    stock: 'all',
   });
-  
-  // Aliases pour compatibilité avec le code existant
-  const categoryFilter = filters.category;
-  const statusFilter = filters.status;
-  const stockFilter = filters.stock;
-  const setCategoryFilter = (value: string) => setFilter('category', value);
-  const setStatusFilter = (value: string) => setFilter('status', value);
-  const setStockFilter = (value: string) => setFilter('stock', value);
-  const activeFiltersCount = (filters.category !== 'all' ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.stock !== 'all' ? 1 : 0);
-  const handleClearFilters = resetFilters;
 
-  const filteredProducts = products.filter((product) => {
-    if (filters.category !== 'all' && product.category !== filters.category) return false;
-    if (filters.status === 'active' && !product.isActive) return false;
-    if (filters.status === 'inactive' && product.isActive) return false;
-    if (filters.stock === 'in_stock' && product.stock === 0) return false;
-    if (filters.stock === 'out_of_stock' && product.stock > 0) return false;
-    if (filters.stock === 'low_stock' && product.stock > 100) return false;
+  const filteredSKUs = (skus || []).filter((sku) => {
+    if (filters.category !== 'all' && sku.category !== filters.category) return false;
+    if (filters.status === 'active' && !sku.active) return false;
+    if (filters.status === 'inactive' && sku.active) return false;
     return true;
   });
 
-  const columns: Column<Product>[] = [
+  // Handlers
+  const handleCreate = () => {
+    console.log('🔥 BOUTON CLIQUÉ !');
+    console.log('showModal avant:', showModal);
+    setSelectedSKU(null);
+    setModalMode('create');
+    setShowModal(true);
+    console.log('showModal après:', true);
+  };
+
+  const handleEdit = (sku: SKU) => {
+    setSelectedSKU(sku);
+    setModalMode('edit');
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Supprimer ce produit ?')) return;
+    
+    try {
+      await skusService.delete(id);
+      alert('Produit supprimé avec succès');
+      loadSKUs();
+    } catch (error) {
+      alert('Erreur lors de la suppression');
+    }
+  };
+
+  const handleSubmit = async (data: any) => {
+    try {
+      if (modalMode === 'create') {
+        await skusService.create(data);
+        alert('Produit créé avec succès');
+      } else if (selectedSKU) {
+        await skusService.update(selectedSKU.id, data);
+        alert('Produit mis à jour avec succès');
+      }
+      
+      // Fermer le modal
+      setShowModal(false);
+      
+      // Recharger la liste instantanément
+      await loadSKUs();
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  const columns: Column<SKU>[] = [
     {
       key: 'name',
       label: 'Produit',
@@ -210,79 +210,44 @@ export default function ProductsManagement() {
     },
   ];
 
-  const outOfStock = products.filter((p) => p.stock === 0).length;
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock < 100).length;
+  const activeCount = (skus || []).filter((s) => s.active).length;
+  const inactiveCount = (skus || []).length - activeCount;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des produits...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Gestion des Produits"
-        description={`${products.length} produits • ${outOfStock} en rupture • ${lowStock} stock faible`}
+        description={`${(skus || []).length} produits • ${activeCount} actifs • ${inactiveCount} inactifs`}
         actions={
-          <Button variant="primary" size="md">
+          <Button variant="primary" size="md" onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2" />
             Nouveau Produit
           </Button>
         }
       />
 
-      {/* Alertes */}
-      {(outOfStock > 0 || lowStock > 0) && (
-        <div className="mb-6 space-y-3">
-          {outOfStock > 0 && (
-            <div className="p-4 bg-danger/10 border border-danger/20 rounded-lg flex items-center gap-3">
-              <XCircle className="w-5 h-5 text-danger" />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">
-                  {outOfStock} produit{outOfStock > 1 ? 's' : ''} en rupture de stock
-                </p>
-                <p className="text-sm text-gray-600">
-                  Ces produits ne sont plus disponibles et nécessitent un réapprovisionnement.
-                </p>
-              </div>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setStockFilter('out_of_stock')}
-              >
-                Voir
-              </Button>
-            </div>
-          )}
-          {lowStock > 0 && (
-            <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg flex items-center gap-3">
-              <Package className="w-5 h-5 text-warning" />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">
-                  {lowStock} produit{lowStock > 1 ? 's' : ''} avec stock faible
-                </p>
-                <p className="text-sm text-gray-600">
-                  Ces produits ont moins de 100 unités en stock.
-                </p>
-              </div>
-              <Button
-                variant="warning"
-                size="sm"
-                onClick={() => setStockFilter('low_stock')}
-              >
-                Voir
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
       <FilterBar
-        activeFiltersCount={activeFiltersCount}
-        onClear={handleClearFilters}
+        activeFiltersCount={(filters.category !== 'all' ? 1 : 0) + (filters.status !== 'all' ? 1 : 0)}
+        onClear={resetFilters}
       >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Catégorie
           </label>
           <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            value={filters.category}
+            onChange={(e) => setFilter('category', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">Toutes les catégories</option>
@@ -290,6 +255,7 @@ export default function ProductsManagement() {
             <option value="Snacks">Snacks</option>
             <option value="Hygiène">Hygiène</option>
             <option value="Alimentaire">Alimentaire</option>
+            <option value="Entretien">Entretien</option>
           </select>
         </div>
 
@@ -298,8 +264,8 @@ export default function ProductsManagement() {
             Statut
           </label>
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={filters.status}
+            onChange={(e) => setFilter('status', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">Tous</option>
@@ -307,29 +273,21 @@ export default function ProductsManagement() {
             <option value="inactive">Inactifs</option>
           </select>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Stock
-          </label>
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Tous</option>
-            <option value="in_stock">En stock</option>
-            <option value="low_stock">Stock faible</option>
-            <option value="out_of_stock">Rupture</option>
-          </select>
-        </div>
       </FilterBar>
 
       <DataTable
-        data={filteredProducts}
+        data={filteredSKUs}
         columns={columns}
         searchable
-        searchPlaceholder="Rechercher un produit..."
+        searchPlaceholder="Rechercher un produit (nom, EAN, marque)..."
+      />
+
+      <SKUModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        sku={selectedSKU}
+        mode={modalMode}
       />
     </div>
   );

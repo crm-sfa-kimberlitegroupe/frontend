@@ -11,9 +11,10 @@ interface UserModalProps {
   user?: User | null;
   mode: 'create' | 'edit';
   allowRoleSelection?: boolean; // Si true, permet de sélectionner le rôle (pour SUP). Si false, fixé à REP (pour ADMIN)
+  currentUser?: User | null; // Utilisateur connecté pour pré-remplir les champs
 }
 
-export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allowRoleSelection = false }: UserModalProps) {
+export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allowRoleSelection = false, currentUser }: UserModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -54,21 +55,24 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
       });
     } else {
       // Réinitialiser le formulaire en mode création
+      // Si c'est un ADMIN qui crée un vendeur, pré-remplir territoire et manager
+      const isAdminCreatingVendor = mode === 'create' && currentUser?.role === 'ADMIN';
+      
       setFormData({
         email: '',
         password: '',
         firstName: '',
         lastName: '',
         role: 'REP',
-        territoryId: '',
+        territoryId: isAdminCreatingVendor ? (currentUser?.assignedSectorId || currentUser?.territoryId || '') : '',
         phone: '',
         matricule: '',
         hireDate: '',
-        managerId: '',
+        managerId: isAdminCreatingVendor ? (currentUser?.id || '') : '',
       });
     }
     setError('');
-  }, [mode, user, isOpen]);
+  }, [mode, user, isOpen, currentUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,37 +237,39 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
             )}
           </div>
 
-          {/* Territoire */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Territoire
-            </label>
-            <select
-              value={formData.territoryId}
-              onChange={(e) => setFormData({ ...formData, territoryId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Sélectionner un territoire</option>
-              {territories
-                .filter((territory) => {
-                  // En mode édition, afficher le territoire actuellement assigné + les territoires non assignés
-                  if (mode === 'edit' && user && territory.id === user.territory) {
-                    return true;
-                  }
-                  // Filtrer les territoires non assignés (sans utilisateurs assignés ou avec tableau vide)
-                  return !territory.assignedUsers || territory.assignedUsers.length === 0;
-                })
-                .map((territory) => (
-                  <option key={territory.id} value={territory.id}>
-                    {territory.name} ({territory.code})
-                    {territory.assignedUsers && territory.assignedUsers.length > 0 && ' - Déjà assigné'}
-                  </option>
-                ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Seuls les territoires non assignés sont affichés
-            </p>
-          </div>
+          {/* Territoire - Caché si ADMIN crée un vendeur */}
+          {!(mode === 'create' && currentUser?.role === 'ADMIN') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Territoire
+              </label>
+              <select
+                value={formData.territoryId}
+                onChange={(e) => setFormData({ ...formData, territoryId: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Sélectionner un territoire</option>
+                {territories
+                  .filter((territory) => {
+                    // En mode édition, afficher le territoire actuellement assigné + les territoires non assignés
+                    if (mode === 'edit' && user && territory.id === user.territory) {
+                      return true;
+                    }
+                    // Filtrer les territoires non assignés (sans utilisateurs assignés ou avec tableau vide)
+                    return !territory.assignedUsers || territory.assignedUsers.length === 0;
+                  })
+                  .map((territory) => (
+                    <option key={territory.id} value={territory.id}>
+                      {territory.name} ({territory.code})
+                      {territory.assignedUsers && territory.assignedUsers.length > 0 && ' - Déjà assigné'}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Seuls les territoires non assignés sont affichés
+              </p>
+            </div>
+          )}
 
           {/* Téléphone */}
           <div>
@@ -306,25 +312,27 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
             />
           </div>
 
-          {/* Manager */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Manager
-            </label>
-            <select
-              value={formData.managerId}
-              onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Aucun manager</option>
-              {managers.map((manager) => (
-                <option key={manager.id} value={manager.id}>
-                  {manager.firstName} {manager.lastName} ({manager.role})
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Sélectionner un superviseur ou administrateur</p>
-          </div>
+          {/* Manager - Caché si ADMIN crée un vendeur */}
+          {!(mode === 'create' && currentUser?.role === 'ADMIN') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Manager
+              </label>
+              <select
+                value={formData.managerId}
+                onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Aucun manager</option>
+                {managers.map((manager) => (
+                  <option key={manager.id} value={manager.id}>
+                    {manager.firstName} {manager.lastName} ({manager.role})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Sélectionner un superviseur ou administrateur</p>
+            </div>
+          )}
           </div>
 
           {/* Actions */}
