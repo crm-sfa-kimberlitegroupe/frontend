@@ -80,18 +80,18 @@ export default function StockManagement() {
     // Vérifier que item.sku existe
     if (!item.sku) return false;
     
-    const skuName = item.sku.name || '';
-    const skuBrand = item.sku.brand || '';
+    const skuName = item.sku.shortDescription || '';
+    const skuBrand = item.sku.packSize.packFormat.brand.displayName || '';
     const matchesSearch = skuName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          skuBrand.toLowerCase().includes(searchTerm.toLowerCase());
-    const skuCategory = item.sku.category;
+    const skuCategory = item.sku.packSize.packFormat.brand.subCategory.category.displayName;
     const matchesCategory = filterCategory === 'all' || skuCategory === filterCategory;
     return matchesSearch && matchesCategory;
   }) || [];
 
   // Catégories uniques
   const categories = Array.from(new Set(portfolio?.map(item => {
-    return item.sku?.category;
+    return item.sku?.packSize.packFormat.brand.subCategory.category.displayName;
   }).filter(Boolean) || []));
 
   if (isLoading) {

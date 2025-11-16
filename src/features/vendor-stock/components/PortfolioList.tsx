@@ -37,7 +37,7 @@ export default function PortfolioList({ items }: PortfolioListProps) {
                 {item.sku.photo ? (
                   <img
                     src={item.sku.photo}
-                    alt={item.sku.name}
+                    alt={item.sku.shortDescription}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -50,14 +50,22 @@ export default function PortfolioList({ items }: PortfolioListProps) {
               {/* Informations produit */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-900 truncate">
-                  {item.sku.name}
+                  {item.sku.packSize.packFormat.brand.displayName}
                 </h3>
-                <p className="text-sm text-gray-600 truncate">{item.sku.brand}</p>
-                {item.sku.category && (
-                  <span className="inline-block px-2 py-0.5 bg-gray-100 text-xs text-gray-600 rounded mt-1">
-                    {item.sku.category}
+                <p className="text-sm text-gray-600 truncate">
+                  {item.sku.shortDescription}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {item.sku.packSize.displayName}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-block px-2 py-0.5 bg-blue-100 text-xs text-blue-700 rounded">
+                    {item.sku.packSize.packFormat.brand.subCategory.category.displayName}
                   </span>
-                )}
+                  <span className="inline-block px-2 py-0.5 bg-gray-100 text-xs text-gray-600 rounded">
+                    {item.sku.packSize.packFormat.brand.subCategory.displayName}
+                  </span>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Mis à jour {formatDate(item.updatedAt)}
                 </p>

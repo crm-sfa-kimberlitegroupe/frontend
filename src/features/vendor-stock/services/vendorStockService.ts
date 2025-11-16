@@ -17,11 +17,30 @@ export interface VendorStockItem {
   sku: {
     id: string;
     ean: string;
-    name: string;
-    brand: string;
-    category: string | null;
+    fullDescription: string;
+    shortDescription: string;
     photo: string | null;
     priceHt: number;
+    packSize: {
+      name: string;
+      displayName: string;
+      packFormat: {
+        name: string;
+        displayName: string;
+        brand: {
+          name: string;
+          displayName: string;
+          subCategory: {
+            name: string;
+            displayName: string;
+            category: {
+              name: string;
+              displayName: string;
+            };
+          };
+        };
+      };
+    };
   };
   updatedAt: string;
 }
@@ -75,7 +94,7 @@ export const vendorStockService = {
   /**
    * Ajouter du stock au portefeuille
    */
-  async addStock(data: AddStockDto): Promise<any> {
+  async addStock(data: AddStockDto): Promise<{ message: string; items: VendorStockItem[] }> {
     console.log('📤 Envoi ajout stock:', data);
     const response = await api.post('/vendor-stock/add', data);
     console.log('✅ Stock ajouté:', response);
@@ -133,7 +152,7 @@ export const vendorStockService = {
   /**
    * Décharger tout le stock (vider le portefeuille)
    */
-  async unloadAllStock(): Promise<any> {
+  async unloadAllStock(): Promise<{ message: string; deletedCount: number }> {
     console.log('📤 Déchargement de tout le stock...');
     const response = await api.delete('/vendor-stock/unload-all');
     console.log('✅ Stock déchargé:', response);
