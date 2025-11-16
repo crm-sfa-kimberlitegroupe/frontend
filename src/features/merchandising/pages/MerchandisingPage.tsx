@@ -12,7 +12,7 @@ export default function MerchandisingPage() {
   const visitId = searchParams.get('visitId');
   const pdvName = searchParams.get('pdvName') || 'Point de vente';
   
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos] = useState<string[]>([]);
   const [checklist, setChecklist] = useState({
     produitsDisposes: false,
     prixAffiches: false,
@@ -59,7 +59,7 @@ export default function MerchandisingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 pb-24">
       {/* Header */}
       <div className="mb-6">
         <button 

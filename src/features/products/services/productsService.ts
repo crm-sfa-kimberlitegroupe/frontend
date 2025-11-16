@@ -69,7 +69,7 @@ class SKUsService {
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
 
-    const response = await api.get<SKU[]>(url);
+    const response = await api.get(url);
     return response.data;
   }
 
@@ -77,7 +77,7 @@ class SKUsService {
    * Récupérer un produit par ID
    */
   async getById(id: string): Promise<SKU> {
-    const response = await api.get<SKU>(`${this.baseUrl}/${id}`);
+    const response = await api.get(`${this.baseUrl}/${id}`);
     return response.data;
   }
 
@@ -85,7 +85,7 @@ class SKUsService {
    * Récupérer un produit par EAN
    */
   async getByEan(ean: string): Promise<SKU> {
-    const response = await api.get<SKU>(`${this.baseUrl}/ean/${ean}`);
+    const response = await api.get(`${this.baseUrl}/ean/${ean}`);
     return response.data;
   }
 
@@ -93,7 +93,7 @@ class SKUsService {
    * Créer un nouveau produit
    */
   async create(data: CreateSKUData): Promise<SKU> {
-    const response = await api.post<SKU>(this.baseUrl, data);
+    const response = await api.post(this.baseUrl, data);
     return response.data;
   }
 
@@ -101,7 +101,7 @@ class SKUsService {
    * Mettre à jour un produit
    */
   async update(id: string, data: UpdateSKUData): Promise<SKU> {
-    const response = await api.put<SKU>(`${this.baseUrl}/${id}`, data);
+    const response = await api.put(`${this.baseUrl}/${id}`, data);
     return response.data;
   }
 
@@ -109,7 +109,7 @@ class SKUsService {
    * Activer/Désactiver un produit
    */
   async toggleActive(id: string): Promise<SKU> {
-    const response = await api.put<SKU>(`${this.baseUrl}/${id}/toggle-active`);
+    const response = await api.put(`${this.baseUrl}/${id}/toggle-active`);
     return response.data;
   }
 
@@ -117,7 +117,7 @@ class SKUsService {
    * Supprimer un produit
    */
   async delete(id: string): Promise<{ message: string }> {
-    const response = await api.delete<{ message: string }>(`${this.baseUrl}/${id}`);
+    const response = await api.delete(`${this.baseUrl}/${id}`);
     return response.data;
   }
 
@@ -125,7 +125,7 @@ class SKUsService {
    * Obtenir les statistiques des produits
    */
   async getStats(): Promise<SKUStats> {
-    const response = await api.get<SKUStats>(`${this.baseUrl}/stats`);
+    const response = await api.get(`${this.baseUrl}/stats`);
     return response.data;
   }
 
@@ -133,12 +133,12 @@ class SKUsService {
    * Obtenir la liste des catégories
    */
   async getCategories(): Promise<string[]> {
-    const response = await api.get<string[]>(`${this.baseUrl}/categories`);
+    const response = await api.get(`${this.baseUrl}/categories`);
     return response.data;
   }
 
   async getBrands(): Promise<string[]> {
-    const response = await api.get<string[]>(`${this.baseUrl}/brands`);
+    const response = await api.get(`${this.baseUrl}/brands`);
     return response.data;
   }
 

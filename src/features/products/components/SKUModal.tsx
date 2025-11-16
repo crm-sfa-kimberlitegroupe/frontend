@@ -112,11 +112,7 @@ export default function SKUModal({ isOpen, onClose, onSubmit, sku, mode }: SKUMo
       const formDataUpload = new FormData();
       formDataUpload.append('file', photoFile);
 
-      const response = await api.post<{ url: string }>('/cloudinary/upload', formDataUpload, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/cloudinary/upload', formDataUpload);
 
       return response.data.url;
     } catch (error) {
@@ -147,8 +143,8 @@ export default function SKUModal({ isOpen, onClose, onSubmit, sku, mode }: SKUMo
       });
 
       onClose();
-    } catch (error: any) {
-      alert(error.message || 'Erreur lors de l\'enregistrement');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erreur lors de l\'enregistrement');
     } finally {
       setSubmitting(false);
     }

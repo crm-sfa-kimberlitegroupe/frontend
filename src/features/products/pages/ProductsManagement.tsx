@@ -6,7 +6,7 @@ import { Button, Badge } from '@/core/ui';
 import { useFilters } from '@/core/hooks';
 import SKUModal from '../components/SKUModal';
 import { skusService } from '../services/productsService';
-import type { SKU } from '../services/productsService';
+import type { SKU, CreateSKUData } from '../services/productsService';
 
 
 export default function ProductsManagement() {
@@ -57,25 +57,11 @@ export default function ProductsManagement() {
     console.log('showModal après:', true);
   };
 
-  const handleEdit = (sku: SKU) => {
-    setSelectedSKU(sku);
-    setModalMode('edit');
-    setShowModal(true);
-  };
+  // Fonctions pour les actions (à implémenter plus tard)
+  // const handleEdit = (sku: SKU) => { ... }
+  // const handleDelete = async (id: string) => { ... }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce produit ?')) return;
-    
-    try {
-      await skusService.delete(id);
-      alert('Produit supprimé avec succès');
-      loadSKUs();
-    } catch (error) {
-      alert('Erreur lors de la suppression');
-    }
-  };
-
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CreateSKUData) => {
     try {
       if (modalMode === 'create') {
         await skusService.create(data);
@@ -90,7 +76,7 @@ export default function ProductsManagement() {
       
       // Recharger la liste instantanément
       await loadSKUs();
-    } catch (error: any) {
+    } catch (error) {
       throw error;
     }
   };
@@ -107,7 +93,7 @@ export default function ProductsManagement() {
           </div>
           <div>
             <p className="font-medium text-gray-900">{product.name}</p>
-            <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+            <p className="text-sm text-gray-500">EAN: {product.ean}</p>
           </div>
         </div>
       ),
@@ -126,7 +112,7 @@ export default function ProductsManagement() {
       sortable: true,
       render: (product) => (
         <span className="font-semibold text-gray-900">
-          {product.price.toLocaleString()} FCFA
+          {product.priceHt.toLocaleString()} FCFA
         </span>
       ),
     },
@@ -134,35 +120,24 @@ export default function ProductsManagement() {
       key: 'stock',
       label: 'Stock',
       sortable: true,
-      render: (product) => (
+      render: () => (
         <div>
-          <span
-            className={`font-semibold ${
-              product.stock === 0
-                ? 'text-danger'
-                : product.stock < 100
-                ? 'text-warning'
-                : 'text-success'
-            }`}
-          >
-            {product.stock}
+          <span className="font-semibold text-gray-500">
+            N/A
           </span>
-          {product.stock === 0 && (
-            <p className="text-xs text-danger mt-1">Rupture</p>
-          )}
-          {product.stock > 0 && product.stock < 100 && (
-            <p className="text-xs text-warning mt-1">Stock faible</p>
-          )}
+          <div className="mt-1">
+            <Badge variant="secondary">Stock non géré</Badge>
+          </div>
         </div>
       ),
     },
     {
-      key: 'isActive',
+      key: 'active',
       label: 'Statut',
       sortable: true,
       render: (product) => (
         <div className="flex items-center gap-2">
-          {product.isActive ? (
+          {product.active ? (
             <>
               <CheckCircle className="w-4 h-4 text-success" />
               <span className="text-success font-medium">Actif</span>

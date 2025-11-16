@@ -38,6 +38,8 @@ import SKUManagement from './features/products/pages/SKUManagement';
 import { CreateOrderPage } from './features/orders/pages/CreateOrderPageWorking';
 import { OrdersListPage } from './features/orders/pages/OrdersListPage';
 import { OrderDetailPage } from './features/orders/pages/OrderDetailPage';
+// Page Merchandising
+import MerchandisingPage from './features/merchandising/pages/MerchandisingPage';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -123,6 +125,9 @@ function App() {
           <Route path="orders" element={<OrdersListPage />} />
           <Route path="orders/create" element={<CreateOrderPage />} />
           <Route path="orders/:orderId" element={<OrderDetailPage />} />
+          
+          {/* Route Merchandising */}
+          <Route path="merchandising" element={<MerchandisingPage />} />
           
           {/* Pages anciennes - TEMPORAIREMENT DÉSACTIVÉES */}
           <Route path="sessions" element={<UnderConstruction />} />

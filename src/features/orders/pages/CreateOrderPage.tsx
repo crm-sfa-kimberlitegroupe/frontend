@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../../core/ui/Button';
 import Card from '../../../core/ui/Card';
-import { PageLayout } from '@/core/ui';
 import { ordersService } from '../services/orders.service';
 import { CreateOrderRequest, OrderLine, PaymentMethod } from '../types/order.types';
 import { PageHeader } from '@/core/ui';
 import { Alert } from '@/core/ui';
-import { AlertCircle, CheckCircle, Package, ShoppingCart, Plus, Trash2, Save, CreditCard } from 'lucide-react';
+import { Package, ShoppingCart, Plus, Trash2, Save, CreditCard } from 'lucide-react';
 
 interface SKU {
   id: string;
@@ -182,7 +181,7 @@ export const CreateOrderPage: React.FC = () => {
         ];
       }
 
-      const result = await ordersService.createOrder(orderData);
+      await ordersService.createOrder(orderData);
 
       setSuccess(true);
       setTimeout(() => {
@@ -216,13 +215,13 @@ export const CreateOrderPage: React.FC = () => {
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         {error && (
-          <Alert variant="danger" icon={AlertCircle}>
+          <Alert variant="error">
             {error}
           </Alert>
         )}
 
         {success && (
-          <Alert variant="success" icon={CheckCircle}>
+          <Alert variant="success">
             Vente enregistrée avec succès ! Redirection...
           </Alert>
         )}
@@ -248,7 +247,7 @@ export const CreateOrderPage: React.FC = () => {
                 <p className="text-gray-500 font-medium">Chargement de votre stock...</p>
               </div>
             ) : availableStock.length === 0 ? (
-              <Alert variant="warning" icon={AlertCircle}>
+              <Alert variant="warning">
                 Votre stock est vide. Veuillez contacter votre administrateur.
               </Alert>
             ) : (

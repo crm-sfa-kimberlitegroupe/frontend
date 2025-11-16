@@ -624,8 +624,8 @@ const ProductHierarchy: React.FC = () => {
           } catch (error) {
             console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde de la catégorie:', {
               error: error,
-              errorMessage: error?.message,
-              errorResponse: error?.response?.data,
+              errorMessage: error instanceof Error ? error.message : 'Erreur inconnue',
+              errorResponse: error && typeof error === 'object' && 'response' in error ? (error as any).response?.data : null,
               isEdit: !!editingCategory,
               categoryId: editingCategory?.id
             });

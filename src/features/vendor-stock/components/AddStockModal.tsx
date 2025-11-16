@@ -64,15 +64,15 @@ export default function AddStockModal({ onClose, onSuccess }: AddStockModalProps
       console.log('📦 Nombre de SKUs:', skusList.length);
       
       // Transformer les données pour correspondre au format attendu
-      const transformedSkus = skusList.map((sku: Record<string, unknown>) => ({
-        id: sku.id,
-        ean: sku.ean || sku.code,
-        name: sku.shortDescription,
-        brand: sku.packSize?.packFormat?.brand?.name || 'Sans marque',
-        category: sku.packSize?.packFormat?.brand?.subCategory?.category?.name || null,
-        photo: sku.photo,
-        priceHt: Number(sku.priceHt),
-      }));
+      const transformedSkus = skusList.map((sku: any) => ({
+        id: String(sku.id || ''),
+        ean: String(sku.ean || sku.code || ''),
+        name: String(sku.shortDescription || sku.name || ''),
+        brand: String((sku.packSize as any)?.packFormat?.brand?.name || 'Sans marque'),
+        category: String((sku.packSize as any)?.packFormat?.brand?.subCategory?.category?.name || 'Non catégorisé'),
+        photo: String(sku.photo || ''),
+        priceHt: Number(sku.priceHt || 0),
+      })) as SKU[];
       
       console.log('✅ SKUs transformés:', transformedSkus.length, 'produits');
       setSkus(transformedSkus);
