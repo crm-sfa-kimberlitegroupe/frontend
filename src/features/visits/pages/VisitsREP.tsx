@@ -1,42 +1,163 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button, PageLayout } from '@/core/ui';
 import { Icon } from '@/core/ui/Icon';
 import { useToggle } from '@/core/hooks';
-import type { Visit } from '../types/pdv.types';
-import { useVendorOutlets } from '../hooks/useVendorOutlets';
+import { useRouteVisits } from '../hooks/useRouteVisits';
+import { visitsService } from '../services/visits.service';
+import routesService from '../../routes/services/routesService';
 import VisitsHeader from '../components/VisitsHeader';
-import ActiveVisitCTA from '../components/ActiveVisitCTA';
 import PDVFormWizard from '../components/PDVFormWizard';
 import VisitCard from '../components/VisitCard';
-import VisitDetail from '../components/VisitDetail';
+import VisitDetailNew from '../components/VisitDetailNew';
+import VisitInitializationModal from '../components/VisitInitializationModal';
 
 export default function VisitsREP() {
-  const navigate = useNavigate();
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
-  // ✅ Hook réutilisable pour le toggle
+  // Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
+  // Stocker les IDs des vraies visites créées (outletId -> realVisitId)
+  const [createdVisits, setCreatedVisits] = useState<Record<string, string>>(() => {
+    // Charger depuis localStorage au démarrage
+    try {
+      const saved = localStorage.getItem('createdVisits');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  // États pour la modale d'initialisation
+  const [showInitModal, setShowInitModal] = useState(false);
+  const [initPdvName, setInitPdvName] = useState('');
+
+
+
+
+
+
+
+// Fonction pour nettoyer une visite terminée du localStorage
+const cleanupCompletedVisit = (outletId: string) => {
+  const newCreatedVisits = { ...createdVisits };
+  delete newCreatedVisits[outletId];
+  setCreatedVisits(newCreatedVisits);
+  localStorage.setItem('createdVisits', JSON.stringify(newCreatedVisits));
+  console.log('🧹 Visite terminée nettoyée du localStorage pour outlet:', outletId);
+};
+
+const handleVisitSelect = async (visit: typeof visits[0]) => {
+  try {
+    // Si la visite est PLANNED, créer une visite avec check-in ET mettre à jour le routeStop
+    if (visit.status === 'PLANNED') {
+      // Afficher la modale d'initialisation
+      setInitPdvName(visit.pdvName);
+      setShowInitModal(true);
+      
+      console.log('🚀 Démarrage de la visite pour:', visit.pdvName);
+      
+      // Récupérer les coordonnées GPS
+      let lat: number | undefined;
+      let lng: number | undefined;
+      
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        } catch (error) {
+          console.log('⚠️ Impossible de récupérer la position GPS:', error);
+        }
+      }
+
+      // Créer la visite avec check-in
+      const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
+      console.log('✅ Visite créée avec check-in:', newVisit);
+
+      // Stocker l'ID de la vraie visite créée
+      if (newVisit?.id) {
+        const newCreatedVisits = {
+          ...createdVisits,
+          [visit.outletId]: newVisit.id
+        };
+        setCreatedVisits(newCreatedVisits);
+        
+        // Persister dans localStorage
+        localStorage.setItem('createdVisits', JSON.stringify(newCreatedVisits));
+        
+        console.log('💾 ID de la vraie visite stocké:', newVisit.id, 'pour outlet:', visit.outletId);
+      }
+
+      // Mettre à jour le statut du routeStop à IN_PROGRESS
+      if (routePlan?.id) {
+        await routesService.updateRouteStopStatus(routePlan.id, visit.outletId, 'IN_PROGRESS');
+        console.log('✅ Statut du stop de route mis à jour vers IN_PROGRESS');
+      }
+      
+      // Recharger les données
+      await refetch();
+      
+      // Fermer la modale
+      setShowInitModal(false);
+    }
+    
+    // Ouvrir le détail de la visite (après la modale si c'était PLANNED)
+    setTimeout(() => {
+      setSelectedVisit(visit.id);
+    }, visit.status === 'PLANNED' ? 1500 : 0);
+    
+  } catch (error) {
+    console.error('❌ Erreur lors du démarrage de la visite:', error);
+    setShowInitModal(false);
+    alert('Erreur lors du démarrage de la visite. Veuillez réessayer.');
+  }
+};
+
+
   
-  // 🏪 Récupérer les PDV du vendeur connecté
-  const { outlets, sector, loading, error } = useVendorOutlets();
+  // Récupérer les visites depuis la route planifiée
+  const { visits, sector, loading, error, refetch, routePlan } = useRouteVisits();
 
-  // 📝 Convertir les PDV en visites (pour l'instant, toutes planifiées)
-  // TODO: Intégrer avec un vrai système de planification de visites
-  const visits: Visit[] = outlets.map((outlet, index) => ({
-    id: outlet.id,
-    pdvName: outlet.name,
-    status: index === 0 ? 'IN_PROGRESS' : index < 2 ? 'COMPLETED' : 'PLANNED' as const,
-    scheduledTime: `${8 + index * 2}:00`,
-    checkInTime: index < 2 ? `${8 + index * 2}:05` : undefined,
-    checkOutTime: index < 2 ? `${8 + index * 2}:45` : undefined,
-  }));
+  // Nettoyer automatiquement les visites terminées du localStorage
+  useEffect(() => {
+    if (visits.length > 0) {
+      const currentCreatedVisits = { ...createdVisits };
+      let hasChanges = false;
 
-  const activeVisit = visits.find(v => v.status === 'IN_PROGRESS');
+      // Vérifier chaque visite stockée
+      Object.keys(currentCreatedVisits).forEach(outletId => {
+        const visit = visits.find(v => v.outletId === outletId);
+        // Si la visite est terminée, la supprimer du localStorage
+        if (visit && visit.status === 'COMPLETED') {
+          delete currentCreatedVisits[outletId];
+          hasChanges = true;
+          console.log('🧹 Auto-nettoyage: visite terminée supprimée du localStorage pour outlet:', outletId);
+        }
+      });
+
+      // Mettre à jour si des changements ont été faits
+      if (hasChanges) {
+        setCreatedVisits(currentCreatedVisits);
+        localStorage.setItem('createdVisits', JSON.stringify(currentCreatedVisits));
+      }
+    }
+  }, [visits, createdVisits]);
+
+
+  console.log("visits",visits);
+  console.log("visits",visits);
+  console.log("visits",visits);
+  console.log("visits",visits);
+  console.log("visits",visits);
+  console.log("visits",visits);
+
+
+
   const completedCount = visits.filter(v => v.status === 'COMPLETED').length;
   const inProgressCount = visits.filter(v => v.status === 'IN_PROGRESS').length;
   const plannedCount = visits.filter(v => v.status === 'PLANNED').length;
 
-  // 🔄 État de chargement
+  // État de chargement
   if (loading) {
     return (
       <PageLayout>
@@ -50,21 +171,30 @@ export default function VisitsREP() {
     );
   }
 
-  // ❌ État d'erreur
+  // État d'erreur avec debug
   if (error) {
     return (
       <PageLayout>
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-lg text-slate-600">Chargement...</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-2xl">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Erreur</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            
+            
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="primary"
+            >
+              Réessayer
+            </Button>
+          </div>
         </div>
-      </div>
       </PageLayout>
     );
   }
 
-  // 🚫 Pas de secteur assigné
+  // Pas de secteur assigné
   if (!sector) {
     return (
       <PageLayout>
@@ -96,45 +226,24 @@ export default function VisitsREP() {
               <strong>{sector.name}</strong> ({sector.code})
             </p>
             <p className="text-base text-blue-600 mt-1">
-              {outlets.length} PDV assignés
+              {visits.length} PDV dans votre route
             </p>
           </div>
         )}
 
-        {/* Boutons d'action principaux */}
+        {/* Bouton d'ajout de PDV */}
         {!selectedVisit && !showPDVForm && (
-          <div className="space-y-3 mb-4">
-            {/* Actions hors routing */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                size="md"
-                onClick={() => alert('Fonctionnalité: Merchandising hors routing')}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Icon name="camera" size="sm" className="mr-2" />
-                <span className="text-sm">Merchandising hors routing</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="md"
-                onClick={() => navigate('/dashboard/orders/create')}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Icon name="cart" size="sm" className="mr-2" />
-                <span className="text-sm">Vente hors routing</span>
-              </Button>
-            </div>
-
+          <div className="mb-4">
+            <Button 
+              variant="primary" 
+              size="md"
+              onClick={() => setShowPDVForm(true)}
+              fullWidth
+            >
+              <Icon name="plus" size="sm" className="mr-2" />
+              Nouveau PDV
+            </Button>
           </div>
-        )}
-
-        {/* CTA Check-in si visite en cours */}
-        {activeVisit && !selectedVisit && !showPDVForm && (
-          <ActiveVisitCTA 
-            pdvName={activeVisit.pdvName}
-            onContinue={() => setSelectedVisit(activeVisit.id)}
-          />
         )}
 
         {/* Formulaire d'enregistrement de PDV */}
@@ -156,7 +265,12 @@ export default function VisitsREP() {
                 <VisitCard 
                   key={visit.id}
                   visit={visit}
-                  onSelect={setSelectedVisit}
+                  onSelect={async (visitId) => {
+                    const visit = visits.find(v => v.id === visitId);
+                    if (visit) {
+                      await handleVisitSelect(visit);
+                    }
+                  }}
                 />
               ))
             )}
@@ -166,20 +280,42 @@ export default function VisitsREP() {
         {/* Détail de visite */}
         {selectedVisit && !showPDVForm && (() => {
           const visit = visits.find(v => v.id === selectedVisit);
-          const outlet = outlets.find(o => o.id === selectedVisit);
-          if (!visit || !outlet) return null;
+          if (!visit) return null;
+          
+          // Utiliser l'ID de la vraie visite créée si disponible, sinon l'outletId
+          const realVisitId = createdVisits[visit.outletId] || visit.id;
+          
+          console.log('🔍 [DEBUG VisitsREP] outletId:', visit.outletId);
+          console.log('🔍 [DEBUG VisitsREP] createdVisits:', createdVisits);
+          console.log('🔍 [DEBUG VisitsREP] realVisitId passé:', realVisitId);
           
           return (
-            <VisitDetail 
-              onBack={() => setSelectedVisit(null)}
-              visitId={visit.id}
-              outletId={outlet.id}
-              pdvName={outlet.name}
-              address={outlet.address || ''}
+            <VisitDetailNew 
+              onBack={() => {
+                setSelectedVisit(null);
+                // La liste se mettra à jour automatiquement via le hook
+              }}
+              onVisitCompleted={() => {
+                // Nettoyer l'ID de la visite terminée du localStorage
+                cleanupCompletedVisit(visit.outletId);
+                // Recharger les données pour mettre à jour le statut
+                refetch();
+              }}
+              visitId={realVisitId}
+              outletId={visit.outletId}
+              pdvName={visit.pdvName}
+              address={visit.address || ''}
               status={visit.status as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'}
+              routePlanId={routePlan?.id}
             />
           );
         })()}
+
+        {/* Modale d'initialisation de visite */}
+        <VisitInitializationModal 
+          isOpen={showInitModal}
+          pdvName={initPdvName}
+        />
       </div>
     </PageLayout>
   );
