@@ -73,8 +73,6 @@ export function useRouteVisits() {
           
           if (stop.status === 'VISITED') {
             visitStatus = 'COMPLETED';
-          } else if (stop.status === 'IN_PROGRESS') {
-            visitStatus = 'IN_PROGRESS';
           } else if (stop.status === 'PLANNED') {
             // Logique pour déterminer si c'est le prochain à visiter
             const hasStarted = todayRoute.status === 'IN_PROGRESS';

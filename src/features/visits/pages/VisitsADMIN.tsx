@@ -12,7 +12,6 @@ export default function VisitsADMIN() {
   const [pendingPDV, setPendingPDV] = useState<Outlet[]>([]);
   const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV validés pour l'onglet "Points de vente"
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPDV, setSelectedPDV] = useState<Outlet | null>(null);
 
   // Charger les PDV depuis l'API
   useEffect(() => {
