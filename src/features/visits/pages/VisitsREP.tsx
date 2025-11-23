@@ -45,6 +45,8 @@ const cleanupCompletedVisit = (outletId: string) => {
 };
 
 const handleVisitSelect = async (visit: typeof visits[0]) => {
+  let createdVisit: { id: string } | null = null; // Déclarer la variable pour la visite créée
+  
   try {
     // Si la visite est PLANNED, créer une visite avec check-in ET mettre à jour le routeStop
     if (visit.status === 'PLANNED') {
@@ -71,21 +73,39 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
       }
 
       // Créer la visite avec check-in
-      const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
-      console.log('✅ Visite créée avec check-in:', newVisit);
+      console.log('📤 Envoi check-in pour outletId:', visit.outletId, 'lat:', lat, 'lng:', lng);
+      
+      try {
+        const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
+        createdVisit = newVisit; // Assigner à la variable externe
+        
+        console.log('📥 Réponse complète du check-in:', newVisit);
+        console.log('📥 Type de la réponse:', typeof newVisit);
+        console.log('📥 Clés de l\'objet:', newVisit ? Object.keys(newVisit) : 'null');
+        console.log('✅ Visite créée avec check-in:', newVisit);
+        console.log('🆔 ID de la nouvelle visite créée:', newVisit?.id);
+        
+        if (!newVisit || !newVisit.id) {
+          throw new Error('Service checkIn n\'a pas retourné de visite valide');
+        }
+        
+      } catch (checkInError) {
+        console.error('❌ Erreur lors du check-in:', checkInError);
+        throw checkInError; // Re-lancer l'erreur pour qu'elle soit gérée par le catch principal
+      }
 
       // Stocker l'ID de la vraie visite créée
-      if (newVisit?.id) {
+      if (createdVisit?.id) {
         const newCreatedVisits = {
           ...createdVisits,
-          [visit.outletId]: newVisit.id
+          [visit.outletId]: createdVisit.id
         };
         setCreatedVisits(newCreatedVisits);
         
         // Persister dans localStorage
         localStorage.setItem('createdVisits', JSON.stringify(newCreatedVisits));
         
-        console.log('💾 ID de la vraie visite stocké:', newVisit.id, 'pour outlet:', visit.outletId);
+        console.log('💾 ID de la vraie visite stocké:', createdVisit.id, 'pour outlet:', visit.outletId);
       }
 
       // Mettre à jour le statut du routeStop à IN_PROGRESS
@@ -103,7 +123,12 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
     
     // Ouvrir le détail de la visite (après la modale si c'était PLANNED)
     setTimeout(() => {
-      setSelectedVisit(visit.id);
+      // Utiliser l'ID de la vraie visite créée si disponible, sinon l'ID original
+      const visitIdToUse = visit.status === 'PLANNED' && createdVisit?.id ? createdVisit.id : visit.id;
+      console.log('🎯 ID utilisé pour ouvrir le détail:', visitIdToUse);
+      console.log('🎯 Ancien ID (visit.id):', visit.id);
+      console.log('🎯 Nouveau ID (createdVisit.id):', createdVisit?.id);
+      setSelectedVisit(visitIdToUse);
     }, visit.status === 'PLANNED' ? 1500 : 0);
     
   } catch (error) {
@@ -279,11 +304,24 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
 
         {/* Détail de visite */}
         {selectedVisit && !showPDVForm && (() => {
-          const visit = visits.find(v => v.id === selectedVisit);
+          // Chercher d'abord par ID de visite, puis par outletId si c'est un ID de visite créée
+          let visit = visits.find(v => v.id === selectedVisit);
+          
+          // Si pas trouvé, c'est peut-être un ID de vraie visite, chercher par outletId
+          if (!visit) {
+            // Chercher l'outletId correspondant à cet ID de visite
+            const outletId = Object.keys(createdVisits).find(key => createdVisits[key] === selectedVisit);
+            if (outletId) {
+              visit = visits.find(v => v.outletId === outletId);
+            }
+          }
+          
           if (!visit) return null;
           
-          // Utiliser l'ID de la vraie visite créée si disponible, sinon l'outletId
-          const realVisitId = createdVisits[visit.outletId] || visit.id;
+          // Utiliser l'ID sélectionné s'il correspond à une vraie visite, sinon utiliser le mapping
+          const realVisitId = Object.values(createdVisits).includes(selectedVisit) 
+            ? selectedVisit 
+            : (createdVisits[visit.outletId] || visit.id);
           
           console.log('🔍 [DEBUG VisitsREP] outletId:', visit.outletId);
           console.log('🔍 [DEBUG VisitsREP] createdVisits:', createdVisits);

@@ -132,12 +132,30 @@ export default function RouteADMIN() {
 
     try {
       setMultiDayLoading(true);
+      
+      // Récupérer les informations du vendeur sélectionné pour obtenir son secteur
+      const selectedRepData = reps.find(rep => rep.id === selectedRep);
+      const rawSectorId = selectedRepData?.assignedSectorId || selectedRepData?.territoryId;
+      const sectorId = rawSectorId || undefined; // Convertir null en undefined
+      
+      console.log('🔍 Génération multiroute pour:', {
+        userId: selectedRep,
+        sectorId,
+        repData: selectedRepData
+      });
+      
+      // Vérifier si le vendeur a un secteur assigné
+      if (!sectorId) {
+        alert(`⚠️ Attention: Le vendeur ${selectedRepData?.firstName} ${selectedRepData?.lastName} n'a pas de secteur assigné. Les routes seront créées sans contrainte géographique.`);
+      }
+      
       await routesService.generateMultiDayRoutes({
         userId: selectedRep,
         startDate,
         numberOfDays,
         outletsPerDay,
         optimize: true,
+        sectorId, // Ajouter l'ID du secteur (peut être undefined)
       });
       
       setIsMultiDayModalOpen(false);
@@ -479,10 +497,35 @@ export default function RouteADMIN() {
               {reps.map(rep => (
                 <option key={rep.id} value={rep.id}>
                   {rep.firstName} {rep.lastName} - {rep.email}
+                  {(rep.assignedSectorId || rep.territoryId) && ` (Secteur: ${rep.assignedSectorId || rep.territoryId})`}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* Informations du vendeur sélectionné */}
+          {selectedRep && (() => {
+            const selectedRepData = reps.find(rep => rep.id === selectedRep);
+            const rawSectorId = selectedRepData?.assignedSectorId || selectedRepData?.territoryId;
+            const sectorId = rawSectorId || undefined;
+            
+            return (
+              <div className={`border rounded-lg p-3 ${sectorId ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div className="flex items-start gap-2">
+                  <Icon name={sectorId ? "checkCircle" : "warning"} size="sm" variant={sectorId ? "green" : "yellow"} />
+                  <div className={`text-sm ${sectorId ? 'text-green-800' : 'text-yellow-800'}`}>
+                    <p className="font-medium mb-1">Vendeur sélectionné</p>
+                    <p><strong>Nom :</strong> {selectedRepData?.firstName} {selectedRepData?.lastName}</p>
+                    <p><strong>Email :</strong> {selectedRepData?.email}</p>
+                    <p><strong>Secteur ID :</strong> {sectorId || 'Non assigné'}</p>
+                    {!sectorId && (
+                      <p className="text-red-600 mt-1">⚠️ Attention : Ce vendeur n'a pas de secteur assigné</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

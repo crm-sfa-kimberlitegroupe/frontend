@@ -35,7 +35,7 @@ class OrdersService {
     if (filters?.endDate) params.append('endDate', filters.endDate);
 
     const response = await api.get(`/orders/my-orders?${params.toString()}`);
-    return response.data;
+    return response.data || [];
   }
 
   /**

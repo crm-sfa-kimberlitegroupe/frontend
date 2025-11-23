@@ -98,13 +98,41 @@ class VisitsService {
    * Check-in : Début d'une visite
    */
   async checkIn(outletId: string, lat?: number, lng?: number, notes?: string): Promise<Visit> {
-    const response = await api.post('/visits/check-in', {
-      outletId,
-      checkinLat: lat,
-      checkinLng: lng,
-      notes,
-    });
-    return response.data.data;
+    console.log('🔄 [visitsService] Appel API check-in avec:', { outletId, checkinLat: lat, checkinLng: lng, notes });
+    
+    try {
+      const response = await api.post('/visits/check-in', {
+        outletId,
+        checkinLat: lat,
+        checkinLng: lng,
+        notes,
+      });
+      
+      console.log('📡 [visitsService] Réponse brute API:', response);
+      console.log('📡 [visitsService] response.data:', response.data);
+      console.log('📡 [visitsService] response.data.data:', response.data.data);
+      
+      // Essayer différentes structures de réponse
+      let visit = response.data.data;
+      if (!visit && response.data) {
+        // Peut-être que la visite est directement dans response.data
+        visit = response.data;
+        console.log('📡 [visitsService] Essai avec response.data directement:', visit);
+      }
+      
+      if (!visit || !visit.id) {
+        console.error('❌ [visitsService] Aucune visite valide dans la réponse');
+        console.error('❌ [visitsService] Structure complète:', JSON.stringify(response.data, null, 2));
+        throw new Error('Réponse API invalide - pas de visite retournée');
+      }
+      
+      console.log('✅ [visitsService] Visite extraite avec succès:', visit);
+      return visit;
+      
+    } catch (error) {
+      console.error('❌ [visitsService] Erreur lors du check-in:', error);
+      throw error;
+    }
   }
 
   /**

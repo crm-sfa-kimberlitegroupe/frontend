@@ -89,21 +89,21 @@ export function useRouteData(): UseRouteDataReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Chargement des données de route...');
-      console.log('👤 Utilisateur connecté:', user);
+      console.log('Chargement des données de route...');
+      console.log('Utilisateur connecté:', user);
 
       // Charger la route du jour
       const route = await routesService.getTodayRoute();
-      console.log('📅 Route du jour:', route);
+      console.log('Route du jour:', route);
       
       // Charger les PDV du secteur assigné au vendeur (si c'est un REP)
       let outlets: Outlet[] = [];
       if (user?.role === 'REP' && user?.id) {
-        console.log(`🔍 Récupération des PDV du vendeur ${user.id}...`);
+        console.log(`Récupération des PDV du vendeur ${user.id}...`);
         try {
           // Utiliser la même méthode que dans la page visits qui fonctionne
           const vendorData = await territoriesService.getVendorOutlets(user.id);
-          console.log('🏢 Données vendeur récupérées:', vendorData);
+          console.log('Données vendeur récupérées:', vendorData);
           
           if (vendorData && vendorData.outlets) {
             // Convertir les outlets au bon format
@@ -122,27 +122,27 @@ export function useRouteData(): UseRouteDataReturn {
             }));
             assignedSector = vendorData.sector;
             
-            console.log(`✅ Secteur trouvé: ${vendorData.sector?.name || 'Aucun'} avec ${outlets.length} PDV`);
+            console.log(`Secteur trouvé: ${vendorData.sector?.name || 'Aucun'} avec ${outlets.length} PDV`);
           } else {
-            console.log('⚠️ Aucune donnée vendeur trouvée');
+            console.log('Aucune donnée vendeur trouvée');
           }
         } catch (vendorErr: any) {
-          console.warn('⚠️ Erreur lors du chargement des PDV du vendeur:', vendorErr);
-          console.log('🔍 Tentative de fallback vers les PDV du territoire...');
+          console.warn('Erreur lors du chargement des PDV du vendeur:', vendorErr);
+          console.log('Tentative de fallback vers les PDV du territoire...');
           // Si pas de secteur assigné, essayer de charger tous les PDV du territoire
           if (user?.territoryId) {
-            console.log(`🌍 Chargement des PDV du territoire ${user.territoryId}...`);
+            console.log(`Chargement des PDV du territoire ${user.territoryId}...`);
             try {
               outlets = await outletsService.getAll({ 
                 territoryId: user.territoryId,
                 status: 'APPROVED'
               });
-              console.log(`✅ PDV du territoire chargés: ${outlets.length}`);
+              console.log(`PDV du territoire chargés: ${outlets.length}`);
             } catch (outletErr) {
-              console.warn('⚠️ Erreur lors du chargement des PDV du territoire:', outletErr);
+              console.warn('Erreur lors du chargement des PDV du territoire:', outletErr);
             }
           } else {
-            console.log('❌ Aucun territoryId trouvé pour l\'utilisateur');
+            console.log('Aucun territoryId trouvé pour l\'utilisateur');
           }
         }
       } else if (user?.territoryId) {
@@ -153,12 +153,12 @@ export function useRouteData(): UseRouteDataReturn {
             status: 'APPROVED'
           });
         } catch (outletErr) {
-          console.warn('⚠️ Erreur lors du chargement des PDV:', outletErr);
+          console.warn('Erreur lors du chargement des PDV:', outletErr);
         }
       }
 
       // Debug: Vérifier les coordonnées des PDV
-      console.log('🗺️ PDV bruts récupérés:', outlets.map(o => ({
+      console.log('PDV bruts récupérés:', outlets.map(o => ({
         name: o.name,
         lat: o.lat,
         lng: o.lng,
@@ -168,8 +168,13 @@ export function useRouteData(): UseRouteDataReturn {
       // Créer un Set des IDs de PDV dans la route planifiée pour identification rapide
       const routeOutletIds = new Set<string>();
       const visitedOutletIds = new Set<string>(); // PDV visités
+      
+      console.log('📋 Route récupérée:', route);
+      console.log('📍 Route stops:', route?.routeStops);
+      
       if (route && route.routeStops) {
         route.routeStops.forEach(stop => {
+          console.log(`  - Stop: ${stop.outletId}, Status: ${stop.status}`);
           if (stop.outletId) {
             routeOutletIds.add(stop.outletId);
             // Si le stop est visité, l'ajouter au set des visités
@@ -179,8 +184,8 @@ export function useRouteData(): UseRouteDataReturn {
           }
         });
       }
-      console.log(`🎯 PDV dans la route planifiée: ${routeOutletIds.size}`, Array.from(routeOutletIds));
-      console.log(`✅ PDV visités: ${visitedOutletIds.size}`, Array.from(visitedOutletIds));
+      console.log(`PDV dans la route planifiée: ${routeOutletIds.size}`, Array.from(routeOutletIds));
+      console.log(`PDV visités: ${visitedOutletIds.size}`, Array.from(visitedOutletIds));
 
       // Convertir tous les PDV en format carte
       const allOutletsConverted: RouteStop[] = outlets
@@ -190,7 +195,7 @@ export function useRouteData(): UseRouteDataReturn {
           
           // Si pas de coordonnées, générer des coordonnées par défaut autour d'Abidjan pour test
           if (!lat || !lng) {
-            console.log(`⚠️ PDV sans coordonnées: ${outlet.name} - Attribution de coordonnées par défaut`);
+            console.log(`PDV sans coordonnées: ${outlet.name} - Attribution de coordonnées par défaut`);
             // Coordonnées aléatoires autour d'Abidjan (5.36, -4.01)
             lat = 5.36 + (Math.random() - 0.5) * 0.1; // ±0.05 degrés
             lng = -4.01 + (Math.random() - 0.5) * 0.1;
@@ -203,16 +208,21 @@ export function useRouteData(): UseRouteDataReturn {
 
           // Déterminer le statut selon la légende :
           // - 'completed' (✓ vert) si le PDV a été visité
-          // - 'route_planned' (🎯 bleu) si le PDV est dans la route mais pas encore visité
-          // - 'territory' (● gris) si le PDV n'est pas dans la route
+          // - 'route_planned' (bleu) si le PDV est dans la route mais pas encore visité
+          // - 'territory' (gris) si le PDV n'est pas dans la route
           let status: 'completed' | 'route_planned' | 'territory';
           
           if (visitedOutletIds.has(outlet.id)) {
             status = 'completed'; // PDV visité (✓ vert)
           } else if (routeOutletIds.has(outlet.id)) {
-            status = 'route_planned'; // PDV de la route non visité (🎯 bleu)
+            status = 'route_planned'; // PDV de la route non visité (bleu)
           } else {
-            status = 'territory'; // Autres PDV du territoire (● gris)
+            status = 'territory'; // Autres PDV du territoire (gris)
+          }
+
+          // Log pour debug
+          if (status === 'route_planned') {
+            console.log(`PDV de la route (non visité): ${outlet.name} - ID: ${outlet.id}`);
           }
 
           return {
@@ -226,7 +236,9 @@ export function useRouteData(): UseRouteDataReturn {
           };
         });
 
-      console.log(`📍 Total PDV convertis pour la carte: ${allOutletsConverted.length}`);
+      console.log(`Total PDV convertis pour la carte: ${allOutletsConverted.length}`);
+      
+      // Toujours utiliser les PDV convertis sans simulation
       setAllOutlets(allOutletsConverted);
       
       if (route && route.routeStops && route.routeStops.length > 0) {
@@ -245,18 +257,18 @@ export function useRouteData(): UseRouteDataReturn {
             if (!assignedSector) errorDetails.push('Aucun secteur assigné');
             
             const detailMessage = errorDetails.length > 0 ? ` (${errorDetails.join(', ')})` : '';
-            console.log('❌ Aucun PDV trouvé. Détails:', { user, assignedSector, outlets });
+            console.log('Aucun PDV trouvé. Détails:', { user, assignedSector, outlets });
             setError(`Aucun point de vente disponible${detailMessage}. Contactez votre administrateur pour assigner un secteur ou territoire.`);
           } else {
             setError('Aucun point de vente disponible dans votre territoire');
           }
         } else {
-          console.log('✅ PDV trouvés et affichés sur la carte');
+          console.log('PDV trouvés et affichés sur la carte');
         }
         // Ne pas afficher d'erreur si on a des PDV à afficher
       }
     } catch (err) {
-      console.error('❌ Erreur lors du chargement de la route:', err);
+      console.error('Erreur lors du chargement de la route:', err);
       setError('Impossible de charger les données. Vérifiez votre connexion.');
       setRoutePlan(null);
       setRouteStops([]);

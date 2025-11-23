@@ -57,20 +57,17 @@ export const CreateOrderPage = () => {
   const loadVendorStock = async () => {
     try {
       setLoadingStock(true);
-      console.log('🔄 Chargement du stock vendeur...');
       
       // Utiliser le service api comme dans ProductHierarchy
       const response = await api.get('/vendor-stock/my-stock');
       
-      console.log('📦 Stock reçu:', response);
       
       // L'API retourne directement le tableau ou dans response.data
       const stockData = Array.isArray(response) ? response : (response.data || response);
       
       setAvailableStock(stockData);
-      console.log('✅ Stock chargé:', stockData.length, 'produits');
-    } catch (err) {
-      console.error('❌ Erreur chargement stock:', err);
+    } catch (error) {
+      console.error('Erreur chargement stock:', error);
       setError('Erreur lors du chargement du stock');
     } finally {
       setLoadingStock(false);
@@ -173,20 +170,35 @@ export const CreateOrderPage = () => {
         }] : undefined,
       };
 
-      console.log('📤 Envoi de la commande:', orderData);
       
       // Utiliser le service api comme dans ProductHierarchy
       const response = await api.post('/orders', orderData);
       
-      console.log('✅ Commande créée:', response);
+      // Sauvegarder l'ID de la commande dans localStorage pour la visite
+      if (response.data?.data?.id && visitId) {
+        localStorage.setItem(`visit_${visitId}_venteId`, response.data.data.id);
+        console.log('💾 ID commande sauvegardé pour la visite:', response.data.data.id);
+      }
       
       setSuccess(true);
+      
+      // Logs de débogage pour la redirection
+      const fromVisit = searchParams.get('fromVisit');
+      console.log('🔍 Paramètres de redirection:', {
+        visitId,
+        fromVisit,
+        fromVisitCheck: fromVisit === 'true',
+        shouldReturnToVisit: visitId && fromVisit === 'true'
+      });
+      
       setTimeout(() => {
-        // Si on a un visitId, retourner à la page des visites
-        // Sinon, aller à la liste des commandes
+        // Si on a un visitId, on vient forcément d'une visite
+        // Donc on retourne à la page précédente (détail de visite)
         if (visitId) {
-          navigate('/dashboard/visits');
+          console.log('🔄 Redirection vers la page de visite précédente (visitId présent)');
+          navigate(-1); // Retour à la page précédente (détail de la visite)
         } else {
+          console.log('🔄 Redirection vers la liste des commandes (pas de visitId)');
           navigate('/dashboard/orders');
         }
       }, 2000);
@@ -215,18 +227,18 @@ export const CreateOrderPage = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                // Si on vient d'une visite, retourner aux visites
+                // Si on vient d'une visite, retourner à la page précédente (détail de visite)
                 // Sinon retourner à la liste des commandes
-                if (visitId) {
-                  navigate('/dashboard/visits');
+                if (visitId && searchParams.get('fromVisit') === 'true') {
+                  navigate(-1); // Retour à la page précédente (détail de visite)
                 } else {
-                  navigate(-1); // Retour à la page précédente
+                  navigate('/dashboard/orders'); // Retour à la liste des commandes
                 }
               }}
               className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
             >
               <span className="text-xl">←</span>
-              <span>Retour {visitId ? 'aux visites' : ''}</span>
+              <span>Retour {visitId ? 'à la visite' : 'aux commandes'}</span>
             </button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">🛒 Nouvelle Vente</h1>

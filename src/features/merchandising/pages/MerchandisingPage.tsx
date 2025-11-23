@@ -45,7 +45,17 @@ export default function MerchandisingPage() {
         };
         
         // Appel API pour sauvegarder le merchandising
-        await api.post('/merchandising', merchandisingData);
+        const response = await api.post('/merchandising', merchandisingData);
+        
+        // Sauvegarder l'ID du merchandising dans localStorage pour la visite
+        if (response.data?.data?.id && visitId) {
+          localStorage.setItem(`visit_${visitId}_merchId`, response.data.data.id);
+          console.log('💾 ID merchandising sauvegardé pour la visite:', response.data.data.id);
+        }
+        if (response.data?.data?.id && outletId) {
+          localStorage.setItem(`merch_${outletId}`, response.data.data.id);
+          console.log('💾 ID merchandising sauvegardé:', response.data.data.id);
+        }
         
         alert('Merchandising enregistré avec succès!');
         navigate(-1); // Retour à la page précédente

@@ -67,6 +67,7 @@ export interface GenerateMultiDayDto {
   numberOfDays: number;
   outletsPerDay?: number;
   optimize?: boolean;
+  sectorId?: string; // ID du secteur du vendeur
 }
 
 const routesService = {
@@ -196,6 +197,19 @@ const routesService = {
   async optimizeRoute(routeId: string): Promise<RoutePlan> {
     const response = await api.post(`/routes/${routeId}/optimize`);
     return response;
+  },
+
+  // Mettre à jour le statut d'un stop de route
+  async updateRouteStopStatus(
+    routePlanId: string, 
+    outletId: string, 
+    status: 'PLANNED' | 'IN_PROGRESS' | 'VISITED'
+  ) {
+    const response = await api.patch(
+      `/route-plans/${routePlanId}/stops/${outletId}/status`,
+      { status }
+    );
+    return response.data;
   },
 };
 

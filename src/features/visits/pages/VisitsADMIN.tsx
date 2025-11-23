@@ -4,7 +4,6 @@ import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { outletsService, OutletStatusEnum, type Outlet } from '@/features/pdv/services';
-import PDVDetailsModal from '../components/PDVDetailsModal';
 
 export default function VisitsADMIN() {
   const [selectedView, setSelectedView] = useState<'list' | 'validation'>('validation');
@@ -216,11 +215,11 @@ export default function VisitsADMIN() {
                         variant="primary" 
                         size="md" 
                         fullWidth
-                        onClick={() => setSelectedPDV(pdv)}
+                        onClick={() => alert(`Détails du PDV: ${pdv.name}\nCode: ${pdv.code}\nAdresse: ${pdv.address || 'Non renseignée'}`)}
                       >
                         <span className="flex items-center justify-center gap-2">
                           <Icon name="eye" size="sm" variant="white" />
-                          <span>Voir détails & Modifier</span>
+                          <span>Voir détails</span>
                         </span>
                       </Button>
                     </div>
@@ -374,12 +373,6 @@ export default function VisitsADMIN() {
         )}
       </div>
 
-      {/* Modal de détails/édition */}
-      <PDVDetailsModal 
-        pdv={selectedPDV}
-        onClose={() => setSelectedPDV(null)}
-        onUpdate={loadPDV}
-      />
     </div>
   );
 }

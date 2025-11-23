@@ -37,18 +37,34 @@ export default function VisitCard({ visit, onSelect }: VisitCardProps) {
 
       <div>
         <Button 
-          variant={visit.status === 'COMPLETED' ? 'success' : 'primary'}
+          variant={
+            visit.status === 'COMPLETED' ? 'success' : 
+            visit.status === 'IN_PROGRESS' ? 'warning' : 
+            'primary'
+          }
           size="md" 
           fullWidth
           onClick={() => onSelect(visit.id)}
-          className={visit.status === 'COMPLETED' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+          className={
+            visit.status === 'COMPLETED' ? 'bg-emerald-600 hover:bg-emerald-700' :
+            visit.status === 'IN_PROGRESS' ? 'bg-amber-600 hover:bg-amber-700' :
+            ''
+          }
         >
           <Icon 
-            name={visit.status === 'COMPLETED' ? 'checkCircle' : 'locationMarker'} 
+            name={
+              visit.status === 'COMPLETED' ? 'checkCircle' : 
+              visit.status === 'IN_PROGRESS' ? 'clock' : 
+              'locationMarker'
+            } 
             size="md" 
             className="mr-2" 
           />
-          {visit.status === 'COMPLETED' ? 'Visité ✓' : 'A visiter'}
+          {
+            visit.status === 'COMPLETED' ? 'Visité ✓' : 
+            visit.status === 'IN_PROGRESS' ? 'En cours...' : 
+            'A visiter'
+          }
         </Button>
       </div>
     </Card>

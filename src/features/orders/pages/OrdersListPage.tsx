@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Plus, Eye, Calendar, TrendingUp } from 'lucide-react';
 import { ordersService } from '../services/orders.service';
@@ -11,25 +11,26 @@ export const OrdersListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
 
-  useEffect(() => {
-    loadData();
-  }, [period]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [ordersData, statsData] = await Promise.all([
         ordersService.getMyOrders(),
         ordersService.getMyStats(period),
       ]);
-      setOrders(ordersData);
+      setOrders(ordersData || []);
       setStats(statsData);
     } catch (error) {
       console.error('Erreur chargement données:', error);
+      setOrders([]); // S'assurer que orders est toujours un tableau
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    loadData();
+  }, [period, loadData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -153,7 +154,7 @@ export const OrdersListPage: React.FC = () => {
 
           {loading ? (
             <div className="text-center py-12 text-gray-500">Chargement...</div>
-          ) : orders.length === 0 ? (
+          ) : (!orders || orders.length === 0) ? (
             <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
               <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500 mb-4">Aucune vente enregistrée</p>

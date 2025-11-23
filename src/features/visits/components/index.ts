@@ -1,9 +1,8 @@
 export { default as VisitsHeader } from './VisitsHeader';
-export { default as ActiveVisitCTA } from './ActiveVisitCTA';
 export { default as PDVFormWizard } from './PDVFormWizard';
 export { default as PDVFormStep1 } from './PDVFormStep1';
 export { default as PDVFormStep2 } from './PDVFormStep2';
 export { default as PDVFormStep3 } from './PDVFormStep3';
 export { default as PDVFormStep4 } from './PDVFormStep4';
 export { default as VisitCard } from './VisitCard';
-export { default as VisitDetail } from './VisitDetail';
+export { default as VisitDetailNew } from './VisitDetailNew';

@@ -188,24 +188,39 @@ export default function RouteMap({
         {/* Marqueurs de TOUS les PDV du territoire */}
         {allOutlets.map((outlet) => {
           console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}] - Status: ${outlet.status}`);
-          const isRouteOutlet = outlet.status === 'route_planned';
+          
+          // Déterminer l'icône et le z-index selon le statut
+          let zIndex = 0;
+          if (outlet.status === 'completed') {
+            zIndex = 200; // PDV visités au-dessus des autres PDV
+          } else if (outlet.status === 'route_planned') {
+            zIndex = 100; // PDV de la route au-dessus des PDV du territoire
+          }
+          
+          // Déterminer l'emoji pour le popup
+          const emoji = outlet.status === 'completed' ? '✅' : 
+                       outlet.status === 'route_planned' ? '🎯' : '🏪';
+          
           return (
             <Marker
               key={`outlet-${outlet.id}`}
               position={[outlet.latitude, outlet.longitude]}
               icon={createCustomIcon(outlet.status as any)}
+              zIndexOffset={zIndex}
             >
               <Popup>
                 <div className="min-w-[200px]">
                   <p className="font-medium text-gray-900 mb-1">
-                    {isRouteOutlet ? '🎯' : '🏪'} {outlet.name}
+                    {emoji} {outlet.name}
                   </p>
                   <span className={`text-xs px-2 py-1 rounded ${
-                    isRouteOutlet 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-gray-100 text-gray-800'
+                    outlet.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    outlet.status === 'route_planned' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-gray-100 text-gray-800'
                   }`}>
-                    {isRouteOutlet ? 'PDV de ma route' : 'PDV du territoire'}
+                    {outlet.status === 'completed' ? 'PDV visité' :
+                     outlet.status === 'route_planned' ? 'PDV de ma route' : 
+                     'PDV du territoire'}
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
                     Coordonnées: [{outlet.latitude.toFixed(6)}, {outlet.longitude.toFixed(6)}]
@@ -216,8 +231,8 @@ export default function RouteMap({
           );
         })}
 
-        {/* Marqueurs des arrêts de la route (au premier plan) */}
-        {stops.map((stop, index) => (
+        {/* Marqueurs des arrêts de la route - SEULEMENT si pas déjà dans allOutlets */}
+        {stops.length > 0 && allOutlets.length === 0 && stops.map((stop, index) => (
           <Marker
             key={`route-${stop.id}`}
             position={[stop.latitude, stop.longitude]}
