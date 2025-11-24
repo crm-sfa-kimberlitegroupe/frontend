@@ -3,6 +3,7 @@ import { useAuthStore } from '../../../core/auth';
 import { usersService, type UserPerformance, type ManagerInfo } from '@/features/users/services';
 import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
+import { Icon } from '../../../core/ui/Icon';
 
 // Import des composants modulaires
 import ProfileHeader from '../components/ProfileHeader';
@@ -180,8 +181,19 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-slate-600">Chargement...</p>
+          {/* Spinner CSS + Icône de secours */}
+          <div className="relative mx-auto mb-6">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Icon name="user" size="xl" variant="primary" className="animate-pulse" />
+            </div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre profil</h2>
+          <p className="text-gray-600 mb-4">Récupération de vos informations personnelles...</p>
+          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+            <Icon name="settings" size="sm" variant="grey" />
+            <span>Chargement sécurisé</span>
+          </div>
         </div>
       </div>
     );

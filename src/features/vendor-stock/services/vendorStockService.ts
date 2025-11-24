@@ -74,10 +74,13 @@ export interface StockStats {
 export interface LowStockItem {
   id: string;
   quantity: number;
+  alertThreshold: number;
+  skuId: string;
+  userId: string;
+  updatedAt: string;
   sku: {
     id: string;
-    name: string;
-    brand: string;
+    shortDescription: string;
     photo: string | null;
   };
 }

@@ -1,12 +1,30 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
-import KPICard from '../../../core/ui/KPICard';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { useAuthStore } from '@/core/auth';
-import { vendorStockService, type LowStockItem } from '../../vendor-stock/services/vendorStockService';
+import { useVisitsStore } from '@/features/visits/stores/visitsStore';
+import { useOrdersStore } from '@/features/orders/stores/ordersStore';
+import { useVendorStockStore } from '@/features/vendor-stock/stores/vendorStockStore';
+import { useRoutesStore } from '@/features/routes/stores/routesStore';
+// import { useStatsStore } from '@/features/stats/stores/statsStore'; // Disponible si besoin
+import { weatherService, type WeatherData } from '../../weather/services/weatherService';
+
+// Fonction utilitaire pour calculer la distance entre deux points GPS (formule de Haversine)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Rayon de la Terre en kilomètres
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  return Math.round(distance * 10) / 10; // Arrondir à 1 décimale
+};
 
 export default function HomeREP() {
   const navigate = useNavigate();
@@ -16,56 +34,162 @@ export default function HomeREP() {
     isOnline: true,
     lastSync: new Date(),
   });
-  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
-  const [isLoadingStock, setIsLoadingStock] = useState(true);
+  // Plus besoin d'états locaux - utilisation des stores
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  
+  // Récupérer les données depuis les stores (déjà préchargées)
+  const { activeVisits } = useVisitsStore();
+  const { getTodayOrdersCount, getTodayRevenue, todayOrders } = useOrdersStore();
+  const { lowStockItems } = useVendorStockStore();
+  const { todayRoute } = useRoutesStore();
+  // Les stats sont disponibles si besoin : const { dailyStats, kpiStats } = useStatsStore();
+
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Charger les alertes de stock faible
+  // Plus besoin de charger - les données sont déjà dans les stores
+
+  // Plus besoin de charger - la route est déjà dans le store
+
+  // Obtenir la géolocalisation de l'utilisateur
   useEffect(() => {
-    const loadLowStockAlerts = async () => {
+    const getCurrentLocation = () => {
+      if (!navigator.geolocation) {
+        console.warn('[HomeREP] Géolocalisation non supportée par ce navigateur');
+        return;
+      }
+
+      setIsLoadingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          console.log('[HomeREP] Position obtenue:', { lat: latitude, lng: longitude });
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          console.error('[HomeREP] Erreur géolocalisation:', error.message);
+          setIsLoadingLocation(false);
+          // En cas d'erreur, on peut utiliser une position par défaut (Abidjan par exemple)
+          // setUserLocation({ lat: 5.3600, lng: -4.0083 }); // Coordonnées d'Abidjan
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // Cache pendant 5 minutes
+        }
+      );
+    };
+
+    getCurrentLocation();
+  }, []);
+
+  // Charger les données météo
+  useEffect(() => {
+    const loadWeather = async () => {
       try {
-        setIsLoadingStock(true);
-        const lowStock = await vendorStockService.getLowStockItems(10); // Seuil de 10
-        setLowStockItems(lowStock);
+        setIsLoadingWeather(true);
+        let weather: WeatherData;
+        
+        if (userLocation) {
+          // Utiliser la position GPS si disponible
+          weather = await weatherService.getWeatherByCoordinates(userLocation.lat, userLocation.lng);
+        } else {
+          // Sinon utiliser Abidjan par défaut
+          weather = await weatherService.getWeatherByCity('Abidjan');
+        }
+        
+        setWeatherData(weather);
       } catch (error) {
-        console.error('Erreur lors du chargement des alertes de stock:', error);
-        setLowStockItems([]);
+        console.error('Erreur lors du chargement de la météo:', error);
+        // Utiliser des données par défaut en cas d'erreur
+        setWeatherData(weatherService.getDefaultWeather('Abidjan'));
       } finally {
-        setIsLoadingStock(false);
+        setIsLoadingWeather(false);
       }
     };
 
-    loadLowStockAlerts();
-  }, []);
+    loadWeather();
+  }, [userLocation]); // Se recharge quand la position change
 
-  const todayStats = {
-    pdvToVisit: 12,
-    pdvVisited: 5,
-    ordersPlaced: 3,
-    revenue: '850k',
-    nextVisit: 'Supermarché Plateau',
-    distance: '3.2 km',
-  };
+  // Toutes les données sont déjà préchargées dans les stores
 
-  const weekStats = {
-    totalVisits: 47,
-    totalOrders: 28,
-    successRate: 85,
-    avgOrderValue: '180k',
-  };
+
+
+  // Calculer les statistiques du jour à partir des vraies données
+  const todayStats = React.useMemo(() => {
+    // Nombre de PDV à visiter (depuis la route du jour)
+    const pdvToVisit = todayRoute?.routeStops?.length || 0;
+    
+    // Nombre de PDV visités (depuis les visites actives terminées + route stops avec status VISITED)
+    const visitedFromActiveVisits = Object.values(activeVisits).filter(visit => visit.status === 'COMPLETED').length;
+    const visitedFromRoute = todayRoute?.routeStops?.filter(stop => stop.status === 'VISITED').length || 0;
+    const pdvVisited = Math.max(visitedFromActiveVisits, visitedFromRoute);
+    
+    // Nombre de commandes/ventes du jour (depuis le store des commandes)
+    const ordersPlaced = getTodayOrdersCount();
+    
+    // Chiffre d'affaires du jour (somme des ventes en FCFA)
+    const todayRevenue = getTodayRevenue();
+    const formattedRevenue = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(todayRevenue);
+    
+    // Prochaine visite (premier PDV non visité de la route)
+    const nextStop = todayRoute?.routeStops?.find(stop => stop.status === 'PLANNED');
+    const nextVisit = nextStop?.outlet?.name || 'Aucune visite planifiée';
+    
+    // Calculer la distance jusqu'au prochain PDV
+    let distance = 'N/A';
+    if (userLocation && nextStop?.outlet?.lat && nextStop?.outlet?.lng) {
+      const distanceKm = calculateDistance(
+        userLocation.lat, 
+        userLocation.lng, 
+        nextStop.outlet.lat, 
+        nextStop.outlet.lng
+      );
+      distance = `${distanceKm} km`;
+    } else if (isLoadingLocation) {
+      distance = 'Localisation...';
+    } else if (!userLocation) {
+      distance = 'Position indisponible';
+    } else if (!nextStop?.outlet?.lat || !nextStop?.outlet?.lng) {
+      distance = 'Coordonnées PDV manquantes';
+    }
+    
+    return {
+      pdvToVisit,
+      pdvVisited,
+      ordersPlaced,
+      revenue: formattedRevenue,
+      nextVisit,
+      distance,
+    };
+  }, [todayRoute, activeVisits, userLocation, isLoadingLocation, todayOrders, getTodayOrdersCount, getTodayRevenue]);
+
 
   // Créer les notifications à partir des alertes de stock
-  const notifications = lowStockItems.map((item, index) => ({
-    id: index + 1,
-    type: 'warning' as const,
-    message: `Stock faible: ${item.sku.name} (${item.quantity} restant${item.quantity > 1 ? 's' : ''})`,
-    time: 'maintenant',
-    skuId: item.id
-  }));
+  const notifications = lowStockItems.map((item, index) => {
+    // Utiliser la structure réelle des données : shortDescription
+    const productName = item.sku?.shortDescription || 'Produit inconnu';
+    
+    return {
+      id: index + 1,
+      type: 'warning' as const,
+      message: `Stock faible: ${productName} (${item.quantity} restant${item.quantity > 1 ? 's' : ''})`,
+      time: 'maintenant',
+      skuId: item.id
+    };
+  });
 
   const progressPercentage = Math.round((todayStats.pdvVisited / todayStats.pdvToVisit) * 100);
 
@@ -128,26 +252,45 @@ export default function HomeREP() {
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Icon name="package" size="lg" variant="green" />
+              <Icon name="chartBar" size="lg" variant="green" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{todayStats.ordersPlaced}</p>
-            <p className="text-sm text-gray-600 mt-1">Commandes prises</p>
+            <p className="text-xl font-bold text-gray-900">
+              {todayStats.revenue}
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              Chiffre d'affaires
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {todayStats.ordersPlaced} vente{todayStats.ordersPlaced > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
-        <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-xs text-gray-600 mb-1">Prochaine visite</p>
-              <p className="font-semibold text-gray-900">{todayStats.nextVisit}</p>
-              <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                <Icon name="locationMarker" size="sm" variant="grey" />
-                <span>{todayStats.distance}</span>
+        {!todayRoute ? (
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-3">
+              <Icon name="warning" size="lg" variant="yellow" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Aucune route planifiée</p>
+                <p className="text-xs text-gray-600">Contactez votre superviseur pour planifier votre journée</p>
               </div>
             </div>
-            <Icon name="arrowRight" size="xl" variant="primary" />
           </div>
-        </div>
+        ) : (
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs text-gray-600 mb-1">Prochaine visite</p>
+                <p className="font-semibold text-gray-900">{todayStats.nextVisit}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                  <Icon name="locationMarker" size="sm" variant="grey" />
+                  <span>{todayStats.distance}</span>
+                </div>
+              </div>
+              <Icon name="arrowRight" size="xl" variant="primary" />
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* CTA Principal sobre */}
@@ -172,51 +315,12 @@ export default function HomeREP() {
         </Button>
       </div>
 
-      {/* KPI Cards - Performance de la semaine */}
-      <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Icon name="chartBar" size="lg" variant="primary" />
-          Performance cette semaine
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <KPICard
-            label="Visites totales"
-            value={weekStats.totalVisits}
-            icon="user"
-            color="primary"
-            trend={12}
-          />
-          <KPICard
-            label="Commandes"
-            value={weekStats.totalOrders}
-            icon="cart"
-            color="green"
-            trend={8}
-          />
-          <KPICard
-            label="Taux de réussite"
-            value={weekStats.successRate}
-            unit="%"
-            icon="chartBar"
-            color="yellow"
-            trend={5}
-          />
-          <KPICard
-            label="Panier moyen"
-            value={weekStats.avgOrderValue}
-            unit="FCFA"
-            icon="star"
-            color="green"
-            trend={-3}
-          />
-        </div>
-      </div>
 
       {/* Alertes de stock */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-gray-900">Alertes de stock</h3>
-          {!isLoadingStock && lowStockItems.length > 0 && (
+          {lowStockItems.length > 0 && (
             <button
               onClick={() => navigate('/dashboard/stock')}
               className="text-sm text-primary hover:text-primary/80 font-medium"
@@ -226,14 +330,7 @@ export default function HomeREP() {
           )}
         </div>
         
-        {isLoadingStock ? (
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <Icon name="refresh" size="lg" variant="grey" className="animate-spin" />
-              <p className="text-sm text-gray-600">Chargement des alertes...</p>
-            </div>
-          </Card>
-        ) : notifications.length > 0 ? (
+        {notifications.length > 0 ? (
           <div className="space-y-2">
             {notifications.slice(0, 3).map((notif) => (
               <Card key={notif.id} className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -280,11 +377,21 @@ export default function HomeREP() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Icon name="locationMarker" size="md" variant="primary" />
-            <p className="text-xs text-gray-600 font-medium">Météo Abidjan</p>
+            {isLoadingWeather ? (
+              <Icon name="refresh" size="md" variant="grey" className="animate-spin" />
+            ) : (
+              <Icon name="map" size="md" variant="primary" />
+            )}
+            <p className="text-xs text-gray-600 font-medium">
+              {isLoadingWeather ? 'Chargement...' : `Météo ${weatherData?.city || 'Abidjan'}`}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">32°C</p>
-          <p className="text-sm text-gray-600 mt-1">Ensoleillé</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {isLoadingWeather ? '--°C' : `${weatherData?.temperature || '--'}°C`}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">
+            {isLoadingWeather ? 'Chargement...' : weatherData?.description || 'Indisponible'}
+          </p>
         </Card>
 
         <Card className="p-4">
@@ -316,18 +423,15 @@ export default function HomeREP() {
           </button>
           <div className="text-center">
             <div className="mb-2 flex justify-center">
-              <Icon name="chartBar" size="2xl" variant="primary" />
-            </div>
-            <p className="text-xs font-medium text-gray-700">Mes stats</p>
-          </div>
-          <div className="text-center">
-            <div className="mb-2 flex justify-center">
               <Icon name="phone" size="2xl" variant="primary" />
             </div>
             <p className="text-xs font-medium text-gray-700">Support</p>
           </div>
         </div>
       </Card>
+
+      {/* Espacement pour éviter que le contenu soit masqué par la bottom navigation */}
+      <div className="pb-20"></div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/core/auth';
 import routesService, { type RoutePlan, type RouteStop } from '../../routes/services/routesService';
 import territoriesService from '../../territories/services/territoriesService';
+import { useVisitsStore } from '../stores/visitsStore';
 
 interface RouteVisitData {
   routePlan: RoutePlan | null;
@@ -31,7 +32,10 @@ export function useRouteVisits() {
   
   const user = useAuthStore((state) => state.user);
 
-  const fetchRouteVisits = useCallback(async () => {
+  // Utiliser le store Zustand pour les visites actives
+  const activeVisits = useVisitsStore((state) => state.activeVisits);
+
+  const fetchRouteVisitsInitial = useCallback(async () => {
     if (!user?.id || user.role !== 'REP') {
       setLoading(false);
       return;
@@ -44,7 +48,6 @@ export function useRouteVisits() {
       const todayRoute = await routesService.getTodayRoute();
 
       console.log(todayRoute);
-
 
       
       if (!todayRoute) {
@@ -122,9 +125,68 @@ export function useRouteVisits() {
     }
   }, [user?.id, user?.role]);
 
+  // Version qui utilise le store pour les statuts
+  const fetchRouteVisits = useCallback(async () => {
+    if (!data) {
+      // Si pas de données, faire le chargement initial
+      await fetchRouteVisitsInitial();
+      return;
+    }
+
+    // Mettre à jour seulement les statuts depuis le store
+    const updatedVisits = data.visits.map(visit => {
+      const activeVisit = activeVisits[visit.outletId];
+      
+      if (activeVisit) {
+        return {
+          ...visit,
+          status: (activeVisit.status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS') as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'
+        };
+      }
+      
+      return visit;
+    });
+
+    setData({
+      ...data,
+      visits: updatedVisits
+    });
+  }, [data, activeVisits, fetchRouteVisitsInitial]);
+
   useEffect(() => {
-    fetchRouteVisits();
-  }, [user?.id, user?.role, fetchRouteVisits]);
+    fetchRouteVisitsInitial();
+  }, [user?.id, user?.role, fetchRouteVisitsInitial]);
+
+  // Mettre à jour les statuts quand le store change
+  useEffect(() => {
+    if (data && data.visits.length > 0) {
+      const updatedVisits = data.visits.map(visit => {
+        const activeVisit = activeVisits[visit.outletId];
+        
+        if (activeVisit) {
+          return {
+            ...visit,
+            status: (activeVisit.status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS') as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'
+          };
+        }
+        
+        return visit;
+      });
+
+      // Vérifier s'il y a vraiment des changements avant de mettre à jour
+      const hasChanges = updatedVisits.some((visit, index) => 
+        visit.status !== data.visits[index].status
+      );
+
+      if (hasChanges) {
+        console.log('🔄 Mise à jour des statuts depuis le store');
+        setData({
+          ...data,
+          visits: updatedVisits
+        });
+      }
+    }
+  }, [activeVisits, data]);
 
   const refetch = async () => {
     if (!user?.id || user.role !== 'REP') return;

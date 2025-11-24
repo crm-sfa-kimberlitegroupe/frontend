@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card from '../../../core/ui/Card';
-import Button from '../../../core/ui/Button';
-import Badge from '../../../core/ui/Badge';
-import { Icon } from '../../../core/ui/Icon';
+import { Button, Card, Badge } from '@/core/ui';
+import { Icon } from '@/core/ui/Icon';
 import { visitsService } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
+import { useVisitsStore } from '../stores/visitsStore';
 
 interface VisitDetailProps {
   onBack: () => void;
@@ -29,6 +28,9 @@ export default function VisitDetailNew({
   routePlanId
 }: VisitDetailProps) {
   const navigate = useNavigate();
+  
+  // Utiliser le store Zustand au lieu de localStorage
+  const { getActiveVisit } = useVisitsStore();
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
   const [notes, setNotes] = useState('');
   const [hasVente, setHasVente] = useState(false);
@@ -55,18 +57,17 @@ export default function VisitDetailNew({
     setCurrentVisitId(visitId);
   }, [visitId]);
 
-  // Récupérer les données sauvegardées et utiliser le visitId passé en prop
+  // Récupérer les données sauvegardées du store et utiliser le visitId passé en prop
   useEffect(() => {
-    // Récupérer simplement les IDs sauvegardés
-    const savedVenteId = localStorage.getItem(`visit_${visitId}_venteId`);
-    const savedMerchId = localStorage.getItem(`visit_${visitId}_merchId`);
+    // Récupérer les données depuis le store Zustand
+    const activeVisit = getActiveVisit(outletId);
     
-    if (savedVenteId) {
-      setVenteId(savedVenteId);
+    if (activeVisit?.venteId) {
+      setVenteId(activeVisit.venteId);
       setHasVente(true);
     }
-    if (savedMerchId) {
-      setMerchId(savedMerchId);
+    if (activeVisit?.merchId) {
+      setMerchId(activeVisit.merchId);
       setHasMerchandising(true);
     }
     
@@ -75,7 +76,7 @@ export default function VisitDetailNew({
       setCurrentVisitId(visitId);
       setCurrentStatus('IN_PROGRESS');
     }
-  }, [visitId]);
+  }, [visitId, outletId, getActiveVisit]);
 
   // Fonction pour créer une vente
   const handleCreateVente = () => {
@@ -140,8 +141,8 @@ export default function VisitDetailNew({
         console.log(' [DEBUG] Visite existe?', visitExists);
         
         if (!visitExists) {
-          console.warn(' Visite introuvable, nettoyage du localStorage et création d\'une nouvelle visite');
-          // Nettoyer le localStorage et créer une nouvelle visite
+          console.warn(' Visite introuvable, nettoyage du store et création d\'une nouvelle visite');
+          // Nettoyer le store et créer une nouvelle visite
           if (onVisitCompleted) {
             onVisitCompleted();
           }
@@ -170,9 +171,7 @@ export default function VisitDetailNew({
             }
           }
 
-          // Nettoyer localStorage
-          localStorage.removeItem(`visit_${visitId}_venteId`);
-          localStorage.removeItem(`visit_${visitId}_merchId`);
+          // Les données sont automatiquement nettoyées par le store lors de onVisitCompleted
           
           // Message de succès et retour
           let successMessage = 'Visite terminée et enregistrée avec succès!';
@@ -186,7 +185,7 @@ export default function VisitDetailNew({
           
           alert(successMessage);
           
-          // Notifier que la visite est terminée pour nettoyer le localStorage
+          // Notifier que la visite est terminée pour nettoyer le store
           if (onVisitCompleted) {
             onVisitCompleted();
           }
@@ -245,7 +244,7 @@ export default function VisitDetailNew({
       
       alert(successMessage);
       
-      // Notifier que la visite est terminée pour nettoyer le localStorage
+      // Notifier que la visite est terminée pour nettoyer le store
       if (onVisitCompleted) {
         onVisitCompleted();
       }

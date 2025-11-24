@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@/core/ui/Card';
 import Button from '@/core/ui/Button';
 import KPICard from '@/core/ui/KPICard';
 import { Icon } from '@/core/ui/Icon';
-import { vendorStockService, type VendorStockItem, type StockStats, type LowStockItem } from '../services/vendorStockService';
+import { useVendorStockStore } from '../stores/vendorStockStore';
+import { type VendorStockItem } from '../services/vendorStockService';
 import AddStockModal from '../components/AddStockModal';
 import PortfolioList from '../components/PortfolioList';
 import LowStockAlerts from '../components/LowStockAlerts';
@@ -13,11 +14,17 @@ import SuccessModal from '../components/SuccessModal';
 
 export default function StockManagement() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<StockStats | null>(null);
-  const [portfolio, setPortfolio] = useState<VendorStockItem[]>([]);
-  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
+  
+  // Utiliser le store préchargé au lieu des états locaux
+  const { 
+    portfolio, 
+    stats, 
+    lowStockItems: lowStock,
+    unloadAllStock,
+    refreshData: refreshStock
+  } = useVendorStockStore();
+  
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   
@@ -26,25 +33,15 @@ export default function StockManagement() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isUnloading, setIsUnloading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Plus besoin de useEffect - les données sont déjà dans le store
+  // Les données ont été préchargées par le DataPreloader
 
   const loadData = async () => {
+    // Rafraîchir les données depuis le store
     try {
-      setIsLoading(true);
-      const [statsData, portfolioData, lowStockData] = await Promise.all([
-        vendorStockService.getStats(),
-        vendorStockService.getMyPortfolio(),
-        vendorStockService.getLowStockItems(10),
-      ]);
-      setStats(statsData);
-      setPortfolio(portfolioData);
-      setLowStock(lowStockData);
+      await refreshStock();
     } catch (error) {
-      console.error('Erreur chargement stock:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Erreur rafraîchissement stock:', error);
     }
   };
 
@@ -62,11 +59,10 @@ export default function StockManagement() {
       setIsUnloading(true);
       setShowConfirmModal(false);
       
-      // Appel API pour vider le stock
-      await vendorStockService.unloadAllStock();
+      // Utiliser l'action du store
+      await unloadAllStock();
       
       setShowSuccessModal(true);
-      loadData(); // Recharger les données
     } catch (error) {
       console.error('Erreur lors du déchargement du stock:', error);
       alert('Erreur lors du déchargement du stock. Veuillez réessayer.');
@@ -76,7 +72,7 @@ export default function StockManagement() {
   };
 
   // Filtrage du portefeuille
-  const filteredPortfolio = portfolio?.filter((item) => {
+  const filteredPortfolio = portfolio?.filter((item: VendorStockItem) => {
     // Vérifier que item.sku existe
     if (!item.sku) return false;
     
@@ -94,16 +90,7 @@ export default function StockManagement() {
     return item.sku?.packSize.packFormat.brand.subCategory.category.displayName;
   }).filter(Boolean) || []));
 
-  if (isLoading) {
-    return (
-      <div className="pb-nav-safe px-4 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Icon name="refresh" size="2xl" variant="primary" className="animate-spin mb-4" />
-          <p className="text-gray-600">Chargement du stock...</p>
-        </div>
-      </div>
-    );
-  }
+  // Plus besoin d'état de chargement - données préchargées
 
   return (
     <div className="pb-nav-safe px-4 bg-gray-50 min-h-screen">
@@ -173,7 +160,7 @@ export default function StockManagement() {
             size="md"
             fullWidth
             onClick={handleUnloadStock}
-            disabled={isLoading || isUnloading}
+            disabled={isUnloading}
             className="bg-red-600 hover:bg-red-700"
           >
             <Icon name="trash" size="md" className="mr-2" />

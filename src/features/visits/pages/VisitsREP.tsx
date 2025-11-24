@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Button, PageLayout } from '@/core/ui';
+import { PageLayout } from '@/core/ui';
 import { Icon } from '@/core/ui/Icon';
 import { useToggle } from '@/core/hooks';
-import { useRouteVisits } from '../hooks/useRouteVisits';
+import { useAuthStore } from '@/core/auth';
 import { visitsService } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
+import { useVisitsStore, type VisitData } from '../stores/visitsStore';
+import { useRoutesStore } from '../../routes/stores/routesStore';
+import { useOutletsStore } from '../../outlets/stores/outletsStore';
 import VisitsHeader from '../components/VisitsHeader';
 import PDVFormWizard from '../components/PDVFormWizard';
 import VisitCard from '../components/VisitCard';
@@ -15,16 +18,14 @@ export default function VisitsREP() {
   const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
   // Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
-  // Stocker les IDs des vraies visites créées (outletId -> realVisitId)
-  const [createdVisits, setCreatedVisits] = useState<Record<string, string>>(() => {
-    // Charger depuis localStorage au démarrage
-    try {
-      const saved = localStorage.getItem('createdVisits');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Utiliser les stores préchargés
+  const user = useAuthStore((state) => state.user);
+  const { startVisit, getActiveVisit, clearVisit } = useVisitsStore();
+  const { todayRoute } = useRoutesStore();
+  const { outlets } = useOutletsStore();
+  
   // États pour la modale d'initialisation
   const [showInitModal, setShowInitModal] = useState(false);
   const [initPdvName, setInitPdvName] = useState('');
@@ -35,22 +36,17 @@ export default function VisitsREP() {
 
 
 
-// Fonction pour nettoyer une visite terminée du localStorage
+// Fonction pour nettoyer une visite terminée du store
 const cleanupCompletedVisit = (outletId: string) => {
-  const newCreatedVisits = { ...createdVisits };
-  delete newCreatedVisits[outletId];
-  setCreatedVisits(newCreatedVisits);
-  localStorage.setItem('createdVisits', JSON.stringify(newCreatedVisits));
-  console.log('🧹 Visite terminée nettoyée du localStorage pour outlet:', outletId);
+  clearVisit(outletId);
+  console.log('🧹 Visite terminée nettoyée du store pour outlet:', outletId);
 };
 
-const handleVisitSelect = async (visit: typeof visits[0]) => {
-  let createdVisit: { id: string } | null = null; // Déclarer la variable pour la visite créée
+const handleVisitSelect = async (visit: any) => {
+  let createdVisit: { id: string } | null = null;
   
   try {
-    // Si la visite est PLANNED, créer une visite avec check-in ET mettre à jour le routeStop
     if (visit.status === 'PLANNED') {
-      // Afficher la modale d'initialisation
       setInitPdvName(visit.pdvName);
       setShowInitModal(true);
       
@@ -72,18 +68,11 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
         }
       }
 
-      // Créer la visite avec check-in
-      console.log('📤 Envoi check-in pour outletId:', visit.outletId, 'lat:', lat, 'lng:', lng);
-      
       try {
         const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
-        createdVisit = newVisit; // Assigner à la variable externe
+        createdVisit = newVisit;
         
-        console.log('📥 Réponse complète du check-in:', newVisit);
-        console.log('📥 Type de la réponse:', typeof newVisit);
-        console.log('📥 Clés de l\'objet:', newVisit ? Object.keys(newVisit) : 'null');
         console.log('✅ Visite créée avec check-in:', newVisit);
-        console.log('🆔 ID de la nouvelle visite créée:', newVisit?.id);
         
         if (!newVisit || !newVisit.id) {
           throw new Error('Service checkIn n\'a pas retourné de visite valide');
@@ -91,31 +80,30 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
         
       } catch (checkInError) {
         console.error('❌ Erreur lors du check-in:', checkInError);
-        throw checkInError; // Re-lancer l'erreur pour qu'elle soit gérée par le catch principal
+        throw checkInError;
       }
 
-      // Stocker l'ID de la vraie visite créée
       if (createdVisit?.id) {
-        const newCreatedVisits = {
-          ...createdVisits,
-          [visit.outletId]: createdVisit.id
+        const visitData: VisitData = {
+          outletId: visit.outletId,
+          visitId: createdVisit.id,
+          routeStopId: visit.id,
+          pdvName: visit.pdvName,
+          address: visit.address,
+          scheduledTime: visit.scheduledTime,
+          sequence: visit.sequence,
+          routePlanId: todayRoute?.id,
         };
-        setCreatedVisits(newCreatedVisits);
         
-        // Persister dans localStorage
-        localStorage.setItem('createdVisits', JSON.stringify(newCreatedVisits));
-        
-        console.log('💾 ID de la vraie visite stocké:', createdVisit.id, 'pour outlet:', visit.outletId);
+        startVisit(visitData);
+        console.log('💾 Visite complète stockée dans le store:', visitData);
       }
 
       // Mettre à jour le statut du routeStop à IN_PROGRESS
-      if (routePlan?.id) {
-        await routesService.updateRouteStopStatus(routePlan.id, visit.outletId, 'IN_PROGRESS');
-        console.log('✅ Statut du stop de route mis à jour vers IN_PROGRESS');
+      if (todayRoute?.id) {
+        await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
+        console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
       }
-      
-      // Recharger les données
-      await refetch();
       
       // Fermer la modale
       setShowInitModal(false);
@@ -125,102 +113,100 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
     setTimeout(() => {
       // Utiliser l'ID de la vraie visite créée si disponible, sinon l'ID original
       const visitIdToUse = visit.status === 'PLANNED' && createdVisit?.id ? createdVisit.id : visit.id;
-      console.log('🎯 ID utilisé pour ouvrir le détail:', visitIdToUse);
-      console.log('🎯 Ancien ID (visit.id):', visit.id);
-      console.log('🎯 Nouveau ID (createdVisit.id):', createdVisit?.id);
+      console.log('ID utilisé pour ouvrir le détail:', visitIdToUse);
+      console.log('Ancien ID (visit.id):', visit.id);
+      console.log('Nouveau ID (createdVisit.id):', createdVisit?.id);
       setSelectedVisit(visitIdToUse);
     }, visit.status === 'PLANNED' ? 1500 : 0);
     
   } catch (error) {
-    console.error('❌ Erreur lors du démarrage de la visite:', error);
+    console.error('Erreur lors du démarrage de la visite:', error);
     setShowInitModal(false);
     alert('Erreur lors du démarrage de la visite. Veuillez réessayer.');
   }
 };
 
 
-  
-  // Récupérer les visites depuis la route planifiée
-  const { visits, sector, loading, error, refetch, routePlan } = useRouteVisits();
-
-  // Nettoyer automatiquement les visites terminées du localStorage
-  useEffect(() => {
-    if (visits.length > 0) {
-      const currentCreatedVisits = { ...createdVisits };
-      let hasChanges = false;
-
-      // Vérifier chaque visite stockée
-      Object.keys(currentCreatedVisits).forEach(outletId => {
-        const visit = visits.find(v => v.outletId === outletId);
-        // Si la visite est terminée, la supprimer du localStorage
-        if (visit && visit.status === 'COMPLETED') {
-          delete currentCreatedVisits[outletId];
-          hasChanges = true;
-          console.log('🧹 Auto-nettoyage: visite terminée supprimée du localStorage pour outlet:', outletId);
-        }
-      });
-
-      // Mettre à jour si des changements ont été faits
-      if (hasChanges) {
-        setCreatedVisits(currentCreatedVisits);
-        localStorage.setItem('createdVisits', JSON.stringify(currentCreatedVisits));
-      }
+  // Construire les visites depuis les données préchargées
+  const visits = todayRoute?.routeStops?.map(stop => {
+    const outlet = outlets.find(o => o.id === stop.outletId);
+    // Mapper les statuts de route vers les statuts de visite
+    let visitStatus: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
+    switch (stop.status) {
+      case 'VISITED':
+        visitStatus = 'COMPLETED';
+        break;
+      case 'PLANNED':
+        visitStatus = 'PLANNED';
+        break;
+      case 'SKIPPED':
+        visitStatus = 'SKIPPED';
+        break;
+      default:
+        visitStatus = 'PLANNED';
     }
-  }, [visits, createdVisits]);
-
-
-  console.log("visits",visits);
-  console.log("visits",visits);
-  console.log("visits",visits);
-  console.log("visits",visits);
-  console.log("visits",visits);
-  console.log("visits",visits);
-
-
-
-  const completedCount = visits.filter(v => v.status === 'COMPLETED').length;
-  const inProgressCount = visits.filter(v => v.status === 'IN_PROGRESS').length;
-  const plannedCount = visits.filter(v => v.status === 'PLANNED').length;
-
+    
+    return {
+      id: stop.id,
+      pdvName: outlet?.name || 'PDV Inconnu',
+      outletId: stop.outletId,
+      routeStopId: stop.id,
+      status: visitStatus,
+      scheduledTime: new Date().toISOString(), // Valeur par défaut
+      sequence: 1, // Valeur par défaut
+      address: outlet?.address || '',
+      checkInTime: undefined,
+      checkOutTime: undefined,
+    };
+  }) || [];
+  
+  // Récupérer le secteur depuis l'utilisateur (simuler pour le développement)
+  const sector = user ? {
+    id: 'sector-1',
+    code: 'SEC001',
+    name: 'Secteur Centre-Ville'
+  } : null;
+  
+  // Simuler un temps de chargement pour les données des stores
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // 1 seconde de chargement
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // État de chargement
-  if (loading) {
+  if (isLoading) {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">Chargement de vos PDV...</p>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de vos visites</h2>
+            <p className="text-gray-600 mb-4">Récupération de votre planning du jour...</p>
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <Icon name="calendar" size="sm" variant="grey" />
+              <span>Synchronisation des données</span>
+            </div>
           </div>
         </div>
       </PageLayout>
     );
   }
 
-  // État d'erreur avec debug
-  if (error) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center max-w-2xl">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Erreur</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            
-            
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="primary"
-            >
-              Réessayer
-            </Button>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
 
-  // Pas de secteur assigné
-  if (!sector) {
+
+
+
+  const completedCount = visits.filter(v => v.status === 'COMPLETED').length;
+  const inProgressCount = 0; // visits.filter(v => v.status === 'IN_PROGRESS').length;
+  const plannedCount = visits.filter(v => v.status === 'PLANNED').length;
+
+  // Plus besoin de gestion d'erreur car les données sont préchargées
+
+  // Pas de secteur assigné (seulement après le chargement)
+  if (!sector && !isLoading) {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -256,20 +242,8 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
           </div>
         )}
 
-        {/* Bouton d'ajout de PDV */}
-        {!selectedVisit && !showPDVForm && (
-          <div className="mb-4">
-            <Button 
-              variant="primary" 
-              size="md"
-              onClick={() => setShowPDVForm(true)}
-              fullWidth
-            >
-              <Icon name="plus" size="sm" className="mr-2" />
-              Nouveau PDV
-            </Button>
-          </div>
-        )}
+
+        
 
         {/* Formulaire d'enregistrement de PDV */}
         {showPDVForm && !selectedVisit && (
@@ -309,22 +283,25 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
           
           // Si pas trouvé, c'est peut-être un ID de vraie visite, chercher par outletId
           if (!visit) {
-            // Chercher l'outletId correspondant à cet ID de visite
-            const outletId = Object.keys(createdVisits).find(key => createdVisits[key] === selectedVisit);
-            if (outletId) {
-              visit = visits.find(v => v.outletId === outletId);
-            }
+            // Chercher dans le store Zustand
+            visits.forEach(v => {
+              const activeVisit = getActiveVisit(v.outletId);
+              if (activeVisit?.visitId === selectedVisit) {
+                visit = v;
+              }
+            });
           }
           
           if (!visit) return null;
           
-          // Utiliser l'ID sélectionné s'il correspond à une vraie visite, sinon utiliser le mapping
-          const realVisitId = Object.values(createdVisits).includes(selectedVisit) 
+          // Utiliser l'ID sélectionné s'il correspond à une vraie visite, sinon utiliser le mapping du store
+          const activeVisit = getActiveVisit(visit.outletId);
+          const realVisitId = activeVisit?.visitId === selectedVisit 
             ? selectedVisit 
-            : (createdVisits[visit.outletId] || visit.id);
+            : (activeVisit?.visitId || visit.id);
           
           console.log('🔍 [DEBUG VisitsREP] outletId:', visit.outletId);
-          console.log('🔍 [DEBUG VisitsREP] createdVisits:', createdVisits);
+          console.log('🔍 [DEBUG VisitsREP] activeVisit:', activeVisit);
           console.log('🔍 [DEBUG VisitsREP] realVisitId passé:', realVisitId);
           
           return (
@@ -334,17 +311,17 @@ const handleVisitSelect = async (visit: typeof visits[0]) => {
                 // La liste se mettra à jour automatiquement via le hook
               }}
               onVisitCompleted={() => {
-                // Nettoyer l'ID de la visite terminée du localStorage
-                cleanupCompletedVisit(visit.outletId);
+                // Nettoyer l'ID de la visite terminée du store
+                if (visit) cleanupCompletedVisit(visit.outletId);
                 // Recharger les données pour mettre à jour le statut
-                refetch();
+                // refetch();
               }}
               visitId={realVisitId}
               outletId={visit.outletId}
               pdvName={visit.pdvName}
               address={visit.address || ''}
               status={visit.status as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'}
-              routePlanId={routePlan?.id}
+              routePlanId={todayRoute?.id}
             />
           );
         })()}

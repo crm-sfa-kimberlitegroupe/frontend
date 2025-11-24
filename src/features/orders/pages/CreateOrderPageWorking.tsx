@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout, Button, Card } from '@/core/ui';
 import api from '@/core/api/api';
+import { useOrdersStore } from '../stores/ordersStore';
 
 interface SKU {
   id: string;
@@ -33,6 +34,9 @@ export const CreateOrderPage = () => {
   
   const outletId = searchParams.get('outletId');
   const visitId = searchParams.get('visitId');
+
+  // Store des commandes
+  const { addOrder } = useOrdersStore();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,10 +178,17 @@ export const CreateOrderPage = () => {
       // Utiliser le service api comme dans ProductHierarchy
       const response = await api.post('/orders', orderData);
       
+      // ✅ SAUVEGARDER DANS LE STORE (automatique)
+      const newOrder = response.data?.data || response.data;
+      if (newOrder) {
+        addOrder(newOrder);
+        console.log('[CreateOrderPage] Vente créée et ajoutée au store:', newOrder.id);
+      }
+      
       // Sauvegarder l'ID de la commande dans localStorage pour la visite
-      if (response.data?.data?.id && visitId) {
-        localStorage.setItem(`visit_${visitId}_venteId`, response.data.data.id);
-        console.log('💾 ID commande sauvegardé pour la visite:', response.data.data.id);
+      if (newOrder?.id && visitId) {
+        localStorage.setItem(`visit_${visitId}_venteId`, newOrder.id);
+        console.log('[CreateOrderPage] ID commande sauvegardé pour la visite:', newOrder.id);
       }
       
       setSuccess(true);

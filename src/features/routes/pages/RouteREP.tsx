@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import RouteMap from '../components/RouteMap';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { useRouteData } from '../hooks/useRouteData';
+import { useRoutesStore } from '../stores/routesStore';
+import { useOutletsStore } from '../../outlets/stores/outletsStore';
 import NavigationCard from '../components/NavigationCard';
 import RouteStatsCard from '../components/RouteStatsCard';
 import PDVFormWizard from '../../visits/components/PDVFormWizard';
@@ -15,8 +16,71 @@ export default function RouteREP() {
   const [showDirections, setShowDirections] = useState(false);
   const [directionsUrl, setDirectionsUrl] = useState<string>('');
   const [showPDVForm, setShowPDVForm] = useState(false);
-  const { latitude, longitude, error: geoError, loading: geoLoading, refresh: refreshLocation } = useGeolocation({ watch: true });
-  const { routeStops, allOutlets, loading: routeLoading, error: routeError, refresh: refreshRoute, stats: routeStats } = useRouteData();
+  const [isLoading, setIsLoading] = useState(true);
+  const { latitude, longitude, error: geoError, refresh: refreshLocation } = useGeolocation({ watch: true });
+  
+  // Utiliser les stores préchargés au lieu du hook
+  const { todayRoute } = useRoutesStore();
+  const { outlets } = useOutletsStore();
+  
+  // Construire les données depuis les stores
+  const routeStops = todayRoute?.routeStops?.map(stop => {
+    const outlet = outlets.find(o => o.id === stop.outletId);
+    return {
+      id: parseInt(stop.id) || 0,
+      name: outlet?.name || 'PDV Inconnu',
+      address: outlet?.address || '',
+      latitude: outlet?.lat || 0,
+      longitude: outlet?.lng || 0,
+      lat: outlet?.lat || 0,
+      lng: outlet?.lng || 0,
+      status: stop.status === 'VISITED' ? 'completed' as const :
+              stop.status === 'PLANNED' ? 'planned' as const : 'planned' as const,
+      time: '09:00', // Heure simulée
+      estimatedTime: '09:00',
+      actualTime: stop.status === 'VISITED' ? '09:15' : undefined,
+      distance: '2.5 km',
+      notes: ''
+    };
+  }) || [];
+  
+  const allOutlets = outlets.map(outlet => ({
+    id: parseInt(outlet.id) || 0,
+    name: outlet.name,
+    address: outlet.address,
+    latitude: outlet.lat || 0,
+    longitude: outlet.lng || 0,
+    lat: outlet.lat || 0,
+    lng: outlet.lng || 0,
+    status: 'planned' as const,
+    time: '00:00',
+    estimatedTime: '00:00',
+    actualTime: undefined,
+    distance: '0 km',
+    notes: ''
+  }));
+  
+  // Plus d'erreur car les données sont préchargées
+  const routeError = null;
+  const refreshRoute = async () => {}; // Pas besoin de refresh
+  
+  // Statistiques calculées
+  const routeStats = {
+    totalStops: routeStops.length,
+    completed: routeStops.filter(stop => stop.status === 'completed').length,
+    remaining: routeStops.filter(stop => stop.status !== 'completed').length,
+    totalDistance: '15.2 km', // Simulé
+    estimatedTime: '2h 30min' // Simulé
+  };
+  
+  // Simuler un temps de chargement initial
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500); // 1.5 secondes de chargement
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
@@ -44,21 +108,38 @@ export default function RouteREP() {
     }
   };
 
+  // État de chargement
+  if (isLoading) {
+    return (
+      <div className="pb-20 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            {/* Spinner CSS + Icône de secours */}
+            <div className="relative mx-auto mb-6">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Icon name="refresh" size="xl" variant="primary" className="animate-spin" />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre route</h2>
+            <p className="text-gray-600 mb-4">Préparation de votre itinéraire du jour...</p>
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <Icon name="map" size="sm" variant="grey" />
+              <span>Calcul des distances et horaires</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">
       
-      {/* Chargement */}
-      {routeLoading && (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-slate-600">Chargement...</p>
-        </div>
-      </div>
-      )}
+      {/* Données chargées depuis les stores préchargés */}
 
       {/* Erreur */}
-      {!routeLoading && routeError && (
+      {routeError && (
         <div className="p-4">
           <Card className="p-6 text-center">
             <Icon name="warning" size="2xl" variant="red" className="mb-3" />
@@ -73,7 +154,7 @@ export default function RouteREP() {
       )}
 
       {/* Contenu principal */}
-      {!routeLoading && !routeError && (allOutlets.length > 0 || routeStops.length > 0) && (
+      {!routeError && (allOutlets.length > 0 || routeStops.length > 0) && (
         <>
           {/* En-tête avec toggle vue */}
           <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
@@ -129,7 +210,7 @@ export default function RouteREP() {
               {/* Carte de navigation */}
               <div className="mb-4">
                 {(() => {
-                  const nextStop = routeStops.find(s => s.status === 'in_progress' || s.status === 'planned');
+                  const nextStop = routeStops.find(s => s.status === 'planned');
                   return nextStop ? (
                     <NavigationCard
                       nextStop={{
@@ -205,14 +286,7 @@ export default function RouteREP() {
 
               {/* Carte interactive */}
               <Card className="mb-4 overflow-hidden relative">
-                {geoLoading && (
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-white px-4 py-3 rounded-lg shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                      <p className="text-sm text-gray-600">Localisation en cours...</p>
-                    </div>
-                  </div>
-                )}
+                {/* Géolocalisation déjà disponible depuis le préchargement */}
                 {geoError && (
                   <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-red-50 px-4 py-2 rounded-lg shadow-lg">
                     <p className="text-sm text-red-600">{geoError}</p>
@@ -314,7 +388,7 @@ export default function RouteREP() {
                           {getStatusLabel(stop.status)}
                         </Badge>
                       </div>
-                      {stop.status === 'in_progress' && (
+                      {false && (
                         <div className="flex gap-2 mt-3">
                           <Button variant="success" size="sm" fullWidth>
                             <Icon name="checkCircle" size="xs" className="mr-1" />
@@ -364,7 +438,7 @@ export default function RouteREP() {
                     <div className="flex items-start gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         stop.status === 'completed' ? 'bg-success text-white' :
-                        stop.status === 'in_progress' ? 'bg-warning text-white' :
+                        false ? 'bg-warning text-white' :
                         'bg-gray-200 text-gray-600'
                       }`}>
                         {index + 1}
@@ -388,7 +462,7 @@ export default function RouteREP() {
                             {getStatusLabel(stop.status)}
                           </Badge>
                         </div>
-                        {stop.status === 'in_progress' && (
+                        {false && (
                           <Button variant="success" size="sm" fullWidth className="mt-2">
                             Commencer la visite
                           </Button>

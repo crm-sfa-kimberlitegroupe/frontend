@@ -31,7 +31,7 @@ export default function LowStockAlerts({ items, className = '' }: LowStockAlerts
                     {item.sku.photo ? (
                       <img
                         src={item.sku.photo}
-                        alt={item.sku.name}
+                        alt={item.sku.shortDescription}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -42,9 +42,9 @@ export default function LowStockAlerts({ items, className = '' }: LowStockAlerts
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-yellow-900 truncate">
-                      {item.sku.name}
+                      {item.sku.shortDescription}
                     </p>
-                    <p className="text-xs text-yellow-700">{item.sku.brand}</p>
+                    <p className="text-xs text-yellow-700">Stock faible</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-3">
