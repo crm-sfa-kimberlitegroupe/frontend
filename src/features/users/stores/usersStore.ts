@@ -63,7 +63,8 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   },
 
   // Charger les performances de l'utilisateur
-  loadUserPerformance: async (userId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  loadUserPerformance: async (_userId: string) => {
     try {
       // Simuler des données de performance
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -90,7 +91,8 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   },
 
   // Charger les informations du manager
-  loadManagerInfo: async (userId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  loadManagerInfo: async (_userId: string) => {
     try {
       // Simuler des données du manager
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -136,7 +138,8 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   },
 
   // Mettre à jour l'utilisateur
-  updateUser: async (userId: string, data: Partial<User>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  updateUser: async (_userId: string, data: Partial<User>) => {
     set({ isLoading: true, error: null });
     
     try {
