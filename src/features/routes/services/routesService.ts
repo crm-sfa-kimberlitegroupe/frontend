@@ -26,7 +26,7 @@ export interface RouteStop {
   seq: number;
   eta?: string;
   durationPlanned?: number;
-  status: 'PLANNED' | 'VISITED' | 'SKIPPED';
+  status: 'PLANNED' | 'IN_PROGRESS' | 'VISITED' | 'SKIPPED';
   reason?: string;
   outlet?: {
     id: string;
@@ -164,13 +164,37 @@ const routesService = {
   },
 
   // Récupérer les PDV du secteur du vendeur
-  async getVendorSectorOutlets(vendorId: string): Promise<{
-    user: { id: string; firstName: string; lastName: string };
-    sector: { id: string; code: string; name: string };
-    outlets: any[];
-  }> {
-    const response = await api.get(`/territories/vendors/${vendorId}/outlets`);
-    return response;
+  async getVendorSectorOutlets(vendorId: string): Promise<any> {
+    try {
+      console.log('🔄 [routesService] Appel getVendorSectorOutlets pour vendorId:', vendorId);
+      const url = `/territories/vendors/${vendorId}/outlets`;
+      console.log('🔄 [routesService] URL appelée:', url);
+      
+      const response = await api.get(url);
+      
+      console.log('✅ [routesService] Réponse reçue:', response);
+      console.log('✅ [routesService] Type de réponse:', typeof response);
+      
+      // Vérifier si la réponse a une structure { success, data, message }
+      if (response?.data) {
+        console.log('✅ [routesService] Structure avec data détectée');
+        console.log('✅ [routesService] Nombre de PDV:', response.data.outlets?.length || 0);
+      } else {
+        console.log('✅ [routesService] Structure directe détectée');
+        console.log('✅ [routesService] Nombre de PDV:', response?.outlets?.length || 0);
+      }
+      
+      return response;
+    } catch (error: unknown) {
+      console.error('❌ [routesService] Erreur getVendorSectorOutlets:', error);
+      console.error('❌ [routesService] Détails erreur:', {
+        message: (error as Error).message,
+        status: (error as any).status,
+        statusText: (error as any).statusText,
+        url: `/territories/vendors/${vendorId}/outlets`
+      });
+      throw error;
+    }
   },
 
   // Générer des routes pour plusieurs jours
@@ -205,11 +229,24 @@ const routesService = {
     outletId: string, 
     status: 'PLANNED' | 'IN_PROGRESS' | 'VISITED'
   ) {
-    const response = await api.patch(
-      `/route-plans/${routePlanId}/stops/${outletId}/status`,
-      { status }
-    );
-    return response.data;
+    try {
+      console.log('🔄 [routesService] updateRouteStopStatus:', {
+        routePlanId,
+        outletId,
+        status
+      });
+      
+      const response = await api.patch(
+        `/route-plans/${routePlanId}/stops/${outletId}/status`,
+        { status }
+      );
+      
+      console.log('✅ [routesService] Statut mis à jour:', response);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [routesService] Erreur mise à jour statut:', error);
+      throw error;
+    }
   },
 };
 

@@ -186,26 +186,77 @@ export default function RouteMap({
         </Marker>
 
         {/* Marqueurs de TOUS les PDV du territoire */}
-        {allOutlets.map((outlet) => {
+        {allOutlets
+          .filter(outlet => {
+            const lat = Number(outlet.latitude);
+            const lng = Number(outlet.longitude);
+            const isValid = outlet.latitude != null && outlet.longitude != null && 
+                           !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+            if (!isValid) {
+              console.log(`🚫 [RouteMap] Outlet ${outlet.name} filtré - coordonnées invalides:`, {
+                latitude: outlet.latitude,
+                longitude: outlet.longitude,
+                lat,
+                lng
+              });
+            }
+            return isValid;
+          })
+          .map((outlet, index) => {
           console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}] - Status: ${outlet.status}`);
+          console.log(`🔍 Types: latitude=${typeof outlet.latitude}, longitude=${typeof outlet.longitude}`);
           
           // Déterminer l'icône et le z-index selon le statut
           let zIndex = 0;
+          let iconColor = '#6B7280'; // Gris par défaut pour territory
+          
           if (outlet.status === 'completed') {
-            zIndex = 200; // PDV visités au-dessus des autres PDV
-          } else if (outlet.status === 'route_planned') {
-            zIndex = 100; // PDV de la route au-dessus des PDV du territoire
+            zIndex = 300; // PDV visités au-dessus de tout
+            iconColor = '#10B981'; // Vert pour visité
+          } else if (outlet.status === 'in_progress') {
+            zIndex = 250; // PDV en cours au-dessus des planifiés
+            iconColor = '#F59E0B'; // Orange pour en cours
+          } else if (outlet.status === 'planned') {
+            zIndex = 200; // PDV planifiés au-dessus du territoire
+            iconColor = '#3B82F6'; // Bleu pour planifié
+          } else if (outlet.status === 'territory') {
+            zIndex = 100; // PDV du territoire en arrière-plan
+            iconColor = '#6B7280'; // Gris pour territoire
           }
           
           // Déterminer l'emoji pour le popup
           const emoji = outlet.status === 'completed' ? '✅' : 
-                       outlet.status === 'route_planned' ? '🎯' : '🏪';
+                       outlet.status === 'in_progress' ? '🔄' :
+                       outlet.status === 'planned' ? '🎯' : '🏪';
+          
+          // Créer une icône personnalisée avec la couleur appropriée
+          const customIcon = L.divIcon({
+            html: `<div style="
+              background-color: ${iconColor};
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 10px;
+              font-weight: bold;
+            ">${outlet.status === 'completed' ? '✓' : 
+                outlet.status === 'in_progress' ? '●' :
+                outlet.status === 'planned' ? '!' : '○'}</div>`,
+            className: 'custom-outlet-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
           
           return (
             <Marker
-              key={`outlet-${outlet.id}`}
-              position={[outlet.latitude, outlet.longitude]}
-              icon={createCustomIcon(outlet.status as any)}
+              key={`outlet-${outlet.id}-${index}`}
+              position={[Number(outlet.latitude), Number(outlet.longitude)]}
+              icon={customIcon}
               zIndexOffset={zIndex}
             >
               <Popup>
@@ -215,15 +266,17 @@ export default function RouteMap({
                   </p>
                   <span className={`text-xs px-2 py-1 rounded ${
                     outlet.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    outlet.status === 'route_planned' ? 'bg-blue-100 text-blue-800' : 
+                    outlet.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
+                    outlet.status === 'planned' ? 'bg-blue-100 text-blue-800' : 
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {outlet.status === 'completed' ? 'PDV visité' :
-                     outlet.status === 'route_planned' ? 'PDV de ma route' : 
+                     outlet.status === 'in_progress' ? 'Visite en cours' :
+                     outlet.status === 'planned' ? 'PDV planifié' : 
                      'PDV du territoire'}
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
-                    Coordonnées: [{outlet.latitude.toFixed(6)}, {outlet.longitude.toFixed(6)}]
+                    Coordonnées: [{Number(outlet.latitude)?.toFixed(6) || 'N/A'}, {Number(outlet.longitude)?.toFixed(6) || 'N/A'}]
                   </p>
                 </div>
               </Popup>
@@ -234,7 +287,7 @@ export default function RouteMap({
         {/* Marqueurs des arrêts de la route - SEULEMENT si pas déjà dans allOutlets */}
         {stops.length > 0 && allOutlets.length === 0 && stops.map((stop, index) => (
           <Marker
-            key={`route-${stop.id}`}
+            key={`route-${stop.id}-${index}`}
             position={[stop.latitude, stop.longitude]}
             icon={createCustomIcon(stop.status)}
             zIndexOffset={1000} // Au premier plan

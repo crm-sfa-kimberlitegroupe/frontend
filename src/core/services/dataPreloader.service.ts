@@ -7,7 +7,7 @@
 import { useAuthStore } from '@/core/auth';
 import { useOrdersStore } from '@/features/orders/stores/ordersStore';
 import { useVisitsStore } from '@/features/visits/stores/visitsStore';
-import { useOutletsStore } from '@/features/outlets/stores/outletsStore';
+import { useOutletsStore } from '@/features/outlets/store/outletsStore';
 import { useProductsStore } from '@/features/products/stores/productsStore';
 import { useVendorStockStore } from '@/features/vendor-stock/stores/vendorStockStore';
 import { useRoutesStore } from '@/features/routes/stores/routesStore';
@@ -156,13 +156,18 @@ class DataPreloaderService {
     const outletsStore = useOutletsStore.getState();
     
     try {
+      console.log('🏪 [DataPreloader] Début chargement outlets...');
       // Charger tous les PDV assignés
       await outletsStore.loadOutlets();
       
-      // Charger aussi les statistiques
-      await outletsStore.loadOutletStats();
+      const finalState = useOutletsStore.getState();
+      console.log('🏪 [DataPreloader] Outlets chargés:', {
+        count: finalState.outlets.length,
+        loading: finalState.loading,
+        error: finalState.error
+      });
     } catch (error) {
-      console.error('Erreur chargement outlets:', error);
+      console.error('❌ [DataPreloader] Erreur chargement outlets:', error);
     }
   }
 

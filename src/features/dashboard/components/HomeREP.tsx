@@ -309,6 +309,7 @@ export default function HomeREP() {
           variant="outline" 
           size="lg" 
           fullWidth
+          onClick={() => navigate('/dashboard/route')}
         >
           <Icon name="map" size="lg" className="mr-2" />
           <span className="font-medium">Démarrer ma tournée</span>

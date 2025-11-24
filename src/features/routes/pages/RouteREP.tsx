@@ -1,67 +1,133 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import RouteMap from '../components/RouteMap';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { useRoutesStore } from '../stores/routesStore';
-import { useOutletsStore } from '../../outlets/stores/outletsStore';
+import { useOutletsStore } from '../../outlets/store/outletsStore';
+import { useRouteVisits } from '../../visits/hooks/useRouteVisits';
 import NavigationCard from '../components/NavigationCard';
 import RouteStatsCard from '../components/RouteStatsCard';
 import PDVFormWizard from '../../visits/components/PDVFormWizard';
 
 export default function RouteREP() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [showDirections, setShowDirections] = useState(false);
-  const [directionsUrl, setDirectionsUrl] = useState<string>('');
   const [showPDVForm, setShowPDVForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { latitude, longitude, error: geoError, refresh: refreshLocation } = useGeolocation({ watch: true });
   
-  // Utiliser les stores préchargés au lieu du hook
-  const { todayRoute } = useRoutesStore();
-  const { outlets } = useOutletsStore();
+  // Utiliser le hook useRouteVisits qui contient la logique avancée
+  const { 
+    visits, 
+    routePlan: todayRoute, 
+    sector,
+    loading: routeLoading, 
+    error: hookError 
+  } = useRouteVisits();
+
+
+  console.log("🗺️ RouteREP - visits du hook:", visits.length, visits);
+
   
-  // Construire les données depuis les stores
-  const routeStops = todayRoute?.routeStops?.map(stop => {
-    const outlet = outlets.find(o => o.id === stop.outletId);
+  // Garder les outlets pour la carte
+  const { outlets, loading: outletsLoading, error: outletsError } = useOutletsStore();
+
+  // Logs détaillés pour diagnostiquer le problème outlets
+  console.log('🏪 [RouteREP] État du store outlets:');
+  console.log('📊 outlets.length:', outlets?.length || 0);
+  console.log('📊 outletsLoading:', outletsLoading);
+  console.log('📊 outletsError:', outletsError);
+  console.log('📊 outlets (premiers 3):', outlets?.slice(0, 3));
+  console.log('📊 outlets complet:', outlets);
+  console.log('📊 Type de outlets:', typeof outlets, Array.isArray(outlets));
+  console.log('📊 outlets === undefined?', outlets === undefined);
+  console.log('📊 outlets === null?', outlets === null);
+
+
+
+  console.log("lllllllllllllllllllllllllllllllllllllllll",outlets)
+
+  
+  // Debug: Logs pour voir les données du hook
+  console.log('🚀 RouteREP - Données du hook useRouteVisits:', {
+    todayRoute,
+    visitsCount: visits.length,
+    sector: sector?.name,
+    outlets: outlets.length,
+    outletsWithCoords: outlets.filter(o => o.lat && o.lng).length
+  });
+
+  // Convertir les visits du hook en format RouteStop pour la carte
+  const routeStops = visits.map((visit, index) => {
+    const outlet = outlets.find(o => o.id === visit.outletId);
+    console.log(`🎯 Visit ${index}: ${visit.pdvName}, status: ${visit.status}`);
+    
     return {
-      id: parseInt(stop.id) || 0,
-      name: outlet?.name || 'PDV Inconnu',
-      address: outlet?.address || '',
+      id: parseInt(visit.id) || (index + 1),
+      name: visit.pdvName,
+      address: visit.address || outlet?.address || '',
       latitude: outlet?.lat || 0,
       longitude: outlet?.lng || 0,
       lat: outlet?.lat || 0,
       lng: outlet?.lng || 0,
-      status: stop.status === 'VISITED' ? 'completed' as const :
-              stop.status === 'PLANNED' ? 'planned' as const : 'planned' as const,
-      time: '09:00', // Heure simulée
-      estimatedTime: '09:00',
-      actualTime: stop.status === 'VISITED' ? '09:15' : undefined,
-      distance: '2.5 km',
+      status: visit.status === 'COMPLETED' ? 'completed' as const :
+              visit.status === 'IN_PROGRESS' ? 'in_progress' as const : 'planned' as const,
+      time: visit.scheduledTime,
+      estimatedTime: visit.scheduledTime,
+      actualTime: visit.checkOutTime,
+      distance: '2.5 km', // TODO: Calculer la vraie distance
       notes: ''
     };
-  }) || [];
+  });
   
-  const allOutlets = outlets.map(outlet => ({
-    id: parseInt(outlet.id) || 0,
-    name: outlet.name,
-    address: outlet.address,
-    latitude: outlet.lat || 0,
-    longitude: outlet.lng || 0,
-    lat: outlet.lat || 0,
-    lng: outlet.lng || 0,
-    status: 'planned' as const,
-    time: '00:00',
-    estimatedTime: '00:00',
-    actualTime: undefined,
-    distance: '0 km',
-    notes: ''
-  }));
+  const allOutlets = outlets.map((outlet, index) => {
+    console.log(`🏪 [RouteREP] Mapping outlet ${index}:`, {
+      id: outlet.id,
+      name: outlet.name,
+      lat: outlet.lat,
+      lng: outlet.lng,
+      address: outlet.address,
+      status: outlet.status
+    });
+    
+    // Chercher si ce PDV a une visite associée
+    const associatedVisit = visits.find(visit => visit.outletId === outlet.id);
+    
+    // Déterminer le statut basé sur la visite
+    let outletStatus: 'completed' | 'planned' | 'in_progress' | 'territory' = 'territory';
+    
+    if (associatedVisit) {
+      if (associatedVisit.status === 'COMPLETED') {
+        outletStatus = 'completed';
+      } else if (associatedVisit.status === 'IN_PROGRESS') {
+        outletStatus = 'in_progress';
+      } else if (associatedVisit.status === 'PLANNED') {
+        outletStatus = 'planned';
+      }
+      
+      console.log(`🎯 [RouteREP] PDV ${outlet.name} a une visite: ${associatedVisit.status} → ${outletStatus}`);
+    } else {
+      console.log(`🏪 [RouteREP] PDV ${outlet.name} sans visite → territory`);
+    }
+    
+    return {
+      id: parseInt(outlet.id) || index + 1000, // Éviter les ID = 0, utiliser index + offset
+      name: outlet.name,
+      address: outlet.address,
+      latitude: outlet.lat || 0,
+      longitude: outlet.lng || 0,
+      lat: outlet.lat || 0,
+      lng: outlet.lng || 0,
+      status: outletStatus, // Statut basé sur les visites
+      time: associatedVisit?.scheduledTime || '00:00',
+      estimatedTime: associatedVisit?.scheduledTime || '00:00',
+      actualTime: associatedVisit?.checkOutTime,
+      distance: '0 km', // TODO: Calculer la vraie distance
+      notes: ''
+    };
+  });
   
-  // Plus d'erreur car les données sont préchargées
-  const routeError = null;
+  // Utiliser les erreurs du hook
   const refreshRoute = async () => {}; // Pas besoin de refresh
   
   // Statistiques calculées
@@ -73,14 +139,7 @@ export default function RouteREP() {
     estimatedTime: '2h 30min' // Simulé
   };
   
-  // Simuler un temps de chargement initial
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500); // 1.5 secondes de chargement
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Le chargement est maintenant géré par le hook useRouteVisits
 
   const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
@@ -108,8 +167,8 @@ export default function RouteREP() {
     }
   };
 
-  // État de chargement
-  if (isLoading) {
+  // État de chargement du hook
+  if (routeLoading) {
     return (
       <div className="pb-20 bg-gray-50 min-h-screen">
         <div className="flex items-center justify-center min-h-screen">
@@ -139,12 +198,12 @@ export default function RouteREP() {
       {/* Données chargées depuis les stores préchargés */}
 
       {/* Erreur */}
-      {routeError && (
+      {hookError && (
         <div className="p-4">
           <Card className="p-6 text-center">
             <Icon name="warning" size="2xl" variant="red" className="mb-3" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune route planifiée</h3>
-            <p className="text-gray-600 mb-4">{routeError}</p>
+            <p className="text-gray-600 mb-4">{hookError}</p>
             <Button variant="primary" onClick={refreshRoute}>
               <Icon name="refresh" size="sm" className="mr-2" />
               Réessayer
@@ -154,7 +213,7 @@ export default function RouteREP() {
       )}
 
       {/* Contenu principal */}
-      {!routeError && (allOutlets.length > 0 || routeStops.length > 0) && (
+      {!hookError && (allOutlets.length > 0 || routeStops.length > 0) && (
         <>
           {/* En-tête avec toggle vue */}
           <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
@@ -223,10 +282,9 @@ export default function RouteREP() {
                       }}
                       onStartNavigation={() => {
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${nextStop.latitude},${nextStop.longitude}`;
-                        setDirectionsUrl(url);
-                        setShowDirections(!showDirections);
+                        // Ouvrir directement Google Maps dans une nouvelle fenêtre
+                        window.open(url, '_blank');
                       }}
-                      showDirections={showDirections}
                     />
                   ) : (
                     <NavigationCard />
@@ -234,43 +292,6 @@ export default function RouteREP() {
                 })()}
               </div>
 
-              {/* Iframe Google Maps pour l'itinéraire */}
-              {showDirections && directionsUrl && (
-                <Card className="mb-4 overflow-hidden">
-                  <div className="bg-blue-50 px-4 py-2 flex items-center justify-between border-b border-blue-200">
-                    <div className="flex items-center gap-2">
-                      <Icon name="map" size="sm" variant="primary" />
-                      <span className="text-sm font-medium text-gray-900">Itinéraire Google Maps</span>
-                    </div>
-                    <button
-                      onClick={() => setShowDirections(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <Icon name="x" size="sm" />
-                    </button>
-                  </div>
-                  <iframe
-                    src={directionsUrl}
-                    width="100%"
-                    height="400"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Google Maps Directions"
-                  />
-                  <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      fullWidth
-                      onClick={() => window.open(directionsUrl, '_blank')}
-                    >
-                      <Icon name="arrowRight" size="xs" className="mr-2" />
-                      Ouvrir dans une nouvelle fenêtre
-                    </Button>
-                  </div>
-                </Card>
-              )}
 
               {/* Statistiques de la route */}
               <div className="mb-4">
@@ -309,25 +330,27 @@ export default function RouteREP() {
                 {/* Légende */}
                 <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[1000] border border-gray-200">
                   <p className="text-xs font-semibold text-gray-900 mb-2">Légende</p>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs">
                       <div className="w-4 h-4 flex items-center justify-center text-red-500">📍</div>
                       <span>Votre position</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-4 h-4 flex items-center justify-center text-green-500">✓</div>
+                      <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[8px] font-bold">✓</div>
                       <span>PDV visité</span>
                     </div>
-
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-4 h-4 flex items-center justify-center text-blue-500">🎯</div>
-                      <span>PDV de ma route</span>
+                      <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white text-[8px] font-bold">●</div>
+                      <span>Visite en cours</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-4 h-4 flex items-center justify-center text-gray-300">●</div>
-                      <span>Autres PDV du territoire</span>
+                      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">!</div>
+                      <span>PDV planifié</span>
                     </div>
-
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center text-white text-[8px] font-bold">○</div>
+                      <span>PDV du territoire</span>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -388,25 +411,7 @@ export default function RouteREP() {
                           {getStatusLabel(stop.status)}
                         </Badge>
                       </div>
-                      {false && (
-                        <div className="flex gap-2 mt-3">
-                          <Button variant="success" size="sm" fullWidth>
-                            <Icon name="checkCircle" size="xs" className="mr-1" />
-                            Commencer
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              const url = `https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`;
-                              setDirectionsUrl(url);
-                              setShowDirections(true);
-                            }}
-                          >
-                            <Icon name="map" size="xs" />
-                          </Button>
-                        </div>
-                      )}
+                      {/* Boutons désactivés temporairement */}
                       {stop.status === 'planned' && (
                         <Button 
                           variant="outline" 
@@ -415,8 +420,8 @@ export default function RouteREP() {
                           className="mt-3"
                           onClick={() => {
                             const url = `https://www.google.com/maps/dir/?api=1&destination=${stop.latitude},${stop.longitude}`;
-                            setDirectionsUrl(url);
-                            setShowDirections(true);
+                            // Ouvrir directement Google Maps dans une nouvelle fenêtre/onglet
+                            window.open(url, '_blank');
                           }}
                         >
                           <Icon name="map" size="xs" className="mr-1" />
@@ -438,7 +443,6 @@ export default function RouteREP() {
                     <div className="flex items-start gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         stop.status === 'completed' ? 'bg-success text-white' :
-                        false ? 'bg-warning text-white' :
                         'bg-gray-200 text-gray-600'
                       }`}>
                         {index + 1}
@@ -462,11 +466,7 @@ export default function RouteREP() {
                             {getStatusLabel(stop.status)}
                           </Badge>
                         </div>
-                        {false && (
-                          <Button variant="success" size="sm" fullWidth className="mt-2">
-                            Commencer la visite
-                          </Button>
-                        )}
+                        {/* Bouton visite désactivé temporairement */}
                       </div>
                     </div>
                   </Card>

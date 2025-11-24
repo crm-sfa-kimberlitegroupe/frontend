@@ -7,7 +7,7 @@ import { visitsService } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
 import { useVisitsStore, type VisitData } from '../stores/visitsStore';
 import { useRoutesStore } from '../../routes/stores/routesStore';
-import { useOutletsStore } from '../../outlets/stores/outletsStore';
+import { useOutletsStore } from '../../outlets/store/outletsStore';
 import VisitsHeader from '../components/VisitsHeader';
 import PDVFormWizard from '../components/PDVFormWizard';
 import VisitCard from '../components/VisitCard';
@@ -23,8 +23,21 @@ export default function VisitsREP() {
   // Utiliser les stores préchargés
   const user = useAuthStore((state) => state.user);
   const { startVisit, getActiveVisit, clearVisit } = useVisitsStore();
-  const { todayRoute } = useRoutesStore();
-  const { outlets } = useOutletsStore();
+  const { todayRoute, loadTodayRoute } = useRoutesStore();
+  const { loadOutlets } = useOutletsStore();
+
+
+  // Logs uniquement si todayRoute change
+  useEffect(() => {
+    console.log("📋 VisitsREP - todayRoute:", todayRoute);
+    console.log("📋 VisitsREP - routeStops:", todayRoute?.routeStops?.map(s => ({
+      id: s.id,
+      outletId: s.outletId,
+      status: s.status,
+      outletName: s.outlet?.name
+    })));
+  }, [todayRoute]);
+
   
   // États pour la modale d'initialisation
   const [showInitModal, setShowInitModal] = useState(false);
@@ -32,25 +45,29 @@ export default function VisitsREP() {
 
 
 
-
-
-
-
 // Fonction pour nettoyer une visite terminée du store
 const cleanupCompletedVisit = (outletId: string) => {
   clearVisit(outletId);
-  console.log('🧹 Visite terminée nettoyée du store pour outlet:', outletId);
+  console.log('Visite terminée nettoyée du store pour outlet:', outletId);
 };
 
 const handleVisitSelect = async (visit: any) => {
   let createdVisit: { id: string } | null = null;
   
   try {
+    // Vérifier si une visite est déjà en cours pour éviter les doublons
+    if (visit.status === 'IN_PROGRESS') {
+      console.log('⚠️ Visite déjà en cours pour:', visit.pdvName);
+      // Ouvrir directement le détail sans créer une nouvelle visite
+      setSelectedVisit(visit.id);
+      return;
+    }
+    
     if (visit.status === 'PLANNED') {
       setInitPdvName(visit.pdvName);
       setShowInitModal(true);
       
-      console.log('🚀 Démarrage de la visite pour:', visit.pdvName);
+      console.log('Démarrage de la visite pour:', visit.pdvName);
       
       // Récupérer les coordonnées GPS
       let lat: number | undefined;
@@ -72,14 +89,14 @@ const handleVisitSelect = async (visit: any) => {
         const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
         createdVisit = newVisit;
         
-        console.log('✅ Visite créée avec check-in:', newVisit);
+        console.log('Visite créée avec check-in:', newVisit);
         
         if (!newVisit || !newVisit.id) {
           throw new Error('Service checkIn n\'a pas retourné de visite valide');
         }
         
       } catch (checkInError) {
-        console.error('❌ Erreur lors du check-in:', checkInError);
+        console.error('Erreur lors du check-in:', checkInError);
         throw checkInError;
       }
 
@@ -96,13 +113,39 @@ const handleVisitSelect = async (visit: any) => {
         };
         
         startVisit(visitData);
-        console.log('💾 Visite complète stockée dans le store:', visitData);
+        console.log('Visite complète stockée dans le store:', visitData);
       }
 
       // Mettre à jour le statut du routeStop à IN_PROGRESS
       if (todayRoute?.id) {
+        console.log('🔄 Mise à jour du statut:', {
+          routePlanId: todayRoute.id,
+          outletId: visit.outletId,
+          newStatus: 'IN_PROGRESS'
+        });
+        
         await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
-        console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
+        console.log('✅ Statut du stop de route mis à jour vers IN_PROGRESS');
+        
+        // 🔄 IMPORTANT: Recharger les données pour synchroniser les stores
+        console.log('🔄 Rechargement des données après mise à jour du statut...');
+        await Promise.all([
+          loadTodayRoute(user?.id),
+          loadOutlets()
+        ]);
+        console.log('✅ Données de la route et outlets rechargées avec succès');
+        
+        // Vérifier les nouvelles données
+        console.log('🔍 Vérification après rechargement...');
+        setTimeout(() => {
+          const updatedRoute = useRoutesStore.getState().todayRoute;
+          console.log('📋 Route après rechargement:', updatedRoute?.routeStops?.map(s => ({
+            id: s.id,
+            outletId: s.outletId,
+            status: s.status,
+            outletName: s.outlet?.name
+          })));
+        }, 500);
       }
       
       // Fermer la modale
@@ -129,22 +172,21 @@ const handleVisitSelect = async (visit: any) => {
 
   // Construire les visites depuis les données préchargées
   const visits = todayRoute?.routeStops?.map(stop => {
-    const outlet = outlets.find(o => o.id === stop.outletId);
-    // Mapper les statuts de route vers les statuts de visite
-    let visitStatus: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
-    switch (stop.status) {
-      case 'VISITED':
-        visitStatus = 'COMPLETED';
-        break;
-      case 'PLANNED':
-        visitStatus = 'PLANNED';
-        break;
-      case 'SKIPPED':
-        visitStatus = 'SKIPPED';
-        break;
-      default:
-        visitStatus = 'PLANNED';
+    // ✅ L'outlet est déjà inclus dans stop.outlet, pas besoin de chercher dans le store
+    const outlet = stop.outlet;
+    
+    let visitStatus: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' = 'PLANNED';
+    
+    // Mapper directement les statuts du routeStop
+    if (stop.status === 'VISITED') {
+      visitStatus = 'COMPLETED';
+    } else if (stop.status === 'IN_PROGRESS') {
+      visitStatus = 'IN_PROGRESS';
+    } else if (stop.status === 'PLANNED') {
+      visitStatus = 'PLANNED';
     }
+    
+    console.log(`📍 [VisitsREP] Stop ${outlet?.name}: ${stop.status} → ${visitStatus}`);
     
     return {
       id: stop.id,
@@ -152,13 +194,35 @@ const handleVisitSelect = async (visit: any) => {
       outletId: stop.outletId,
       routeStopId: stop.id,
       status: visitStatus,
-      scheduledTime: new Date().toISOString(), // Valeur par défaut
-      sequence: 1, // Valeur par défaut
+      scheduledTime: stop.eta ? new Date(stop.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : `${8 + stop.seq}:00`,
+      sequence: stop.seq,
       address: outlet?.address || '',
       checkInTime: undefined,
       checkOutTime: undefined,
     };
   }) || [];
+
+  // Log des visites construites uniquement si elles changent
+  useEffect(() => {
+    console.log("📋 VisitsREP - visits construites:", visits.length, visits);
+  }, [visits.length]);
+
+  // Fonction pour rafraîchir manuellement les données
+  const refreshData = async () => {
+    console.log('🔄 Rafraîchissement manuel des données...');
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadTodayRoute(user?.id),
+        loadOutlets()
+      ]);
+      console.log('✅ Rafraîchissement terminé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors du rafraîchissement:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Récupérer le secteur depuis l'utilisateur (simuler pour le développement)
   const sector = user ? {
@@ -232,7 +296,17 @@ const handleVisitSelect = async (visit: any) => {
         {/* Informations du secteur */}
         {sector && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h3 className="text-lg font-medium text-blue-900 mb-1">Votre secteur</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-medium text-blue-900">Votre secteur</h3>
+              <button
+                onClick={refreshData}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Icon name="refresh" size="sm" className={isLoading ? 'animate-spin' : ''} />
+                {isLoading ? 'Actualisation...' : 'Actualiser'}
+              </button>
+            </div>
             <p className="text-lg text-blue-800">
               <strong>{sector.name}</strong> ({sector.code})
             </p>

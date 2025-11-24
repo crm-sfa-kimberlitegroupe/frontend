@@ -13,10 +13,9 @@ interface NavigationCardProps {
   };
   onStartNavigation?: () => void;
   onSkipStop?: () => void;
-  showDirections?: boolean;
 }
 
-export default function NavigationCard({ nextStop, onStartNavigation, onSkipStop, showDirections }: NavigationCardProps) {
+export default function NavigationCard({ nextStop, onStartNavigation, onSkipStop }: NavigationCardProps) {
   if (!nextStop) {
     return (
       <Card className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
@@ -71,7 +70,7 @@ export default function NavigationCard({ nextStop, onStartNavigation, onSkipStop
           className="flex items-center justify-center gap-2"
         >
           <Icon name="map" size="sm" variant="white" />
-          {showDirections ? 'Masquer l\'itinéraire' : 'Voir l\'itinéraire'}
+          Voir l'itinéraire
         </Button>
         {onSkipStop && (
           <Button 
