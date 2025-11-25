@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
 
 // Debug: Afficher la configuration chargée
-console.log('🔧 Configuration API:', {
+console.log('Configuration API:', {
   apiUrl: API_URL,
   environment: import.meta.env.MODE,
   viteApiUrl: import.meta.env.VITE_API_URL,
@@ -130,7 +130,7 @@ const api = {
 
   async post(url: string, data?: any) {
     const token = localStorage.getItem('access_token') || localStorage.getItem('token');
-    console.log('🔑 Token utilisé pour la requête:', token ? `${token.substring(0, 20)}...` : 'AUCUN TOKEN');
+    console.log('Token utilisé pour la requête:', token ? `${token.substring(0, 20)}...` : 'AUCUN TOKEN');
     
     // Détecter si c'est un FormData (pour l'upload de fichiers)
     const isFormData = data instanceof FormData;
@@ -153,7 +153,7 @@ const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
-        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        console.error('Erreur 401: Non autorisé - Token invalide ou expiré');
         localStorage.clear();
         window.location.href = '/';
         throw new Error('Session expirée. Veuillez vous reconnecter.');
@@ -179,7 +179,7 @@ const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
-        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        console.error(' Erreur 401: Non autorisé - Token invalide ou expiré');
         localStorage.clear();
         window.location.href = '/';
         throw new Error('Session expirée. Veuillez vous reconnecter.');
@@ -205,7 +205,7 @@ const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
-        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        console.error('Erreur 401: Non autorisé - Token invalide ou expiré');
         localStorage.clear();
         window.location.href = '/';
         throw new Error('Session expirée. Veuillez vous reconnecter.');
@@ -230,7 +230,7 @@ const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
-        console.error('❌ Erreur 401: Non autorisé - Token invalide ou expiré');
+        console.error('Erreur 401: Non autorisé - Token invalide ou expiré');
         localStorage.clear();
         window.location.href = '/';
         throw new Error('Session expirée. Veuillez vous reconnecter.');

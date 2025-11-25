@@ -44,24 +44,24 @@ export default function AddStockModal({ onClose, onSuccess }: AddStockModalProps
   const loadSKUs = async () => {
     try {
       setIsLoadingSKUs(true);
-      console.log('🔄 Chargement des SKUs depuis /admin/products/skus...');
+      console.log('Chargement des SKUs depuis /admin/products/skus...');
       
       // api.get() retourne DIRECTEMENT les données (pas dans response.data)
       const data = await api.get('/admin/products/skus', { params: { active: true } });
       
-      console.log('📦 Données reçues:', data);
+      console.log('Données reçues:', data);
       
       // La réponse est paginée : { items: [], total, page, limit, totalPages }
       const skusList = data.items || data;
       
       // Vérifier que nous avons un tableau
       if (!Array.isArray(skusList)) {
-        console.error('❌ skusList n\'est pas un tableau:', skusList);
+        console.error('skusList n\'est pas un tableau:', skusList);
         setError('Format de réponse invalide du serveur');
         return;
       }
       
-      console.log('📦 Nombre de SKUs:', skusList.length);
+      console.log('Nombre de SKUs:', skusList.length);
       
       // Transformer les données pour correspondre au format attendu
       const transformedSkus = skusList.map((sku: any) => ({
@@ -74,10 +74,10 @@ export default function AddStockModal({ onClose, onSuccess }: AddStockModalProps
         priceHt: Number(sku.priceHt || 0),
       })) as SKU[];
       
-      console.log('✅ SKUs transformés:', transformedSkus.length, 'produits');
+      console.log('SKUs transformés:', transformedSkus.length, 'produits');
       setSkus(transformedSkus);
     } catch (err: unknown) {
-      console.error('❌ Erreur chargement SKUs:', err);
+      console.error('Erreur chargement SKUs:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement des produits');
     } finally {
       setIsLoadingSKUs(false);

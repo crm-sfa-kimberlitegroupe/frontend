@@ -35,7 +35,7 @@ export const GoogleTerritoryMap: React.FC<GoogleTerritoryMapProps> = ({
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
-    console.log('✅ Google Map chargée');
+    console.log('Google Map chargée');
   }, []);
 
   const onUnmount = useCallback(() => {
@@ -45,11 +45,11 @@ export const GoogleTerritoryMap: React.FC<GoogleTerritoryMapProps> = ({
   // Afficher la géométrie existante
   useEffect(() => {
     if (!map || !existingGeometry) {
-      console.log('⚠️ Carte ou géométrie manquante');
+      console.log('Carte ou géométrie manquante');
       return;
     }
 
-    console.log('🎨 Affichage de la géométrie existante:', existingGeometry);
+    console.log('Affichage de la géométrie existante:', existingGeometry);
 
     // Supprimer l'ancien polygone s'il existe
     if (existingPolygon) {
@@ -85,10 +85,10 @@ export const GoogleTerritoryMap: React.FC<GoogleTerritoryMapProps> = ({
       });
       map.fitBounds(bounds);
 
-      console.log('✅ Polygone affiché et zoomé');
+      console.log('Polygone affiché et zoomé');
 
     } catch (error) {
-      console.error('❌ Erreur affichage géométrie:', error);
+      console.error(' Erreur affichage géométrie:', error);
     }
   }, [map, existingGeometry]);
 
@@ -134,7 +134,7 @@ export const GoogleTerritoryMap: React.FC<GoogleTerritoryMapProps> = ({
     // Calculer la superficie approximative (en km²)
     const area = google.maps.geometry.spherical.computeArea(path) / 1000000;
 
-    console.log('📊 Données du polygone:', { geojson, center: centerCoords, area });
+    console.log('Données du polygone:', { geojson, center: centerCoords, area });
 
     // Notifier le parent
     onPolygonDrawn(geojson, centerCoords, area);

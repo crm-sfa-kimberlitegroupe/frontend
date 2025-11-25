@@ -50,8 +50,8 @@ export default function SectorsManagementUnified() {
       // Avec persist, les territoires sont disponibles immédiatement
       const myTerritory = territories.find(t => t.id === user.territoryId);
       if (!myTerritory) {
-        console.log('❌ [SectorsManagement] Territoire non trouvé:', user.territoryId);
-        console.log('📊 [SectorsManagement] Territoires disponibles:', territories.map(t => ({ id: t.id, name: t.name })));
+        console.log('[SectorsManagement] Territoire non trouvé:', user.territoryId);
+        console.log('[SectorsManagement] Territoires disponibles:', territories.map(t => ({ id: t.id, name: t.name })));
         showError('Territoire introuvable');
         return;
       }

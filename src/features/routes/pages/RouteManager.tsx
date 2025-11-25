@@ -20,13 +20,13 @@ import { useAuthStore } from '@/core/auth';
 export default function RouteManager() {
   const currentUser = useAuthStore((s) => s.user);
 
-  // ✅ Hook réutilisable pour les filtres
+  //Hook réutilisable pour les filtres
   const { filters, setFilter } = useFilters({
     status: 'all' as 'all' | 'PLANNED' | 'IN_PROGRESS' | 'DONE',
     date: new Date().toISOString().split('T')[0],
   });
 
-  // ✅ Hook réutilisable pour charger les données
+  // Hook réutilisable pour charger les données
   const { data: routesData, loading, refetch } = useQuery(async () => {
     const usersData = await usersService.getAll();
     const filterParams: any = { date: filters.date };
@@ -117,7 +117,7 @@ export default function RouteManager() {
 
   return (
     <PageLayout>
-      {/* ✅ Composant PageHeader réutilisable */}
+      {/* Composant PageHeader réutilisable */}
       <PageHeader
         title="Gestion des Routes"
         actions={
@@ -129,14 +129,14 @@ export default function RouteManager() {
       />
 
       <div className="p-4 space-y-4">
-        {/* ✅ Composant DatePicker réutilisable */}
+        {/*Composant DatePicker réutilisable */}
         <DatePicker
           value={filters.date}
           onChange={(e) => setFilter('date', e.target.value)}
           fullWidth
         />
 
-        {/* ✅ Composant FilterBar réutilisable */}
+        {/* Composant FilterBar réutilisable */}
         <FilterBar
           tabs={[
             { key: 'all', label: 'Toutes', count: routes.length },
@@ -148,14 +148,14 @@ export default function RouteManager() {
           onChange={(status) => setFilter('status', status as any)}
         />
 
-        {/* ✅ Composant StatsGrid réutilisable */}
+        {/*Composant StatsGrid réutilisable */}
         <StatsGrid stats={stats} columns={3} />
 
-        {/* ✅ Composant LoadingSpinner réutilisable */}
+        {/*Composant LoadingSpinner réutilisable */}
         {loading ? (
           <LoadingSpinner text="Chargement des routes..." />
         ) : routes.length === 0 ? (
-          /* ✅ Composant EmptyState réutilisable */
+          /*Composant EmptyState réutilisable */
           <EmptyState
             icon={MapPin}
             title="Aucune route trouvée"

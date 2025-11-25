@@ -112,14 +112,14 @@ export const TerritoryDrawMap: React.FC<TerritoryDrawMapProps> = ({
   // Afficher la géométrie existante sur la carte
   useEffect(() => {
     if (!mapRef.current || !existingGeometry) {
-      console.log('⚠️ Carte ou géométrie manquante:', { 
+      console.log('Carte ou géométrie manquante:', { 
         hasMap: !!mapRef.current, 
         hasGeometry: !!existingGeometry 
       });
       return;
     }
 
-    console.log('🎨 Affichage de la géométrie sur la carte:', existingGeometry);
+    console.log('Affichage de la géométrie sur la carte:', existingGeometry);
 
     // Nettoyer les anciens dessins
     drawnItems.current.clearLayers();
@@ -135,7 +135,7 @@ export const TerritoryDrawMap: React.FC<TerritoryDrawMapProps> = ({
         }
       });
 
-      console.log('✅ Layer créé:', layer);
+      console.log('Layer créé:', layer);
 
       // Ajouter au groupe
       let layerCount = 0;
@@ -144,7 +144,7 @@ export const TerritoryDrawMap: React.FC<TerritoryDrawMapProps> = ({
         layerCount++;
       });
 
-      console.log(`📍 ${layerCount} layer(s) ajouté(s) à la carte`);
+      console.log(`${layerCount} layer(s) ajouté(s) à la carte`);
 
       // Zoomer sur la géométrie
       const bounds = layer.getBounds();
@@ -152,12 +152,12 @@ export const TerritoryDrawMap: React.FC<TerritoryDrawMapProps> = ({
       
       if (bounds.isValid()) {
         mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-        console.log('✅ Zoom effectué sur la géométrie');
+        console.log('Zoom effectué sur la géométrie');
       } else {
-        console.warn('⚠️ Bounds invalides');
+        console.warn(' Bounds invalides');
       }
     } catch (error) {
-      console.error('❌ Erreur affichage géométrie:', error);
+      console.error('Erreur affichage géométrie:', error);
     }
   }, [existingGeometry]);
 

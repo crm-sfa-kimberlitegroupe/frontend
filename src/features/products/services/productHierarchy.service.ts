@@ -155,7 +155,7 @@ class ProductHierarchyService {
       
       return categories || [];
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur récupération catégories:', error);
+      console.error('[ProductHierarchyService] Erreur récupération catégories:', error);
       throw error;
     }
   }
@@ -165,7 +165,7 @@ class ProductHierarchyService {
       const response = await api.get(`${this.baseUrl}/categories/${id}`);
       return response.data;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur récupération catégorie:', error);
+      console.error('[ProductHierarchyService] Erreur récupération catégorie:', error);
       throw error;
     }
   }
@@ -177,7 +177,7 @@ class ProductHierarchyService {
       const category = Array.isArray(response) ? response[0] : response.data || response;
       return category;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur création catégorie:', {
+      console.error('[ProductHierarchyService] Erreur création catégorie:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data
@@ -193,7 +193,7 @@ class ProductHierarchyService {
       const category = Array.isArray(response) ? response[0] : response.data || response;
       return category;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur mise à jour catégorie:', {
+      console.error('[ProductHierarchyService] Erreur mise à jour catégorie:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data
@@ -206,7 +206,7 @@ class ProductHierarchyService {
     try {
       await api.delete(`${this.baseUrl}/categories/${id}`);
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur suppression catégorie:', error);
+      console.error('[ProductHierarchyService] Erreur suppression catégorie:', error);
       throw error;
     }
   }
@@ -232,7 +232,7 @@ class ProductHierarchyService {
       const subCategory = Array.isArray(response) ? response[0] : response.data || response;
       return subCategory;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur création sous-catégorie:', {
+      console.error('[ProductHierarchyService] Erreur création sous-catégorie:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data,
@@ -263,7 +263,7 @@ class ProductHierarchyService {
       const brand = Array.isArray(response) ? response[0] : response.data || response;
       return brand;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur création marque:', {
+      console.error('[ProductHierarchyService] Erreur création marque:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data,
@@ -279,7 +279,7 @@ class ProductHierarchyService {
       const brand = Array.isArray(response) ? response[0] : response.data || response;
       return brand;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur mise à jour marque:', {
+      console.error('[ProductHierarchyService] Erreur mise à jour marque:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data
@@ -309,7 +309,7 @@ class ProductHierarchyService {
       const format = Array.isArray(response) ? response[0] : response.data || response;
       return format;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur création format:', error);
+      console.error('[ProductHierarchyService] Erreur création format:', error);
       throw error;
     }
   }
@@ -329,7 +329,7 @@ class ProductHierarchyService {
       const size = Array.isArray(response) ? response[0] : response.data || response;
       return size;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur création taille:', error);
+      console.error('[ProductHierarchyService] Erreur création taille:', error);
       throw error;
     }
   }
@@ -348,7 +348,7 @@ class ProductHierarchyService {
       
       return result;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur récupération SKUs:', error);
+      console.error('[ProductHierarchyService] Erreur récupération SKUs:', error);
       throw error;
     }
   }
@@ -386,7 +386,7 @@ class ProductHierarchyService {
       // L'API retourne directement l'objet, pas dans response.data
       return response;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur upload image:', error);
+      console.error('[ProductHierarchyService] Erreur upload image:', error);
       throw error;
     }
   }
@@ -404,7 +404,7 @@ class ProductHierarchyService {
       const stats = response;
       return stats;
     } catch (error) {
-      console.error('❌ [ProductHierarchyService] Erreur récupération statistiques:', {
+      console.error('[ProductHierarchyService] Erreur récupération statistiques:', {
         error: error,
         errorMessage: (error as Error)?.message,
         errorResponse: (error as { response?: { data?: unknown } })?.response?.data

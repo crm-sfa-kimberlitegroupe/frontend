@@ -98,9 +98,9 @@ export const vendorStockService = {
    * Ajouter du stock au portefeuille
    */
   async addStock(data: AddStockDto): Promise<{ message: string; items: VendorStockItem[] }> {
-    console.log('📤 Envoi ajout stock:', data);
+    console.log('Envoi ajout stock:', data);
     const response = await api.post('/vendor-stock/add', data);
-    console.log('✅ Stock ajouté:', response);
+    console.log('Stock ajouté:', response);
     // api.post() retourne directement les données
     return response;
   },
@@ -156,9 +156,9 @@ export const vendorStockService = {
    * Décharger tout le stock (vider le portefeuille)
    */
   async unloadAllStock(): Promise<{ message: string; deletedCount: number }> {
-    console.log('📤 Déchargement de tout le stock...');
+    console.log('Déchargement de tout le stock...');
     const response = await api.delete('/vendor-stock/unload-all');
-    console.log('✅ Stock déchargé:', response);
+    console.log('Stock déchargé:', response);
     return response;
   },
 };

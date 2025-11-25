@@ -94,7 +94,7 @@ const SKUManagement: React.FC = () => {
     } else {
       await productHierarchyService.createSKU(data);
     }
-    await loadSKUs(); // ✅ Rafraîchir la liste après création/modification
+    await loadSKUs(); // Rafraîchir la liste après création/modification
     handleCloseDialog();
   };
 

@@ -57,12 +57,12 @@ const ProductHierarchy: React.FC = () => {
   }, []);
 
   const loadStatistics = async () => {
-    console.log('🔄 [ProductHierarchy] Début chargement des données...');
+    console.log('[ProductHierarchy] Début chargement des données...');
     try {
       setLoading(true);
       setError(null);
       
-      console.log('📡 [ProductHierarchy] Appel aux APIs...');
+      console.log('[ProductHierarchy] Appel aux APIs...');
       const [stats, cats, subCats, brandsList, formats, sizes, skusData] = await Promise.all([
         productHierarchyService.getStatistics(),
         productHierarchyService.getCategories(),
@@ -73,7 +73,7 @@ const ProductHierarchy: React.FC = () => {
         productHierarchyService.getSKUs(),
       ]);
       
-      console.log('📊 [ProductHierarchy] Données reçues:', {
+      console.log('[ProductHierarchy] Données reçues:', {
         statistics: stats,
         categoriesCount: cats?.length || 0,
         categories: cats,
@@ -97,9 +97,9 @@ const ProductHierarchy: React.FC = () => {
       setPackSizes(sizes || []);
       setSkus(skusData?.skus || []);
       
-      console.log('✅ [ProductHierarchy] Données chargées avec succès');
+      console.log('[ProductHierarchy] Données chargées avec succès');
     } catch (err: unknown) {
-      console.error('❌ [ProductHierarchy] Erreur lors du chargement des données:', {
+      console.error('[ProductHierarchy] Erreur lors du chargement des données:', {
         error: err,
         errorMessage: (err as Error)?.message,
         errorResponse: (err as { response?: { data?: any } })?.response?.data
@@ -108,12 +108,12 @@ const ProductHierarchy: React.FC = () => {
       setError(error.response?.data?.message || 'Erreur lors du chargement des données');
     } finally {
       setLoading(false);
-      console.log('⏹️ [ProductHierarchy] Fin du chargement des données');
+      console.log('[ProductHierarchy] Fin du chargement des données');
     }
   };
 
   const handleRefresh = () => {
-    console.log('🔄 [ProductHierarchy] Actualisation manuelle des données...');
+    console.log('[ProductHierarchy] Actualisation manuelle des données...');
     loadStatistics();
   };
 
@@ -581,7 +581,7 @@ const ProductHierarchy: React.FC = () => {
           setEditingCategory(null);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde catégorie:', {
+          console.log('[ProductHierarchy] Début sauvegarde catégorie:', {
             isEdit: !!editingCategory,
             categoryId: editingCategory?.id,
             data: data
@@ -589,40 +589,40 @@ const ProductHierarchy: React.FC = () => {
 
           try {
             if (editingCategory) {
-              console.log('✏️ [ProductHierarchy] Mise à jour catégorie:', {
+              console.log('[ProductHierarchy] Mise à jour catégorie:', {
                 categoryId: editingCategory.id,
                 updateData: data
               });
               
               const updatedCategory = await productHierarchyService.updateCategory(editingCategory.id, data);
-              console.log('✅ [ProductHierarchy] Catégorie mise à jour avec succès:', updatedCategory);
+              console.log('[ProductHierarchy] Catégorie mise à jour avec succès:', updatedCategory);
               
               // Mettre à jour l'état local
               setCategories(prev => prev.map(cat => 
                 cat.id === updatedCategory.id ? updatedCategory : cat
               ));
             } else {
-              console.log('➕ [ProductHierarchy] Création nouvelle catégorie:', {
+              console.log('[ProductHierarchy] Création nouvelle catégorie:', {
                 categoryData: data
               });
               
               const newCategory = await productHierarchyService.createCategory(data);
-              console.log('✅ [ProductHierarchy] Catégorie créée avec succès:', newCategory);
+              console.log('[ProductHierarchy] Catégorie créée avec succès:', newCategory);
               
               // Ajouter à l'état local
               setCategories(prev => [...prev, newCategory]);
             }
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde catégorie terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde catégorie terminée avec succès');
             
             // Fermer le dialog
             setCategoryDialogOpen(false);
             setEditingCategory(null);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde de la catégorie:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde de la catégorie:', {
               error: error,
               errorMessage: error instanceof Error ? error.message : 'Erreur inconnue',
               errorResponse: error && typeof error === 'object' && 'response' in error ? (error as any).response?.data : null,
@@ -642,7 +642,7 @@ const ProductHierarchy: React.FC = () => {
           setEditingSubCategory(null);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde sous-catégorie:', {
+          console.log('[ProductHierarchy] Début sauvegarde sous-catégorie:', {
             isEdit: !!editingSubCategory,
             subCategoryId: editingSubCategory?.id,
             data: data
@@ -650,40 +650,40 @@ const ProductHierarchy: React.FC = () => {
 
           try {
             if (editingSubCategory) {
-              console.log('✏️ [ProductHierarchy] Mise à jour sous-catégorie:', {
+              console.log('[ProductHierarchy] Mise à jour sous-catégorie:', {
                 subCategoryId: editingSubCategory.id,
                 updateData: data
               });
               
               const updatedSubCategory = await productHierarchyService.updateSubCategory(editingSubCategory.id, data);
-              console.log('✅ [ProductHierarchy] Sous-catégorie mise à jour avec succès:', updatedSubCategory);
+              console.log('[ProductHierarchy] Sous-catégorie mise à jour avec succès:', updatedSubCategory);
               
               // Mettre à jour l'état local
               setSubCategories(prev => prev.map(subCat => 
                 subCat.id === updatedSubCategory.id ? updatedSubCategory : subCat
               ));
             } else {
-              console.log('➕ [ProductHierarchy] Création nouvelle sous-catégorie:', {
+              console.log('[ProductHierarchy] Création nouvelle sous-catégorie:', {
                 subCategoryData: data
               });
               
               const newSubCategory = await productHierarchyService.createSubCategory(data);
-              console.log('✅ [ProductHierarchy] Sous-catégorie créée avec succès:', newSubCategory);
+              console.log('[ProductHierarchy] Sous-catégorie créée avec succès:', newSubCategory);
               
               // Ajouter à l'état local
               setSubCategories(prev => [...prev, newSubCategory]);
             }
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde sous-catégorie terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde sous-catégorie terminée avec succès');
             
             // Fermer le dialog
             setSubCategoryDialogOpen(false);
             setEditingSubCategory(null);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde de la sous-catégorie:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde de la sous-catégorie:', {
               error: error,
               errorMessage: (error as Error)?.message,
               errorResponse: (error as { response?: { data?: any } })?.response?.data,
@@ -704,7 +704,7 @@ const ProductHierarchy: React.FC = () => {
           setEditingBrand(null);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde marque:', {
+          console.log('[ProductHierarchy] Début sauvegarde marque:', {
             isEdit: !!editingBrand,
             brandId: editingBrand?.id,
             data: data
@@ -712,40 +712,40 @@ const ProductHierarchy: React.FC = () => {
 
           try {
             if (editingBrand) {
-              console.log('✏️ [ProductHierarchy] Mise à jour marque:', {
+              console.log('[ProductHierarchy] Mise à jour marque:', {
                 brandId: editingBrand.id,
                 updateData: data
               });
               
               const updatedBrand = await productHierarchyService.updateBrand(editingBrand.id, data);
-              console.log('✅ [ProductHierarchy] Marque mise à jour avec succès:', updatedBrand);
+              console.log('[ProductHierarchy] Marque mise à jour avec succès:', updatedBrand);
               
               // Mettre à jour l'état local
               setBrands(prev => prev.map(brand => 
                 brand.id === updatedBrand.id ? updatedBrand : brand
               ));
             } else {
-              console.log('➕ [ProductHierarchy] Création nouvelle marque:', {
+              console.log('[ProductHierarchy] Création nouvelle marque:', {
                 brandData: data
               });
               
               const newBrand = await productHierarchyService.createBrand(data);
-              console.log('✅ [ProductHierarchy] Marque créée avec succès:', newBrand);
+              console.log('[ProductHierarchy] Marque créée avec succès:', newBrand);
               
               // Ajouter à l'état local
               setBrands(prev => [...prev, newBrand]);
             }
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde marque terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde marque terminée avec succès');
             
             // Fermer le dialog
             setBrandDialogOpen(false);
             setEditingBrand(null);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde de la marque:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde de la marque:', {
               error: error,
               errorMessage: (error as Error)?.message,
               errorResponse: (error as { response?: { data?: any } })?.response?.data,
@@ -765,23 +765,23 @@ const ProductHierarchy: React.FC = () => {
           setSkuDialogOpen(false);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde SKU:', { data });
+          console.log('[ProductHierarchy] Début sauvegarde SKU:', { data });
           
           try {
-            console.log('➕ [ProductHierarchy] Création nouveau SKU:', { skuData: data });
+            console.log('[ProductHierarchy] Création nouveau SKU:', { skuData: data });
             
             const newSKU = await productHierarchyService.createSKU(data);
-            console.log('✅ [ProductHierarchy] SKU créé avec succès:', newSKU);
+            console.log('[ProductHierarchy] SKU créé avec succès:', newSKU);
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde SKU terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde SKU terminée avec succès');
             
             // Fermer le dialog
             setSkuDialogOpen(false);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde du SKU:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde du SKU:', {
               error: error,
               errorMessage: (error as Error)?.message,
               errorResponse: (error as { response?: { data?: any } })?.response?.data
@@ -798,26 +798,26 @@ const ProductHierarchy: React.FC = () => {
           setEditingPackFormat(null);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde format:', { data });
+          console.log('[ProductHierarchy] Début sauvegarde format:', { data });
           
           try {
-            console.log('➕ [ProductHierarchy] Création nouveau format:', { formatData: data });
+            console.log('[ProductHierarchy] Création nouveau format:', { formatData: data });
             
             const newFormat = await productHierarchyService.createPackFormat(data);
-            console.log('✅ [ProductHierarchy] Format créé avec succès:', newFormat);
+            console.log('[ProductHierarchy] Format créé avec succès:', newFormat);
             
             // Ajouter à l'état local
             setPackFormats(prev => [...prev, newFormat]);
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde format terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde format terminée avec succès');
             
             // Fermer le dialog
             setPackFormatDialogOpen(false);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde du format:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde du format:', {
               error: error,
               errorMessage: (error as Error)?.message,
               errorResponse: (error as { response?: { data?: any } })?.response?.data
@@ -836,26 +836,26 @@ const ProductHierarchy: React.FC = () => {
           setEditingPackSize(null);
         }}
         onSave={async (data) => {
-          console.log('🔧 [ProductHierarchy] Début sauvegarde taille:', { data });
+          console.log('[ProductHierarchy] Début sauvegarde taille:', { data });
           
           try {
-            console.log('➕ [ProductHierarchy] Création nouvelle taille:', { sizeData: data });
+            console.log('[ProductHierarchy] Création nouvelle taille:', { sizeData: data });
             
             const newSize = await productHierarchyService.createPackSize(data);
-            console.log('✅ [ProductHierarchy] Taille créée avec succès:', newSize);
+            console.log('[ProductHierarchy] Taille créée avec succès:', newSize);
             
             // Ajouter à l'état local
             setPackSizes(prev => [...prev, newSize]);
             
-            console.log('🔄 [ProductHierarchy] Rechargement des statistiques...');
+            console.log('[ProductHierarchy] Rechargement des statistiques...');
             await loadStatistics();
-            console.log('✅ [ProductHierarchy] Sauvegarde taille terminée avec succès');
+            console.log('[ProductHierarchy] Sauvegarde taille terminée avec succès');
             
             // Fermer le dialog
             setPackSizeDialogOpen(false);
             
           } catch (error) {
-            console.error('❌ [ProductHierarchy] Erreur lors de la sauvegarde de la taille:', {
+            console.error('[ProductHierarchy] Erreur lors de la sauvegarde de la taille:', {
               error: error,
               errorMessage: (error as Error)?.message,
               errorResponse: (error as { response?: { data?: any } })?.response?.data

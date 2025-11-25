@@ -278,7 +278,7 @@ export const territoriesService = {
     return response.data.data || [];
   },
 
-  // 🗺️ Récupérer les informations géographiques d'un territoire
+  //Récupérer les informations géographiques d'un territoire
   async getTerritoryGeoInfo(territoryId: string): Promise<TerritoryGeoInfo> {
     const response = await api.get<{ success: boolean; data: TerritoryGeoInfo; message: string }>(`/territories/${territoryId}/geo-info`);
     return response.data.data;
@@ -291,7 +291,7 @@ export const territoriesService = {
     return response.data.data || [];
   },
 
-  // 👤 Assigner un administrateur à un territoire
+  // Assigner un administrateur à un territoire
   async assignAdmin(territoryId: string, adminId: string): Promise<Territory> {
     const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
       `/territories/${territoryId}/assign-admin`,
@@ -300,7 +300,7 @@ export const territoriesService = {
     return response.data.data;
   },
 
-  // 👤 Réassigner un administrateur à un territoire (changement)
+  // Réassigner un administrateur à un territoire (changement)
   async reassignAdmin(territoryId: string, adminId: string): Promise<Territory> {
     const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
       `/territories/${territoryId}/reassign-admin`,
@@ -309,7 +309,7 @@ export const territoriesService = {
     return response.data.data;
   },
 
-  // 👤 Retirer l'administrateur d'un territoire
+  // Retirer l'administrateur d'un territoire
   async removeAdmin(territoryId: string): Promise<Territory> {
     const response = await api.delete<{ success: boolean; data: Territory; message: string }>(
       `/territories/${territoryId}/remove-admin`
@@ -317,7 +317,7 @@ export const territoriesService = {
     return response.data.data;
   },
 
-  // 🏢 Réassigner un vendeur à un secteur (changement)
+  // Réassigner un vendeur à un secteur (changement)
   async reassignSectorVendor(sectorId: string, vendorId: string): Promise<Territory> {
     const response = await api.patch<{ success: boolean; data: Territory; message: string }>(
       `/territories/sectors/${sectorId}/reassign-vendor`,
@@ -326,7 +326,7 @@ export const territoriesService = {
     return response.data.data;
   },
 
-  // 🏢 Désassigner un vendeur d'un secteur
+  // Désassigner un vendeur d'un secteur
   async unassignSectorVendor(sectorId: string): Promise<Territory> {
     const response = await api.delete<{ success: boolean; data: Territory; message: string }>(
       `/territories/sectors/${sectorId}/unassign-vendor`

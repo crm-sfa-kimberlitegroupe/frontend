@@ -66,22 +66,22 @@ class VisitsService {
    * Utilisé quand le vendeur termine directement sa visite avec les actions
    */
   async createCompleteVisit(data: CreateVisitData): Promise<Visit> {
-    console.log('📤 [visitsService] Envoi vers POST /visits/complete:', data);
+    console.log('[visitsService] Envoi vers POST /visits/complete:', data);
     const response = await api.post('/visits/complete', data);
-    console.log('📝 [visitsService] Réponse complète:', response);
-    console.log('📝 [visitsService] response.data:', response.data);
+    console.log('[visitsService] Réponse complète:', response);
+    console.log('[visitsService] response.data:', response.data);
     
     // Le backend peut retourner soit { statusCode, message, data } soit directement la visite
     const visit = response.data.data || response.data;
     
     // Vérifier si c'est bien un objet visite (doit avoir un id)
     if (!visit || !visit.id) {
-      console.error('❌ [visitsService] Pas de visite valide dans la réponse');
-      console.error('❌ [visitsService] Structure reçue:', JSON.stringify(response.data, null, 2));
+      console.error('[visitsService] Pas de visite valide dans la réponse');
+      console.error('[visitsService] Structure reçue:', JSON.stringify(response.data, null, 2));
       throw new Error('La réponse de l\'API ne contient pas de visite valide');
     }
     
-    console.log('✅ [visitsService] Visite reçue avec ID:', visit.id);
+    console.log('[visitsService] Visite reçue avec ID:', visit.id);
     return visit;
   }
 
@@ -98,7 +98,7 @@ class VisitsService {
    * Check-in : Début d'une visite
    */
   async checkIn(outletId: string, lat?: number, lng?: number, notes?: string): Promise<Visit> {
-    console.log('🔄 [visitsService] Appel API check-in avec:', { outletId, checkinLat: lat, checkinLng: lng, notes });
+    console.log('[visitsService] Appel API check-in avec:', { outletId, checkinLat: lat, checkinLng: lng, notes });
     
     try {
       const response = await api.post('/visits/check-in', {
@@ -108,29 +108,29 @@ class VisitsService {
         notes,
       });
       
-      console.log('📡 [visitsService] Réponse brute API:', response);
-      console.log('📡 [visitsService] response.data:', response.data);
-      console.log('📡 [visitsService] response.data.data:', response.data.data);
+      console.log('[visitsService] Réponse brute API:', response);
+      console.log('[visitsService] response.data:', response.data);
+      console.log('[visitsService] response.data.data:', response.data.data);
       
       // Essayer différentes structures de réponse
       let visit = response.data.data;
       if (!visit && response.data) {
         // Peut-être que la visite est directement dans response.data
         visit = response.data;
-        console.log('📡 [visitsService] Essai avec response.data directement:', visit);
+        console.log('[visitsService] Essai avec response.data directement:', visit);
       }
       
       if (!visit || !visit.id) {
-        console.error('❌ [visitsService] Aucune visite valide dans la réponse');
-        console.error('❌ [visitsService] Structure complète:', JSON.stringify(response.data, null, 2));
+        console.error('[visitsService] Aucune visite valide dans la réponse');
+        console.error('[visitsService] Structure complète:', JSON.stringify(response.data, null, 2));
         throw new Error('Réponse API invalide - pas de visite retournée');
       }
       
-      console.log('✅ [visitsService] Visite extraite avec succès:', visit);
+      console.log('[visitsService] Visite extraite avec succès:', visit);
       return visit;
       
     } catch (error) {
-      console.error('❌ [visitsService] Erreur lors du check-in:', error);
+      console.error('[visitsService] Erreur lors du check-in:', error);
       throw error;
     }
   }

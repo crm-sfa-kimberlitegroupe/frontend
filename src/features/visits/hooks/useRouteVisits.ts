@@ -90,7 +90,7 @@ export function useRouteVisits() {
             id: stop.outletId,
             pdvName: stop.outlet?.name || 'Point de vente',
             outletId: stop.outletId,
-            routeStopId: stop.id,      // 🆕 ID du RouteStop
+            routeStopId: stop.id,      //ID du RouteStop
             status: visitStatus,
             scheduledTime: stop.eta ? new Date(stop.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : `${8 + stop.seq}:00`,
             sequence: stop.seq,
@@ -179,7 +179,7 @@ export function useRouteVisits() {
       );
 
       if (hasChanges) {
-        console.log('🔄 Mise à jour des statuts depuis le store');
+        console.log('Mise à jour des statuts depuis le store');
         setData({
           ...data,
           visits: updatedVisits

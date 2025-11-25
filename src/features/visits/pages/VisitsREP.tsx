@@ -29,8 +29,8 @@ export default function VisitsREP() {
 
   // Logs uniquement si todayRoute change
   useEffect(() => {
-    console.log("📋 VisitsREP - todayRoute:", todayRoute);
-    console.log("📋 VisitsREP - routeStops:", todayRoute?.routeStops?.map(s => ({
+    console.log("VisitsREP - todayRoute:", todayRoute);
+    console.log("VisitsREP - routeStops:", todayRoute?.routeStops?.map(s => ({
       id: s.id,
       outletId: s.outletId,
       status: s.status,
@@ -57,7 +57,7 @@ const handleVisitSelect = async (visit: any) => {
   try {
     // Vérifier si une visite est déjà en cours pour éviter les doublons
     if (visit.status === 'IN_PROGRESS') {
-      console.log('⚠️ Visite déjà en cours pour:', visit.pdvName);
+      console.log('Visite déjà en cours pour:', visit.pdvName);
       // Ouvrir directement le détail sans créer une nouvelle visite
       setSelectedVisit(visit.id);
       return;
@@ -81,7 +81,7 @@ const handleVisitSelect = async (visit: any) => {
           lat = position.coords.latitude;
           lng = position.coords.longitude;
         } catch (error) {
-          console.log('⚠️ Impossible de récupérer la position GPS:', error);
+          console.log('Impossible de récupérer la position GPS:', error);
         }
       }
 
@@ -118,28 +118,28 @@ const handleVisitSelect = async (visit: any) => {
 
       // Mettre à jour le statut du routeStop à IN_PROGRESS
       if (todayRoute?.id) {
-        console.log('🔄 Mise à jour du statut:', {
+        console.log('Mise à jour du statut:', {
           routePlanId: todayRoute.id,
           outletId: visit.outletId,
           newStatus: 'IN_PROGRESS'
         });
         
         await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
-        console.log('✅ Statut du stop de route mis à jour vers IN_PROGRESS');
+        console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
         
         // 🔄 IMPORTANT: Recharger les données pour synchroniser les stores
-        console.log('🔄 Rechargement des données après mise à jour du statut...');
+        console.log('Rechargement des données après mise à jour du statut...');
         await Promise.all([
           loadTodayRoute(user?.id),
           loadOutlets()
         ]);
-        console.log('✅ Données de la route et outlets rechargées avec succès');
+        console.log('Données de la route et outlets rechargées avec succès');
         
         // Vérifier les nouvelles données
-        console.log('🔍 Vérification après rechargement...');
+        console.log('Vérification après rechargement...');
         setTimeout(() => {
           const updatedRoute = useRoutesStore.getState().todayRoute;
-          console.log('📋 Route après rechargement:', updatedRoute?.routeStops?.map(s => ({
+          console.log('Route après rechargement:', updatedRoute?.routeStops?.map(s => ({
             id: s.id,
             outletId: s.outletId,
             status: s.status,
@@ -186,7 +186,7 @@ const handleVisitSelect = async (visit: any) => {
       visitStatus = 'PLANNED';
     }
     
-    console.log(`📍 [VisitsREP] Stop ${outlet?.name}: ${stop.status} → ${visitStatus}`);
+    console.log(`[VisitsREP] Stop ${outlet?.name}: ${stop.status} → ${visitStatus}`);
     
     return {
       id: stop.id,
@@ -204,21 +204,21 @@ const handleVisitSelect = async (visit: any) => {
 
   // Log des visites construites uniquement si elles changent
   useEffect(() => {
-    console.log("📋 VisitsREP - visits construites:", visits.length, visits);
+    console.log("VisitsREP - visits construites:", visits.length, visits);
   }, [visits.length]);
 
   // Fonction pour rafraîchir manuellement les données
   const refreshData = async () => {
-    console.log('🔄 Rafraîchissement manuel des données...');
+    console.log('Rafraîchissement manuel des données...');
     setIsLoading(true);
     try {
       await Promise.all([
         loadTodayRoute(user?.id),
         loadOutlets()
       ]);
-      console.log('✅ Rafraîchissement terminé avec succès');
+      console.log('Rafraîchissement terminé avec succès');
     } catch (error) {
-      console.error('❌ Erreur lors du rafraîchissement:', error);
+      console.error('Erreur lors du rafraîchissement:', error);
     } finally {
       setIsLoading(false);
     }
@@ -374,9 +374,9 @@ const handleVisitSelect = async (visit: any) => {
             ? selectedVisit 
             : (activeVisit?.visitId || visit.id);
           
-          console.log('🔍 [DEBUG VisitsREP] outletId:', visit.outletId);
-          console.log('🔍 [DEBUG VisitsREP] activeVisit:', activeVisit);
-          console.log('🔍 [DEBUG VisitsREP] realVisitId passé:', realVisitId);
+          console.log('[DEBUG VisitsREP] outletId:', visit.outletId);
+          console.log('[DEBUG VisitsREP] activeVisit:', activeVisit);
+          console.log('[DEBUG VisitsREP] realVisitId passé:', realVisitId);
           
           return (
             <VisitDetailNew 

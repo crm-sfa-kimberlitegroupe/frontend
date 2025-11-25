@@ -99,7 +99,7 @@ const priorityColors = {
 export default function TasksManagement() {
   const [tasks] = useState<Task[]>(mockTasks);
   
-  // ✅ Hook réutilisable pour les filtres
+  // Hook réutilisable pour les filtres
   const { filters, setFilter, resetFilters } = useFilters({
     type: 'all',
     status: 'all',

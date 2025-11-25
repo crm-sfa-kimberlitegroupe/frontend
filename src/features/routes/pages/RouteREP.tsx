@@ -33,15 +33,15 @@ export default function RouteREP() {
   const { outlets, loading: outletsLoading, error: outletsError } = useOutletsStore();
 
   // Logs détaillés pour diagnostiquer le problème outlets
-  console.log('🏪 [RouteREP] État du store outlets:');
-  console.log('📊 outlets.length:', outlets?.length || 0);
-  console.log('📊 outletsLoading:', outletsLoading);
-  console.log('📊 outletsError:', outletsError);
-  console.log('📊 outlets (premiers 3):', outlets?.slice(0, 3));
-  console.log('📊 outlets complet:', outlets);
-  console.log('📊 Type de outlets:', typeof outlets, Array.isArray(outlets));
-  console.log('📊 outlets === undefined?', outlets === undefined);
-  console.log('📊 outlets === null?', outlets === null);
+  console.log('[RouteREP] État du store outlets:');
+  console.log('outlets.length:', outlets?.length || 0);
+  console.log('outletsLoading:', outletsLoading);
+  console.log('outletsError:', outletsError);
+  console.log('outlets (premiers 3):', outlets?.slice(0, 3));
+  console.log('outlets complet:', outlets);
+  console.log('Type de outlets:', typeof outlets, Array.isArray(outlets));
+  console.log('outlets === undefined?', outlets === undefined);
+  console.log('outlets === null?', outlets === null);
 
 
 
@@ -49,7 +49,7 @@ export default function RouteREP() {
 
   
   // Debug: Logs pour voir les données du hook
-  console.log('🚀 RouteREP - Données du hook useRouteVisits:', {
+  console.log('RouteREP - Données du hook useRouteVisits:', {
     todayRoute,
     visitsCount: visits.length,
     sector: sector?.name,
@@ -60,7 +60,7 @@ export default function RouteREP() {
   // Convertir les visits du hook en format RouteStop pour la carte
   const routeStops = visits.map((visit, index) => {
     const outlet = outlets.find(o => o.id === visit.outletId);
-    console.log(`🎯 Visit ${index}: ${visit.pdvName}, status: ${visit.status}`);
+    console.log(`Visit ${index}: ${visit.pdvName}, status: ${visit.status}`);
     
     return {
       id: parseInt(visit.id) || (index + 1),
@@ -81,7 +81,7 @@ export default function RouteREP() {
   });
   
   const allOutlets = outlets.map((outlet, index) => {
-    console.log(`🏪 [RouteREP] Mapping outlet ${index}:`, {
+    console.log(`[RouteREP] Mapping outlet ${index}:`, {
       id: outlet.id,
       name: outlet.name,
       lat: outlet.lat,
@@ -105,9 +105,9 @@ export default function RouteREP() {
         outletStatus = 'planned';
       }
       
-      console.log(`🎯 [RouteREP] PDV ${outlet.name} a une visite: ${associatedVisit.status} → ${outletStatus}`);
+      console.log(`[RouteREP] PDV ${outlet.name} a une visite: ${associatedVisit.status} → ${outletStatus}`);
     } else {
-      console.log(`🏪 [RouteREP] PDV ${outlet.name} sans visite → territory`);
+      console.log(`[RouteREP] PDV ${outlet.name} sans visite → territory`);
     }
     
     return {

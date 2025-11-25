@@ -22,32 +22,32 @@ export default function LayoutRouter() {
 
   // Charger les stores selon le rôle
   useEffect(() => {
-    console.log('🚀 [LayoutRouter] Initialisation des stores pour:', user?.role);
+    console.log('[LayoutRouter] Initialisation des stores pour:', user?.role);
     
     if (user?.role === 'ADMIN') {
-      console.log('📦 [LayoutRouter] Chargement des stores ADMIN...');
+      console.log('[LayoutRouter] Chargement des stores ADMIN...');
       loadVendors();
       loadUsers();
       loadOutlets();
       loadSectors();
-      console.log('✅ [LayoutRouter] Tous les stores ADMIN lancés en parallèle');
+      console.log('[LayoutRouter] Tous les stores ADMIN lancés en parallèle');
     } else if (user?.role === 'REP') {
-      console.log('📦 [LayoutRouter] Chargement des stores REP...');
+      console.log('[LayoutRouter] Chargement des stores REP...');
       loadOutlets(); // Les REP ont besoin des outlets de leur secteur
       loadTodayRoute(user.id); // Les REP ont besoin de leur route du jour
-      console.log('✅ [LayoutRouter] Stores outlets et route lancés pour REP');
+      console.log('[LayoutRouter] Stores outlets et route lancés pour REP');
     }
     
     // Nettoyer les stores lors de la déconnexion
     return () => {
-      console.log('🗑️ [LayoutRouter] Nettoyage des stores à la déconnexion');
+      console.log('[LayoutRouter] Nettoyage des stores à la déconnexion');
       if (user?.role === 'ADMIN') {
         clearVendors();
         clearUsers();
         clearSectors();
       }
       clearOutlets(); // Toujours nettoyer les outlets
-      console.log('✅ [LayoutRouter] Stores nettoyés');
+      console.log('[LayoutRouter] Stores nettoyés');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]); // Seulement user?.role comme dépendance

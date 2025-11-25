@@ -138,7 +138,7 @@ export default function RouteADMIN() {
       const rawSectorId = selectedRepData?.assignedSectorId || selectedRepData?.territoryId;
       const sectorId = rawSectorId || undefined; // Convertir null en undefined
       
-      console.log('🔍 Génération multiroute pour:', {
+      console.log('Génération multiroute pour:', {
         userId: selectedRep,
         sectorId,
         repData: selectedRepData
@@ -146,7 +146,7 @@ export default function RouteADMIN() {
       
       // Vérifier si le vendeur a un secteur assigné
       if (!sectorId) {
-        alert(`⚠️ Attention: Le vendeur ${selectedRepData?.firstName} ${selectedRepData?.lastName} n'a pas de secteur assigné. Les routes seront créées sans contrainte géographique.`);
+        alert(`Attention: Le vendeur ${selectedRepData?.firstName} ${selectedRepData?.lastName} n'a pas de secteur assigné. Les routes seront créées sans contrainte géographique.`);
       }
       
       await routesService.generateMultiDayRoutes({

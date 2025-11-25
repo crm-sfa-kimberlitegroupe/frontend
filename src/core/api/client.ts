@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
 
 // Debug: Afficher la configuration chargée
-console.log('🔧 Configuration API:', {
+console.log('Configuration API:', {
   apiUrl: API_URL,
   environment: import.meta.env.MODE,
   viteApiUrl: import.meta.env.VITE_API_URL,
@@ -69,7 +69,7 @@ export const apiClient = {
       
       if (refreshToken) {
         try {
-          console.log('🔄 Token expiré, tentative de refresh...');
+          console.log('Token expiré, tentative de refresh...');
           
           // Appel au endpoint de refresh
           const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
@@ -87,26 +87,26 @@ export const apiClient = {
             localStorage.setItem('access_token', refreshData.access_token);
             localStorage.setItem('refresh_token', refreshData.refresh_token);
             
-            console.log('✅ Token refreshé avec succès');
+            console.log('Token refreshé avec succès');
             
             // Réessayer la requête originale avec le nouveau token
             return this.request<T>(endpoint, options, true);
           } else {
             // Refresh a échoué, déconnecter l'utilisateur
-            console.error('❌ Refresh token invalide, déconnexion...');
+            console.error('Refresh token invalide, déconnexion...');
             localStorage.clear();
             window.location.href = '/';
             throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
           }
         } catch (refreshError) {
-          console.error('❌ Erreur lors du refresh:', refreshError);
+          console.error('Erreur lors du refresh:', refreshError);
           localStorage.clear();
           window.location.href = '/';
           throw new ApiError('Session expirée, veuillez vous reconnecter', 401);
         }
       } else {
         // Pas de refresh token, déconnecter
-        console.error('❌ Pas de refresh token, déconnexion...');
+        console.error('Pas de refresh token, déconnexion...');
         localStorage.clear();
         window.location.href = '/';
         throw new ApiError('Non autorisé', 401);

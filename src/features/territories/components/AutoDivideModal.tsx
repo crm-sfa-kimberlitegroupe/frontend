@@ -63,15 +63,15 @@ export const AutoDivideModal: React.FC<AutoDivideModalProps> = ({
 
       if (sectors.length > 0) {
         onSectorsGenerated(sectors);
-        alert(`✅ ${sectors.length} secteurs générés avec succès !`);
+        alert(`${sectors.length} secteurs générés avec succès !`);
         onClose();
       } else {
-        alert('❌ Aucun secteur n\'a pu être généré. Vérifiez les paramètres.');
+        alert('Aucun secteur n\'a pu être généré. Vérifiez les paramètres.');
       }
       
     } catch (error) {
       console.error('Erreur génération secteurs:', error);
-      alert('❌ Erreur lors de la génération des secteurs');
+      alert('Erreur lors de la génération des secteurs');
     } finally {
       setLoading(false);
     }

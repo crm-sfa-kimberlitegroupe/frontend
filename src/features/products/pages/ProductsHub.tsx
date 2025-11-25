@@ -41,10 +41,10 @@ const ProductsHub: React.FC = () => {
     try {
       setLoading(true);
       const stats = await productHierarchyService.getStatistics();
-      console.log('📊 [ProductsHub] Statistiques chargées:', stats);
+      console.log('[ProductsHub] Statistiques chargées:', stats);
       setStatistics(stats);
     } catch (error) {
-      console.error('❌ [ProductsHub] Erreur chargement statistiques:', error);
+      console.error(' [ProductsHub] Erreur chargement statistiques:', error);
     } finally {
       setLoading(false);
     }

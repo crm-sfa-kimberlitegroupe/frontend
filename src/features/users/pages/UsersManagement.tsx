@@ -44,14 +44,14 @@ interface SectorInfo {
 }
 
 export default function UsersManagement() {
-  // ✅ Utilisation du store Zustand pour tous les utilisateurs
+  // Utilisation du store Zustand pour tous les utilisateurs
   const users = useUsersStore((state) => state.users);
   const loading = useUsersStore((state) => state.loading);
   const refreshing = useUsersStore((state) => state.refreshing);
   const error = useUsersStore((state) => state.error);
   const refreshUsers = useUsersStore((state) => state.refreshUsers);
   
-  // ✅ Récupérer l'utilisateur connecté
+  // Récupérer l'utilisateur connecté
   const currentUser = useAuthStore((state) => state.user);
 
   // État pour stocker les informations des secteurs

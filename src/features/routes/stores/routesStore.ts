@@ -73,15 +73,15 @@ interface RoutesState {
 const routeStatsService = {
   async getStats(): Promise<RouteStats> {
     try {
-      console.log('🚀 [RouteStatsService] Chargement des statistiques...');
+      console.log('[RouteStatsService] Chargement des statistiques...');
       
       // Appeler l'API pour récupérer les vraies statistiques
       const response = await apiClient.get('/routes/stats');
       
-      console.log('✅ [RouteStatsService] Statistiques chargées:', response);
+      console.log('[RouteStatsService] Statistiques chargées:', response);
       return response;
     } catch (error) {
-      console.error('❌ [RouteStatsService] Erreur chargement statistiques:', error);
+      console.error('[RouteStatsService] Erreur chargement statistiques:', error);
       
       // Fallback avec des statistiques par défaut en cas d'erreur
       return {
@@ -148,13 +148,13 @@ export const useRoutesStore = create<RoutesState>()(
       loadTodayRoute: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-          console.log('🚀 [RoutesStore] Chargement route du jour pour userId:', userId);
+          console.log('[RoutesStore] Chargement route du jour pour userId:', userId);
           
           // Utiliser le service API pour récupérer la vraie route du jour
           // getTodayRoute() utilise l'utilisateur connecté automatiquement
           const todayRoute = await routesService.getTodayRoute();
           
-          console.log('✅ [RoutesStore] Route du jour chargée:', {
+          console.log('[RoutesStore] Route du jour chargée:', {
             routeId: todayRoute?.id,
             status: todayRoute?.status,
             stopsCount: todayRoute?.routeStops?.length || 0,
@@ -167,7 +167,7 @@ export const useRoutesStore = create<RoutesState>()(
             isLoading: false 
           });
         } catch (error) {
-          console.error('❌ [RoutesStore] Erreur chargement route du jour:', error);
+          console.error('[RoutesStore] Erreur chargement route du jour:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors du chargement de la route du jour',
             isLoading: false,
@@ -215,19 +215,19 @@ export const useRoutesStore = create<RoutesState>()(
       createRoute: async (routeData: CreateRoutePlanDto) => {
         set({ isCreatingRoute: true, error: null });
         try {
-          console.log('🚀 [RoutesStore] Création de route:', routeData);
+          console.log('[RoutesStore] Création de route:', routeData);
           
           // Utiliser le service API pour créer la route
           const newRoute = await routesService.create(routeData);
           
-          console.log('✅ [RoutesStore] Route créée:', newRoute);
+          console.log('[RoutesStore] Route créée:', newRoute);
           
           // Recharger toutes les routes pour avoir les données à jour
           await get().loadRoutes();
           
           set({ isCreatingRoute: false });
         } catch (error) {
-          console.error('❌ [RoutesStore] Erreur création route:', error);
+          console.error('[RoutesStore] Erreur création route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la création de la route',
             isCreatingRoute: false 
@@ -239,12 +239,12 @@ export const useRoutesStore = create<RoutesState>()(
       updateRoute: async (id: string, routeData: Partial<RoutePlan>) => {
         set({ isUpdatingRoute: true, error: null });
         try {
-          console.log('🚀 [RoutesStore] Mise à jour route:', id, routeData);
+          console.log('[RoutesStore] Mise à jour route:', id, routeData);
           
           // Utiliser le service API pour mettre à jour la route
           const updatedRoute = await routesService.update(id, routeData);
           
-          console.log('✅ [RoutesStore] Route mise à jour:', updatedRoute);
+          console.log('[RoutesStore] Route mise à jour:', updatedRoute);
           
           // Recharger toutes les routes pour avoir les données à jour
           await get().loadRoutes();
@@ -266,7 +266,7 @@ export const useRoutesStore = create<RoutesState>()(
           
           set({ isUpdatingRoute: false });
         } catch (error) {
-          console.error('❌ [RoutesStore] Erreur mise à jour route:', error);
+          console.error('[RoutesStore] Erreur mise à jour route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la mise à jour de la route',
             isUpdatingRoute: false 
@@ -301,12 +301,12 @@ export const useRoutesStore = create<RoutesState>()(
       deleteRoute: async (id: string) => {
         set({ isLoading: true, error: null });
         try {
-          console.log('🚀 [RoutesStore] Suppression route:', id);
+          console.log('[RoutesStore] Suppression route:', id);
           
           // Utiliser le service API pour supprimer la route
           await routesService.delete(id);
           
-          console.log('✅ [RoutesStore] Route supprimée:', id);
+          console.log('[RoutesStore] Route supprimée:', id);
           
           // Recharger toutes les routes pour avoir les données à jour
           await get().loadRoutes();
@@ -324,7 +324,7 @@ export const useRoutesStore = create<RoutesState>()(
           
           set({ isLoading: false });
         } catch (error) {
-          console.error('❌ [RoutesStore] Erreur suppression route:', error);
+          console.error('[RoutesStore] Erreur suppression route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la suppression de la route',
             isLoading: false 

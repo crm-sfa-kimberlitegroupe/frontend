@@ -49,7 +49,7 @@ export default function ProductsManagement() {
 
   // Handlers
   const handleCreate = () => {
-    console.log('🔥 BOUTON CLIQUÉ !');
+    console.log('BOUTON CLIQUÉ !');
     console.log('showModal avant:', showModal);
     setSelectedSKU(null);
     setModalMode('create');

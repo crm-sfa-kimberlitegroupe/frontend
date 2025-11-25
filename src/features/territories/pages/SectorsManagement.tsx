@@ -33,7 +33,7 @@ export default function SectorsManagement() {
   const [selectedOutlets, setSelectedOutlets] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
   
-  // 🗺️ Filtres géographiques
+  // Filtres géographiques
   const [filterRegion, setFilterRegion] = useState<string>('');
   const [filterCommune, setFilterCommune] = useState<string>('');
   const [filterVille, setFilterVille] = useState<string>('');
@@ -133,7 +133,7 @@ export default function SectorsManagement() {
 
   const availableOutlets = validatedOutlets.filter((o) => !(o as any).sectorId);
   
-  // 🗺️ Filtrage géographique optimisé
+  //Filtrage géographique optimisé
   const filteredOutlets = availableOutlets.filter((o) => {
     const matchSearch = o.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         o.code.toLowerCase().includes(searchTerm.toLowerCase());
@@ -235,7 +235,7 @@ export default function SectorsManagement() {
               )}
             </div>
 
-            {/* 🗺️ Filtres géographiques */}
+            {/* Filtres géographiques */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Région</label>

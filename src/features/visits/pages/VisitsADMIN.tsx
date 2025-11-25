@@ -23,27 +23,27 @@ export default function VisitsADMIN() {
     try {
       setIsLoading(true);
       
-      console.log('🔄 [loadPDV] Chargement des PDV pour:', selectedView);
+      console.log('[loadPDV] Chargement des PDV pour:', selectedView);
       
       if (selectedView === 'list') {
-        console.log('📋 Chargement des PDV APPROVED...');
+        console.log('Chargement des PDV APPROVED...');
         const data = await outletsService.getMyTerritoryOutlets({ 
           status: OutletStatusEnum.APPROVED,
         });
-        console.log('✅ PDV APPROVED reçus:', data);
-        console.log('📊 Nombre de PDV APPROVED:', data?.length || 0);
+        console.log('PDV APPROVED reçus:', data);
+        console.log('Nombre de PDV APPROVED:', data?.length || 0);
         setApprovedPDV(data || []);
       } else {
-        console.log('⏳ Chargement des PDV PENDING...');
+        console.log('Chargement des PDV PENDING...');
         const data = await outletsService.getMyTerritoryOutlets({  
           status: OutletStatusEnum.PENDING,
         });
-        console.log('✅ PDV PENDING reçus:', data);
-        console.log('📊 Nombre de PDV PENDING:', data?.length || 0);
+        console.log('PDV PENDING reçus:', data);
+        console.log('Nombre de PDV PENDING:', data?.length || 0);
         setPendingPDV(data || []);
       }
     } catch (error) {
-      console.error('❌ [loadPDV] Erreur lors du chargement:', error);
+      console.error('[loadPDV] Erreur lors du chargement:', error);
       // En cas d'erreur, initialiser avec un tableau vide
       if (selectedView === 'list') {
         setApprovedPDV([]);

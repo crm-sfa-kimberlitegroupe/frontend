@@ -39,7 +39,7 @@ export default function SectorsCreateTab({ outlets, userTerritory, territoryGeoI
     code: '',
     name: '',
     level: 'SECTEUR',
-    parentId: currentUser?.territoryId, // ✅ TerritoryId de l'admin (sa ZONE)
+    parentId: currentUser?.territoryId, // TerritoryId de l'admin (sa ZONE)
   });
 
   const handleCreateSector = async () => {
@@ -60,7 +60,7 @@ export default function SectorsCreateTab({ outlets, userTerritory, territoryGeoI
         code: formData.code,
         name: formData.name,
         level: formData.level,
-        ...(currentUser?.territoryId && { parentId: currentUser.territoryId }), // 🏛️ ZONE de l'admin
+        ...(currentUser?.territoryId && { parentId: currentUser.territoryId }), //ZONE de l'admin
         ...(currentUser?.id && { createdBy: currentUser.id }), // 👤 ID de l'admin créateur
       };
       const newSector = await territoriesService.createSector(cleanData);
@@ -88,7 +88,7 @@ export default function SectorsCreateTab({ outlets, userTerritory, territoryGeoI
     );
   };
 
-  // 🗺️ Utiliser les données géographiques du territoire
+  // Utiliser les données géographiques du territoire
   const outletWithGeo = outlets as OutletWithGeo[];
   const regions = territoryGeoInfo?.regions || [];
   const communes = territoryGeoInfo?.communes || [];
@@ -146,7 +146,7 @@ export default function SectorsCreateTab({ outlets, userTerritory, territoryGeoI
           />
         </div>
 
-        {/* 🗺️ Filtres géographiques */}
+        {/*Filtres géographiques */}
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
             <Icon name="locationMarker" size="sm" variant="grey" />

@@ -58,11 +58,11 @@ const mapUserToTeamMember = (user: User): TeamMember => {
 export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
-  // ✅ Hook réutilisable pour le modal
+  //Hook réutilisable pour le modal
   const [isModalOpen, , setIsModalOpen] = useToggle(false);
   const [modalMode] = useState<'create' | 'edit'>('create');
 
-  // ✅ Charger les utilisateurs REP et ADMIN depuis le backend
+  //Charger les utilisateurs REP et ADMIN depuis le backend
   const { data: users, loading: isLoading, refetch } = useQuery(
     () => usersService.getTeamMembers()
   );
@@ -78,7 +78,7 @@ export default function TeamPage() {
     ? Math.round(team.reduce((sum, m) => sum + m.performance.coverage, 0) / team.length)
     : 0;
 
-  // ✅ Hook réutilisable pour les mutations
+  //Hook réutilisable pour les mutations
   const createUserMutation = useMutation(
     (data: CreateUserDto) => usersService.create(data),
     {
@@ -254,7 +254,7 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* ✅ Modal réutilisable pour les détails */}
+      {/*Modal réutilisable pour les détails */}
       <Modal
         isOpen={!!selectedMember}
         onClose={() => setSelectedMember(null)}

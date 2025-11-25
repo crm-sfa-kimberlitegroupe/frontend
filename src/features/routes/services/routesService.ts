@@ -166,28 +166,28 @@ const routesService = {
   // Récupérer les PDV du secteur du vendeur
   async getVendorSectorOutlets(vendorId: string): Promise<any> {
     try {
-      console.log('🔄 [routesService] Appel getVendorSectorOutlets pour vendorId:', vendorId);
+      console.log('[RoutesService] Appel getVendorSectorOutlets pour vendorId:', vendorId);
       const url = `/territories/vendors/${vendorId}/outlets`;
-      console.log('🔄 [routesService] URL appelée:', url);
+      console.log('[RoutesService] URL appelée:', url);
       
       const response = await api.get(url);
       
-      console.log('✅ [routesService] Réponse reçue:', response);
-      console.log('✅ [routesService] Type de réponse:', typeof response);
+      console.log('[RoutesService] Réponse reçue:', response);
+      console.log('[RoutesService] Type de réponse:', typeof response);
       
       // Vérifier si la réponse a une structure { success, data, message }
       if (response?.data) {
-        console.log('✅ [routesService] Structure avec data détectée');
-        console.log('✅ [routesService] Nombre de PDV:', response.data.outlets?.length || 0);
+        console.log('[RoutesService] Structure avec data détectée');
+        console.log('[RoutesService] Nombre de PDV:', response.data.outlets?.length || 0);
       } else {
-        console.log('✅ [routesService] Structure directe détectée');
-        console.log('✅ [routesService] Nombre de PDV:', response?.outlets?.length || 0);
+        console.log('[RoutesService] Structure directe détectée');
+        console.log('[RoutesService] Nombre de PDV:', response?.outlets?.length || 0);
       }
       
       return response;
     } catch (error: unknown) {
-      console.error('❌ [routesService] Erreur getVendorSectorOutlets:', error);
-      console.error('❌ [routesService] Détails erreur:', {
+      console.error('[RoutesService] Erreur getVendorSectorOutlets:', error);
+      console.error('[RoutesService] Détails erreur:', {
         message: (error as Error).message,
         status: (error as any).status,
         statusText: (error as any).statusText,
@@ -230,7 +230,7 @@ const routesService = {
     status: 'PLANNED' | 'IN_PROGRESS' | 'VISITED'
   ) {
     try {
-      console.log('🔄 [routesService] updateRouteStopStatus:', {
+      console.log('[RoutesService] updateRouteStopStatus:', {
         routePlanId,
         outletId,
         status
@@ -241,10 +241,10 @@ const routesService = {
         { status }
       );
       
-      console.log('✅ [routesService] Statut mis à jour:', response);
+      console.log('[RoutesService] Statut mis à jour:', response);
       return response.data;
     } catch (error) {
-      console.error('❌ [routesService] Erreur mise à jour statut:', error);
+      console.error('[RoutesService] Erreur mise à jour statut:', error);
       throw error;
     }
   },

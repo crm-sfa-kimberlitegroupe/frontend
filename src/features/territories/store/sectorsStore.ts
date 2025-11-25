@@ -32,9 +32,9 @@ export const useSectorsStore = create<SectorsState>()(
     const state = get();
     const now = Date.now();
     
-    console.log('🔄 [SectorsStore] Début du chargement');
-    console.trace('📍 [SectorsStore] Call stack de loadSectors');
-    console.log('📊 [SectorsStore] État actuel:', {
+    console.log('[SectorsStore] Début du chargement');
+    console.trace('[SectorsStore] Call stack de loadSectors');
+    console.log('[SectorsStore] État actuel:', {
       sectorsCount: state.sectors.length,
       territoriesCount: state.territories.length,
       lastFetch: state.lastFetch,
@@ -46,14 +46,14 @@ export const useSectorsStore = create<SectorsState>()(
     // Vérifier le cache
     if (state.lastFetch && now - state.lastFetch < CACHE_DURATION && state.sectors.length > 0) {
       const cacheAge = Math.floor((now - state.lastFetch) / 1000);
-      console.log(`✅ [SectorsStore] Données en cache utilisées (${cacheAge}s / ${CACHE_DURATION/1000}s)`);
-      console.log(`📦 [SectorsStore] Cache contient: ${state.sectors.length} secteurs, ${state.territories.length} territoires`);
+      console.log(`[SectorsStore] Données en cache utilisées (${cacheAge}s / ${CACHE_DURATION/1000}s)`);
+      console.log(`[SectorsStore] Cache contient: ${state.sectors.length} secteurs, ${state.territories.length} territoires`);
       return;
     }
 
     // Premier chargement ou cache expiré
     const isFirstLoad = !state.lastFetch;
-    console.log(`🚀 [SectorsStore] ${isFirstLoad ? 'Premier chargement' : 'Cache expiré - rechargement'}`);
+    console.log(`[SectorsStore] ${isFirstLoad ? 'Premier chargement' : 'Cache expiré - rechargement'}`);
     
     set({ 
       loading: isFirstLoad, 
@@ -62,13 +62,13 @@ export const useSectorsStore = create<SectorsState>()(
     });
     
     try {
-      console.log('🌐 [SectorsStore] Appel API en cours...');
+      console.log('[SectorsStore] Appel API en cours...');
       const [sectorsData, territoriesData] = await Promise.all([
         territoriesService.getAllSectors({ level: 'SECTEUR' }),
         territoriesService.getAll(),
       ]);
       
-      console.log('📥 [SectorsStore] Données reçues:', {
+      console.log('[SectorsStore] Données reçues:', {
         sectorsCount: sectorsData.length,
         territoriesCount: territoriesData.length,
         sectorsData: sectorsData.map(s => ({ id: s.id, name: s.name, code: s.code })),
@@ -84,13 +84,13 @@ export const useSectorsStore = create<SectorsState>()(
         error: null,
       });
       
-      console.log('✅ [SectorsStore] Chargement terminé avec succès');
-      console.log(`💾 [SectorsStore] Store mis à jour: ${sectorsData.length} secteurs, ${territoriesData.length} territoires`);
+      console.log('[SectorsStore] Chargement terminé avec succès');
+      console.log(`[SectorsStore] Store mis à jour: ${sectorsData.length} secteurs, ${territoriesData.length} territoires`);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement des secteurs';
-      console.error('❌ [SectorsStore] Erreur de chargement:', error);
-      console.error('💥 [SectorsStore] Message d\'erreur:', errorMessage);
+      console.error('[SectorsStore] Erreur de chargement:', error);
+      console.error('[SectorsStore] Message d\'erreur:', errorMessage);
       
       set({
         loading: false,
@@ -101,17 +101,17 @@ export const useSectorsStore = create<SectorsState>()(
   },
 
   refreshSectors: async () => {
-    console.log('🔄 [SectorsStore] Rafraîchissement forcé demandé');
-    console.log('📍 [SectorsStore] refreshSectors appelé depuis:');
+    console.log('[SectorsStore] Rafraîchissement forcé demandé');
+    console.log('[SectorsStore] refreshSectors appelé depuis:');
     console.trace();
     set({ lastFetch: null });
     await get().loadSectors();
   },
 
   clearSectors: () => {
-    console.log('🗑️ [SectorsStore] Nettoyage du store');
+    console.log('[SectorsStore] Nettoyage du store');
     const state = get();
-    console.log('📊 [SectorsStore] Données supprimées:', {
+    console.log('[SectorsStore] Données supprimées:', {
       sectorsCount: state.sectors.length,
       territoriesCount: state.territories.length
     });
@@ -125,7 +125,7 @@ export const useSectorsStore = create<SectorsState>()(
       lastFetch: null,
     });
     
-    console.log('✅ [SectorsStore] Store vidé avec succès');
+    console.log('[SectorsStore] Store vidé avec succès');
   },
 }),
     {
