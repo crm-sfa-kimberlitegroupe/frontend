@@ -3,11 +3,7 @@ import type { User } from '@/core/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backendsfa.onrender.com/api';
 
-console.log('🔧 Configuration AuthService:', {
-  apiUrl: API_URL,
-  environment: import.meta.env.MODE,
-  viteApiUrl: import.meta.env.VITE_API_URL
-});
+
 
 export interface AuthResponse {
   success: boolean;

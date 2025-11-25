@@ -54,7 +54,6 @@ export default function UserModal({ isOpen, onClose, onSubmit, user, mode, allow
         managerId: user.manager || '',
       });
     } else {
-      // Réinitialiser le formulaire en mode création
       // Si c'est un ADMIN qui crée un vendeur, pré-remplir territoire et manager
       const isAdminCreatingVendor = mode === 'create' && currentUser?.role === 'ADMIN';
       

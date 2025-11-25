@@ -49,9 +49,9 @@ export const DataPreloader: React.FC<DataPreloaderProps> = ({ onComplete, childr
         // Initialiser IndexedDB en premier
         if (indexedDBService.isSupported()) {
           await indexedDBService.init();
-          console.log('✅ IndexedDB initialisé');
+          console.log('IndexedDB initialisé');
         } else {
-          console.warn('⚠️ IndexedDB non supporté, utilisation du localStorage');
+          console.warn('indexedDB non supporté, utilisation du localStorage');
         }
 
         // S'abonner aux mises à jour de progression
