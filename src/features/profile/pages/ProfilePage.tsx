@@ -183,10 +183,6 @@ export default function ProfilePage() {
         <div className="text-center">
           {/* Spinner CSS + Icône de secours */}
           <div className="relative mx-auto mb-6">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Icon name="user" size="xl" variant="primary" className="animate-pulse" />
-            </div>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre profil</h2>
           <p className="text-gray-600 mb-4">Récupération de vos informations personnelles...</p>

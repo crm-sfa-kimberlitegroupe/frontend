@@ -26,26 +26,16 @@ export default function RouteREP() {
   } = useRouteVisits();
 
 
-  console.log("🗺️ RouteREP - visits du hook:", visits.length, visits);
+  console.log("RouteREP - visits du hook:", visits.length, visits);
 
   
   // Garder les outlets pour la carte
   const { outlets, loading: outletsLoading, error: outletsError } = useOutletsStore();
 
-  // Logs détaillés pour diagnostiquer le problème outlets
-  console.log('[RouteREP] État du store outlets:');
-  console.log('outlets.length:', outlets?.length || 0);
-  console.log('outletsLoading:', outletsLoading);
-  console.log('outletsError:', outletsError);
-  console.log('outlets (premiers 3):', outlets?.slice(0, 3));
-  console.log('outlets complet:', outlets);
-  console.log('Type de outlets:', typeof outlets, Array.isArray(outlets));
-  console.log('outlets === undefined?', outlets === undefined);
-  console.log('outlets === null?', outlets === null);
 
 
 
-  console.log("lllllllllllllllllllllllllllllllllllllllll",outlets)
+
 
   
   // Debug: Logs pour voir les données du hook
@@ -128,15 +118,14 @@ export default function RouteREP() {
   });
   
   // Utiliser les erreurs du hook
-  const refreshRoute = async () => {}; // Pas besoin de refresh
   
   // Statistiques calculées
   const routeStats = {
     totalStops: routeStops.length,
     completed: routeStops.filter(stop => stop.status === 'completed').length,
     remaining: routeStops.filter(stop => stop.status !== 'completed').length,
-    totalDistance: '15.2 km', // Simulé
-    estimatedTime: '2h 30min' // Simulé
+    totalDistance: routeStops.length > 0 ? '15.2 km' : '0 km', // Simulé
+    estimatedTime: routeStops.length > 0 ? '2h 30min' : '0 min' // Simulé
   };
   
   // Le chargement est maintenant géré par le hook useRouteVisits
@@ -175,10 +164,6 @@ export default function RouteREP() {
           <div className="text-center">
             {/* Spinner CSS + Icône de secours */}
             <div className="relative mx-auto mb-6">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Icon name="refresh" size="xl" variant="primary" className="animate-spin" />
-              </div>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre route</h2>
             <p className="text-gray-600 mb-4">Préparation de votre itinéraire du jour...</p>
@@ -197,23 +182,24 @@ export default function RouteREP() {
       
       {/* Données chargées depuis les stores préchargés */}
 
-      {/* Erreur */}
+      {/* Erreur - Affichage d'information mais pas bloquant */}
       {hookError && (
         <div className="p-4">
-          <Card className="p-6 text-center">
-            <Icon name="warning" size="2xl" variant="red" className="mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune route planifiée</h3>
-            <p className="text-gray-600 mb-4">{hookError}</p>
-            <Button variant="primary" onClick={refreshRoute}>
-              <Icon name="refresh" size="sm" className="mr-2" />
-              Réessayer
-            </Button>
+          <Card className="p-4 bg-amber-50 border-amber-200">
+            <div className="flex items-start gap-3">
+              <Icon name="warning" size="lg" variant="amber" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-900 mb-1">Aucune route planifiée</h3>
+                <p className="text-xs text-amber-700">{hookError}</p>
+                <p className="text-xs text-amber-600 mt-1">Vous pouvez voir tous les PDV de votre territoire ci-dessous.</p>
+              </div>
+            </div>
           </Card>
         </div>
       )}
 
-      {/* Contenu principal */}
-      {!hookError && (allOutlets.length > 0 || routeStops.length > 0) && (
+      {/* Contenu principal - Afficher même s'il y a une erreur du hook mais qu'il y a des outlets */}
+      {allOutlets.length > 0 && (
         <>
           {/* En-tête avec toggle vue */}
           <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
@@ -386,8 +372,8 @@ export default function RouteREP() {
                 </div>
               )}
 
-              {/* Arrêts à proximité */}
-              {!showPDVForm && (
+              {/* Arrêts à proximité - Afficher seulement s'il y a des visites planifiées */}
+              {!showPDVForm && routeStops.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 px-1">Prochains arrêts</h3>
                 <div className="space-y-2">

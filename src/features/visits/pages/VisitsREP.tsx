@@ -127,7 +127,7 @@ const handleVisitSelect = async (visit: any) => {
         await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
         console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
         
-        // 🔄 IMPORTANT: Recharger les données pour synchroniser les stores
+        // IMPORTANT: Recharger les données pour synchroniser les stores
         console.log('Rechargement des données après mise à jour du statut...');
         await Promise.all([
           loadTodayRoute(user?.id),
@@ -250,7 +250,6 @@ const handleVisitSelect = async (visit: any) => {
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de vos visites</h2>
             <p className="text-gray-600 mb-4">Récupération de votre planning du jour...</p>
             <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-              <Icon name="calendar" size="sm" variant="grey" />
               <span>Synchronisation des données</span>
             </div>
           </div>
@@ -275,7 +274,6 @@ const handleVisitSelect = async (visit: any) => {
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-6xl mb-4">🏬</p>
             <p className="text-xl font-semibold text-gray-900 mb-2">Aucun secteur assigné</p>
             <p className="text-base text-gray-600">Contactez votre manager pour vous assigner un secteur.</p>
           </div>
@@ -329,7 +327,6 @@ const handleVisitSelect = async (visit: any) => {
           <div className="space-y-3">
             {visits.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-6xl mb-4">🏪</p>
                 <p className="text-2xl font-semibold text-gray-900 mb-2">Aucun PDV dans votre secteur</p>
                 <p className="text-lg text-gray-600">Contactez votre manager pour ajouter des PDV à votre secteur.</p>
               </div>
