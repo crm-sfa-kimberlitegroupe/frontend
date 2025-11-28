@@ -1,30 +1,27 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/core/ui';
-import { Icon } from '@/core/ui/Icon';
 import { useToggle } from '@/core/hooks';
 import { useAuthStore } from '@/core/auth';
 import { visitsService } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
 import { useVisitsStore, type VisitData } from '../stores/visitsStore';
 import { useRoutesStore } from '../../routes/stores/routesStore';
-import { useOutletsStore } from '../../outlets/store/outletsStore';
 import VisitsHeader from '../components/VisitsHeader';
 import PDVFormWizard from '../components/PDVFormWizard';
 import VisitCard from '../components/VisitCard';
-import VisitDetailNew from '../components/VisitDetailNew';
 import VisitInitializationModal from '../components/VisitInitializationModal';
 
 export default function VisitsREP() {
-  const [selectedVisit, setSelectedVisit] = useState<string | null>(null);
+  const navigate = useNavigate();
   // Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
   const [isLoading, setIsLoading] = useState(true);
   
   // Utiliser les stores préchargés
   const user = useAuthStore((state) => state.user);
-  const { startVisit, getActiveVisit, clearVisit } = useVisitsStore();
-  const { todayRoute, loadTodayRoute } = useRoutesStore();
-  const { loadOutlets } = useOutletsStore();
+  const { startVisit, findVisitByPdvName, getAllActiveVisits } = useVisitsStore();
+  const { todayRoute, updateRouteStopStatusLocally } = useRoutesStore();
 
 
   // Logs uniquement si todayRoute change
@@ -45,22 +42,63 @@ export default function VisitsREP() {
 
 
 
-// Fonction pour nettoyer une visite terminée du store
-const cleanupCompletedVisit = (outletId: string) => {
-  clearVisit(outletId);
-  console.log('Visite terminée nettoyée du store pour outlet:', outletId);
-};
 
-const handleVisitSelect = async (visit: any) => {
+const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId: string; address?: string; status: string; scheduledTime?: string; sequence?: number }) => {
   let createdVisit: { id: string } | null = null;
   
   try {
     // Vérifier si une visite est déjà en cours pour éviter les doublons
     if (visit.status === 'IN_PROGRESS') {
       console.log('Visite déjà en cours pour:', visit.pdvName);
-      // Ouvrir directement le détail sans créer une nouvelle visite
-      setSelectedVisit(visit.id);
-      return;
+      
+      // 🎯 RECHERCHER DANS LE STORE PAR NOM DE PDV
+      console.log('🔍 Recherche dans le store pour:', visit.pdvName);
+      console.log('📊 Toutes les visites actives dans le store:', getAllActiveVisits());
+      
+      const activeVisitFromStore = findVisitByPdvName(visit.pdvName);
+      
+      if (activeVisitFromStore) {
+        
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
+
+        
+        // Utiliser les données du store (plus fiables)
+        const params = new URLSearchParams({
+          visitId: activeVisitFromStore.visitId,
+          outletId: activeVisitFromStore.outletId,
+          pdvName: encodeURIComponent(activeVisitFromStore.pdvName),
+          address: encodeURIComponent(activeVisitFromStore.address || ''),
+          status: activeVisitFromStore.status,
+          routePlanId: activeVisitFromStore.routePlanId || todayRoute?.id || ''
+        });
+        
+        // Utiliser le VRAI visitId du store
+        navigate(`/dashboard/visits/detail/${activeVisitFromStore.visitId}?${params.toString()}`);
+        return;
+      } else {
+        console.warn('⚠️ Visite EN_PROGRESS mais pas trouvée dans le store. Utilisation des données de route.');
+        
+        // Fallback : utiliser les données de la route
+        const params = new URLSearchParams({
+          outletId: visit.outletId,
+          pdvName: encodeURIComponent(visit.pdvName),
+          address: encodeURIComponent(visit.address || ''),
+          status: visit.status,
+          routePlanId: todayRoute?.id || ''
+        });
+        
+        navigate(`/dashboard/visits/detail/${visit.id}?${params.toString()}`);
+        return;
+      }
     }
     
     if (visit.status === 'PLANNED') {
@@ -108,7 +146,7 @@ const handleVisitSelect = async (visit: any) => {
           pdvName: visit.pdvName,
           address: visit.address,
           scheduledTime: visit.scheduledTime,
-          sequence: visit.sequence,
+          sequence: visit.sequence || 0,
           routePlanId: todayRoute?.id,
         };
         
@@ -127,39 +165,33 @@ const handleVisitSelect = async (visit: any) => {
         await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
         console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
         
-        // IMPORTANT: Recharger les données pour synchroniser les stores
-        console.log('Rechargement des données après mise à jour du statut...');
-        await Promise.all([
-          loadTodayRoute(user?.id),
-          loadOutlets()
-        ]);
-        console.log('Données de la route et outlets rechargées avec succès');
-        
-        // Vérifier les nouvelles données
-        console.log('Vérification après rechargement...');
-        setTimeout(() => {
-          const updatedRoute = useRoutesStore.getState().todayRoute;
-          console.log('Route après rechargement:', updatedRoute?.routeStops?.map(s => ({
-            id: s.id,
-            outletId: s.outletId,
-            status: s.status,
-            outletName: s.outlet?.name
-          })));
-        }, 500);
+        // Mettre à jour le store localement immédiatement
+        updateRouteStopStatusLocally(visit.outletId, 'IN_PROGRESS');
+        console.log('Store local mis à jour immédiatement');
       }
       
       // Fermer la modale
       setShowInitModal(false);
     }
     
-    // Ouvrir le détail de la visite (après la modale si c'était PLANNED)
+    // Naviguer vers la page de détail de la visite (après la modale si c'était PLANNED)
     setTimeout(() => {
       // Utiliser l'ID de la vraie visite créée si disponible, sinon l'ID original
       const visitIdToUse = visit.status === 'PLANNED' && createdVisit?.id ? createdVisit.id : visit.id;
       console.log('ID utilisé pour ouvrir le détail:', visitIdToUse);
       console.log('Ancien ID (visit.id):', visit.id);
       console.log('Nouveau ID (createdVisit.id):', createdVisit?.id);
-      setSelectedVisit(visitIdToUse);
+      
+      // Navigation vers la page de détail avec tous les paramètres nécessaires
+      const params = new URLSearchParams({
+        outletId: visit.outletId,
+        pdvName: encodeURIComponent(visit.pdvName),
+        address: encodeURIComponent(visit.address || ''),
+        status: visit.status === 'PLANNED' ? 'IN_PROGRESS' : visit.status,
+        routePlanId: todayRoute?.id || ''
+      });
+      
+      navigate(`/dashboard/visits/detail/${visitIdToUse}?${params.toString()}`);
     }, visit.status === 'PLANNED' ? 1500 : 0);
     
   } catch (error) {
@@ -172,7 +204,7 @@ const handleVisitSelect = async (visit: any) => {
 
   // Construire les visites depuis les données préchargées
   const visits = todayRoute?.routeStops?.map(stop => {
-    // ✅ L'outlet est déjà inclus dans stop.outlet, pas besoin de chercher dans le store
+    // L'outlet est déjà inclus dans stop.outlet, pas besoin de chercher dans le store
     const outlet = stop.outlet;
     
     let visitStatus: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' = 'PLANNED';
@@ -207,22 +239,6 @@ const handleVisitSelect = async (visit: any) => {
     console.log("VisitsREP - visits construites:", visits.length, visits);
   }, [visits.length]);
 
-  // Fonction pour rafraîchir manuellement les données
-  const refreshData = async () => {
-    console.log('Rafraîchissement manuel des données...');
-    setIsLoading(true);
-    try {
-      await Promise.all([
-        loadTodayRoute(user?.id),
-        loadOutlets()
-      ]);
-      console.log('Rafraîchissement terminé avec succès');
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
   
   // Récupérer le secteur depuis l'utilisateur (simuler pour le développement)
   const sector = user ? {
@@ -296,14 +312,6 @@ const handleVisitSelect = async (visit: any) => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-medium text-blue-900">Votre secteur</h3>
-              <button
-                onClick={refreshData}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Icon name="refresh" size="sm" className={isLoading ? 'animate-spin' : ''} />
-                {isLoading ? 'Actualisation...' : 'Actualiser'}
-              </button>
             </div>
             <p className="text-lg text-blue-800">
               <strong>{sector.name}</strong> ({sector.code})
@@ -318,12 +326,12 @@ const handleVisitSelect = async (visit: any) => {
         
 
         {/* Formulaire d'enregistrement de PDV */}
-        {showPDVForm && !selectedVisit && (
+        {showPDVForm && (
           <PDVFormWizard onClose={() => setShowPDVForm(false)} userRole="REP" />
         )}
 
         {/* Liste des visites */}
-        {!selectedVisit && !showPDVForm && (
+        {!showPDVForm && (
           <div className="space-y-3">
             {visits.length === 0 ? (
               <div className="text-center py-12">
@@ -347,55 +355,6 @@ const handleVisitSelect = async (visit: any) => {
           </div>
         )}
 
-        {/* Détail de visite */}
-        {selectedVisit && !showPDVForm && (() => {
-          // Chercher d'abord par ID de visite, puis par outletId si c'est un ID de visite créée
-          let visit = visits.find(v => v.id === selectedVisit);
-          
-          // Si pas trouvé, c'est peut-être un ID de vraie visite, chercher par outletId
-          if (!visit) {
-            // Chercher dans le store Zustand
-            visits.forEach(v => {
-              const activeVisit = getActiveVisit(v.outletId);
-              if (activeVisit?.visitId === selectedVisit) {
-                visit = v;
-              }
-            });
-          }
-          
-          if (!visit) return null;
-          
-          // Utiliser l'ID sélectionné s'il correspond à une vraie visite, sinon utiliser le mapping du store
-          const activeVisit = getActiveVisit(visit.outletId);
-          const realVisitId = activeVisit?.visitId === selectedVisit 
-            ? selectedVisit 
-            : (activeVisit?.visitId || visit.id);
-          
-          console.log('[DEBUG VisitsREP] outletId:', visit.outletId);
-          console.log('[DEBUG VisitsREP] activeVisit:', activeVisit);
-          console.log('[DEBUG VisitsREP] realVisitId passé:', realVisitId);
-          
-          return (
-            <VisitDetailNew 
-              onBack={() => {
-                setSelectedVisit(null);
-                // La liste se mettra à jour automatiquement via le hook
-              }}
-              onVisitCompleted={() => {
-                // Nettoyer l'ID de la visite terminée du store
-                if (visit) cleanupCompletedVisit(visit.outletId);
-                // Recharger les données pour mettre à jour le statut
-                // refetch();
-              }}
-              visitId={realVisitId}
-              outletId={visit.outletId}
-              pdvName={visit.pdvName}
-              address={visit.address || ''}
-              status={visit.status as 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'}
-              routePlanId={todayRoute?.id}
-            />
-          );
-        })()}
 
         {/* Modale d'initialisation de visite */}
         <VisitInitializationModal 

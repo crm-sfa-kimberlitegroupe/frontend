@@ -102,13 +102,6 @@ export default function RouteMap({
 }: RouteMapProps) {
   const [center, setCenter] = useState<[number, number]>([5.3600, -4.0083]); // Abidjan par défaut
 
-  // Debug: Logs pour voir les données reçues
-  console.log('🗺️ RouteMap - Données reçues:', {
-    stops: stops.length,
-    allOutlets: allOutlets.length,
-    outletsData: allOutlets.map(o => ({ name: o.name, lat: o.latitude, lng: o.longitude }))
-  });
-
   useEffect(() => {
     if (stops.length > 0) {
       setCenter([stops[0].latitude, stops[0].longitude]);
@@ -172,19 +165,6 @@ export default function RouteMap({
           </Marker>
         )}
 
-        {/* MARQUEUR DE TEST - Pour vérifier que la carte fonctionne */}
-        <Marker
-          position={[5.308416, -4.040294]}
-          icon={createCustomIcon('territory')}
-        >
-          <Popup>
-            <div className="min-w-[200px]">
-              <p className="font-medium text-red-600 mb-1">🔴 MARQUEUR DE TEST</p>
-              <p className="text-xs">Si vous voyez ceci, la carte fonctionne</p>
-            </div>
-          </Popup>
-        </Marker>
-
         {/* Marqueurs de TOUS les PDV du territoire */}
         {allOutlets
           .filter(outlet => {
@@ -192,20 +172,9 @@ export default function RouteMap({
             const lng = Number(outlet.longitude);
             const isValid = outlet.latitude != null && outlet.longitude != null && 
                            !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
-            if (!isValid) {
-              console.log(`🚫 [RouteMap] Outlet ${outlet.name} filtré - coordonnées invalides:`, {
-                latitude: outlet.latitude,
-                longitude: outlet.longitude,
-                lat,
-                lng
-              });
-            }
             return isValid;
           })
           .map((outlet, index) => {
-          console.log(`🗺️ Création marqueur PDV: ${outlet.name} à [${outlet.latitude}, ${outlet.longitude}] - Status: ${outlet.status}`);
-          console.log(`🔍 Types: latitude=${typeof outlet.latitude}, longitude=${typeof outlet.longitude}`);
-          
           // Déterminer l'icône et le z-index selon le statut
           let zIndex = 0;
           let iconColor = '#6B7280'; // Gris par défaut pour territory

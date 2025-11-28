@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout, Button, Card } from '@/core/ui';
 import api from '@/core/api/api';
 import { useOrdersStore } from '../stores/ordersStore';
+import { useVisitsStore } from '@/features/visits/stores/visitsStore';
+import { ArrowLeft, ShoppingCart, Package, Trash2, CreditCard, Save, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
 
 interface SKU {
   id: string;
@@ -37,6 +39,9 @@ export const CreateOrderPage = () => {
 
   // Store des commandes
   const { addOrder } = useOrdersStore();
+  
+  // Store des visites - update visite existante avec l'ID de la vente
+  const { updateVisitAddVenteId } = useVisitsStore();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +52,8 @@ export const CreateOrderPage = () => {
 
   const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
   const [selectedSKU, setSelectedSKU] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<string>('1');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -79,7 +85,8 @@ export const CreateOrderPage = () => {
   };
 
   const handleAddLine = () => {
-    if (!selectedSKU || quantity <= 0) {
+    const qty = parseInt(quantity) || 0;
+    if (!selectedSKU || qty <= 0) {
       setError('Veuillez sélectionner un produit et une quantité valide');
       return;
     }
@@ -92,11 +99,11 @@ export const CreateOrderPage = () => {
 
     // Vérifier le stock disponible
     const alreadyInCart = orderLines.find((line) => line.skuId === selectedSKU);
-    const totalQtyInCart = alreadyInCart ? alreadyInCart.qty + quantity : quantity;
+    const totalQtyInCart = alreadyInCart ? alreadyInCart.qty + qty : qty;
 
     if (totalQtyInCart > stock.quantity) {
       setError(
-        `Stock insuffisant. Disponible: ${stock.quantity}, déjà dans le panier: ${alreadyInCart?.qty || 0}`
+        `Stock insuffisant. Disponible: ${stock.quantity}, deja dans le panier: ${alreadyInCart?.qty || 0}`
       );
       return;
     }
@@ -105,13 +112,13 @@ export const CreateOrderPage = () => {
     if (alreadyInCart) {
       setOrderLines(
         orderLines.map((line) =>
-          line.skuId === selectedSKU ? { ...line, qty: line.qty + quantity } : line
+          line.skuId === selectedSKU ? { ...line, qty: line.qty + qty } : line
         )
       );
     } else {
       const newLine: OrderLine = {
         skuId: selectedSKU,
-        qty: quantity,
+        qty: qty,
         unitPrice: Number(stock.sku.priceHt),
         vatRate: Number(stock.sku.vatRate),
         sku: stock.sku,
@@ -119,9 +126,9 @@ export const CreateOrderPage = () => {
       setOrderLines([...orderLines, newLine]);
     }
 
-    // Réinitialiser la sélection
+    // Reinitialiser la selection
     setSelectedSKU('');
-    setQuantity(1);
+    setQuantity('1');
     setError(null);
   };
 
@@ -154,6 +161,15 @@ export const CreateOrderPage = () => {
       return;
     }
 
+    // Validation du paiement : le montant doit être >= au total TTC
+    const { totalTtc } = calculateTotals();
+    if (paymentAmount > 0 && paymentAmount < totalTtc) {
+      setPaymentError(`Le montant paye (${paymentAmount.toFixed(0)} XOF) est inferieur au total (${totalTtc.toFixed(0)} XOF). Veuillez payer le montant total ou laisser le champ a 0 pour enregistrer sans paiement.`);
+      setError('Montant de paiement insuffisant');
+      return;
+    }
+    setPaymentError(null);
+
     try {
       setLoading(true);
       setError(null);
@@ -177,44 +193,40 @@ export const CreateOrderPage = () => {
       
       // Utiliser le service api comme dans ProductHierarchy
       const response = await api.post('/orders', orderData);
+      console.log('[CreateOrderPage] Réponse API:', response);
       
-      // ✅ SAUVEGARDER DANS LE STORE (automatique)
-      const newOrder = response.data?.data || response.data;
+      // Le backend retourne { success, message, order }
+      // Extraire l'order correctement selon la structure de reponse
+      const newOrder = response?.order || response?.data?.order || response?.data;
+      console.log('[CreateOrderPage] Order extrait:', newOrder);
+
+
+
+
+
       if (newOrder) {
         addOrder(newOrder);
-        console.log('[CreateOrderPage] Vente créée et ajoutée au store:', newOrder.id);
+        console.log('[CreateOrderPage] Vente creee et ajoutee au store:', newOrder.id);
       }
       
-      // Sauvegarder l'ID de la commande dans localStorage pour la visite
+      // Mettre à jour la visite existante avec l'ID de la vente
       if (newOrder?.id && visitId) {
-        localStorage.setItem(`visit_${visitId}_venteId`, newOrder.id);
-        console.log('[CreateOrderPage] ID commande sauvegardé pour la visite:', newOrder.id);
+        updateVisitAddVenteId(visitId, newOrder.id);
+        console.log('[CreateOrderPage] Visite mise a jour avec vente:', { visitId, venteId: newOrder.id });
       }
       
       setSuccess(true);
       
-      // Logs de débogage pour la redirection
-      const fromVisit = searchParams.get('fromVisit');
-      console.log('🔍 Paramètres de redirection:', {
-        visitId,
-        fromVisit,
-        fromVisitCheck: fromVisit === 'true',
-        shouldReturnToVisit: visitId && fromVisit === 'true'
-      });
       
       setTimeout(() => {
-        // Si on a un visitId, on vient forcément d'une visite
-        // Donc on retourne à la page précédente (détail de visite)
         if (visitId) {
-          console.log('🔄 Redirection vers la page de visite précédente (visitId présent)');
-          navigate(-1); // Retour à la page précédente (détail de la visite)
+          navigate(-1);
         } else {
-          console.log('🔄 Redirection vers la liste des commandes (pas de visitId)');
           navigate('/dashboard/orders');
         }
       }, 2000);
     } catch (err: unknown) {
-      console.error('❌ Erreur création vente:', err);
+      console.error('Erreur création vente:', err);
       if (err && typeof err === 'object' && 'response' in err) {
         const response = (err as { response?: { data?: { message?: string } } }).response;
         setError(response?.data?.message || 'Erreur lors de la création de la vente');
@@ -238,21 +250,22 @@ export const CreateOrderPage = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                // Si on vient d'une visite, retourner à la page précédente (détail de visite)
-                // Sinon retourner à la liste des commandes
                 if (visitId && searchParams.get('fromVisit') === 'true') {
-                  navigate(-1); // Retour à la page précédente (détail de visite)
+                  navigate(-1);
                 } else {
-                  navigate('/dashboard/orders'); // Retour à la liste des commandes
+                  navigate('/dashboard/orders');
                 }
               }}
               className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
             >
-              <span className="text-xl">←</span>
-              <span>Retour {visitId ? 'à la visite' : 'aux commandes'}</span>
+              <ArrowLeft className="w-5 h-5" />
+              <span>Retour {visitId ? 'a la visite' : 'aux commandes'}</span>
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">🛒 Nouvelle Vente</h1>
+              <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Nouvelle Vente
+              </h1>
               <p className="text-sm text-gray-500">Enregistrer une vente sur le terrain</p>
             </div>
           </div>
@@ -261,36 +274,34 @@ export const CreateOrderPage = () => {
         <div className="p-4 space-y-4">
           {/* Messages */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">⚠️ {error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {paymentError && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800">{paymentError}</p>
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-800">✅ Vente enregistrée avec succès ! Redirection...</p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-800">Vente enregistree avec succes ! Redirection...</p>
             </div>
           )}
 
-          {/* Info PDV et Visite */}
-          {outletId && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-blue-900">📍 PDV sélectionné</p>
-              <p className="text-xs text-blue-700 mt-1">ID: {outletId}</p>
-              {visitId && (
-                <div className="mt-2 pt-2 border-t border-blue-200">
-                  <p className="text-xs text-blue-700">
-                    🎯 Vente liée à la visite #{visitId}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Sélection de produit */}
+          {/* Selection de produit */}
           <Card>
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">📦 Ajouter des produits</h2>
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Ajouter des produits
+              </h2>
             </div>
 
             <div className="p-4 space-y-4">
@@ -299,9 +310,10 @@ export const CreateOrderPage = () => {
                   Chargement de votre stock...
                 </div>
               ) : availableStock.length === 0 ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800">
-                    ⚠️ Votre stock est vide. Veuillez contacter votre administrateur.
+                    Votre stock est vide. Veuillez contacter votre administrateur.
                   </p>
                 </div>
               ) : (
@@ -327,20 +339,35 @@ export const CreateOrderPage = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Quantité
+                        Quantite
                       </label>
                       <input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={quantity}
-                        onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          // Permettre la saisie libre (vide ou chiffres uniquement)
+                          if (val === '' || /^\d+$/.test(val)) {
+                            setQuantity(val);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Si vide ou 0, remettre 1 au blur
+                          if (!quantity || parseInt(quantity) <= 0) {
+                            setQuantity('1');
+                          }
+                        }}
+                        placeholder="Entrez la quantite"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                       />
                     </div>
                   </div>
 
                   <Button onClick={handleAddLine} variant="primary" size="md" fullWidth>
-                    ➕ Ajouter au panier
+                    <Plus className="w-4 h-4 mr-1" />
+                    Ajouter au panier
                   </Button>
                 </>
               )}
@@ -351,8 +378,9 @@ export const CreateOrderPage = () => {
           {orderLines.length > 0 && (
             <Card>
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  🛒 Panier ({orderLines.length} produit{orderLines.length > 1 ? 's' : ''})
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Panier ({orderLines.length} produit{orderLines.length > 1 ? 's' : ''})
                 </h2>
               </div>
 
@@ -380,7 +408,7 @@ export const CreateOrderPage = () => {
                       onClick={() => handleRemoveLine(line.skuId)}
                       className="text-red-600 hover:text-red-700 p-2"
                     >
-                      🗑️
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
@@ -407,7 +435,11 @@ export const CreateOrderPage = () => {
           {orderLines.length > 0 && (
             <Card>
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">💳 Paiement (optionnel)</h2>
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Paiement
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">Le montant doit etre egal ou superieur au total TTC</p>
               </div>
 
               <div className="p-4 space-y-4">
@@ -429,15 +461,34 @@ export const CreateOrderPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Montant payé (XOF)
+                    Montant paye (XOF)
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                    onChange={(e) => {
+                      const amount = parseFloat(e.target.value) || 0;
+                      setPaymentAmount(amount);
+                      // Effacer l'erreur de paiement si le montant est corrige
+                      if (amount >= totals.totalTtc || amount === 0) {
+                        setPaymentError(null);
+                      }
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
+                      paymentError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                   />
+                  {paymentAmount > 0 && paymentAmount < totals.totalTtc && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Montant insuffisant. Minimum requis: {totals.totalTtc.toFixed(0)} XOF
+                    </p>
+                  )}
+                  {paymentAmount > totals.totalTtc && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      Monnaie a rendre: {(paymentAmount - totals.totalTtc).toFixed(0)} XOF
+                    </p>
+                  )}
                 </div>
 
                 {(paymentMethod === 'MOBILE_MONEY' || paymentMethod === 'BANK_TRANSFER') && (
@@ -471,11 +522,12 @@ export const CreateOrderPage = () => {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || (paymentAmount > 0 && paymentAmount < totals.totalTtc)}
                 variant="primary"
                 fullWidth
               >
-                {loading ? 'Enregistrement...' : '💾 Enregistrer la vente'}
+                <Save className="w-4 h-4 mr-1" />
+                {loading ? 'Enregistrement...' : 'Enregistrer la vente'}
               </Button>
             </div>
           )}

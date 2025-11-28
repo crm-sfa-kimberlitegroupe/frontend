@@ -40,6 +40,8 @@ import { OrdersListPage } from './features/orders/pages/OrdersListPage';
 import { OrderDetailPage } from './features/orders/pages/OrderDetailPage';
 // Page Merchandising
 import MerchandisingPage from './features/merchandising/pages/MerchandisingPage';
+// Page Détail de visite
+import VisitDetailPage from './features/visits/pages/VisitDetailPage';
 
 function VisitsPageRoute() {
   const user = useAuthStore((s) => s.user);
@@ -117,6 +119,7 @@ function App() {
           {/* Routes communes */}
           <Route path="profile" element={<ProfileRouter />} />
           <Route path="visits" element={<VisitsPageRoute />} />
+          <Route path="visits/detail/:visitId" element={<VisitDetailPage />} />
           <Route path="data" element={<DataPageRoute />} />
           <Route path="route" element={<RoutePageRoute />} />
           <Route path="stock" element={<StockManagement />} />

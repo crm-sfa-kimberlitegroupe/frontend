@@ -205,7 +205,7 @@ export default function StockManagement() {
                   onClick={() => setFilterCategory('all')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                     filterCategory === 'all'
-                      ? 'bg-primary text-white shadow-md'
+                      ? 'bg-sky-600 text-white shadow-md'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -222,7 +222,7 @@ export default function StockManagement() {
                     onClick={() => setFilterCategory(cat!)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                       filterCategory === cat
-                        ? 'bg-primary text-white shadow-md'
+                        ? 'bg-sky-600 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >

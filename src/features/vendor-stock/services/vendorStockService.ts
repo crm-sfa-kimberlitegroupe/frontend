@@ -98,10 +98,7 @@ export const vendorStockService = {
    * Ajouter du stock au portefeuille
    */
   async addStock(data: AddStockDto): Promise<{ message: string; items: VendorStockItem[] }> {
-    console.log('Envoi ajout stock:', data);
     const response = await api.post('/vendor-stock/add', data);
-    console.log('Stock ajouté:', response);
-    // api.post() retourne directement les données
     return response;
   },
 
@@ -153,12 +150,44 @@ export const vendorStockService = {
   },
 
   /**
-   * Décharger tout le stock (vider le portefeuille)
+   * Decharger tout le stock (vider le portefeuille)
    */
   async unloadAllStock(): Promise<{ message: string; deletedCount: number }> {
-    console.log('Déchargement de tout le stock...');
     const response = await api.delete('/vendor-stock/unload-all');
-    console.log('Stock déchargé:', response);
     return response;
+  },
+
+  /**
+   * Supprimer un produit specifique du stock
+   */
+  async removeProduct(skuId: string): Promise<{
+    success: boolean;
+    message: string;
+    productName?: string;
+    deletedQuantity?: number;
+  }> {
+    const response = await api.delete(`/vendor-stock/remove/${skuId}`);
+    return response;
+  },
+
+  /**
+   * Supprimer plusieurs produits du stock
+   */
+  async removeMultipleProducts(skuIds: string[]): Promise<{
+    success: boolean;
+    message: string;
+    deletedCount: number;
+  }> {
+    console.log('[vendorStockService.removeMultipleProducts] Appel avec skuIds:', skuIds);
+    console.log('[vendorStockService.removeMultipleProducts] Nombre de produits:', skuIds.length);
+    
+    try {
+      const response = await api.post('/vendor-stock/remove-multiple', { skuIds });
+      console.log('[vendorStockService.removeMultipleProducts] Reponse brute:', response);
+      return response;
+    } catch (error) {
+      console.error('[vendorStockService.removeMultipleProducts] Erreur:', error);
+      throw error;
+    }
   },
 };

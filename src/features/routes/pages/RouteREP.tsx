@@ -20,38 +20,15 @@ export default function RouteREP() {
   const { 
     visits, 
     routePlan: todayRoute, 
-    sector,
-    loading: routeLoading, 
-    error: hookError 
+    loading: routeLoading
   } = useRouteVisits();
-
-
-  console.log("RouteREP - visits du hook:", visits.length, visits);
-
   
   // Garder les outlets pour la carte
   const { outlets, loading: outletsLoading, error: outletsError } = useOutletsStore();
 
-
-
-
-
-
-  
-  // Debug: Logs pour voir les données du hook
-  console.log('RouteREP - Données du hook useRouteVisits:', {
-    todayRoute,
-    visitsCount: visits.length,
-    sector: sector?.name,
-    outlets: outlets.length,
-    outletsWithCoords: outlets.filter(o => o.lat && o.lng).length
-  });
-
   // Convertir les visits du hook en format RouteStop pour la carte
   const routeStops = visits.map((visit, index) => {
     const outlet = outlets.find(o => o.id === visit.outletId);
-    console.log(`Visit ${index}: ${visit.pdvName}, status: ${visit.status}`);
-    
     return {
       id: parseInt(visit.id) || (index + 1),
       name: visit.pdvName,
@@ -71,15 +48,6 @@ export default function RouteREP() {
   });
   
   const allOutlets = outlets.map((outlet, index) => {
-    console.log(`[RouteREP] Mapping outlet ${index}:`, {
-      id: outlet.id,
-      name: outlet.name,
-      lat: outlet.lat,
-      lng: outlet.lng,
-      address: outlet.address,
-      status: outlet.status
-    });
-    
     // Chercher si ce PDV a une visite associée
     const associatedVisit = visits.find(visit => visit.outletId === outlet.id);
     
@@ -94,10 +62,6 @@ export default function RouteREP() {
       } else if (associatedVisit.status === 'PLANNED') {
         outletStatus = 'planned';
       }
-      
-      console.log(`[RouteREP] PDV ${outlet.name} a une visite: ${associatedVisit.status} → ${outletStatus}`);
-    } else {
-      console.log(`[RouteREP] PDV ${outlet.name} sans visite → territory`);
     }
     
     return {
@@ -182,21 +146,6 @@ export default function RouteREP() {
       
       {/* Données chargées depuis les stores préchargés */}
 
-      {/* Erreur - Affichage d'information mais pas bloquant */}
-      {hookError && (
-        <div className="p-4">
-          <Card className="p-4 bg-amber-50 border-amber-200">
-            <div className="flex items-start gap-3">
-              <Icon name="warning" size="lg" variant="amber" />
-              <div>
-                <h3 className="text-sm font-semibold text-amber-900 mb-1">Aucune route planifiée</h3>
-                <p className="text-xs text-amber-700">{hookError}</p>
-                <p className="text-xs text-amber-600 mt-1">Vous pouvez voir tous les PDV de votre territoire ci-dessous.</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Contenu principal - Afficher même s'il y a une erreur du hook mais qu'il y a des outlets */}
       {allOutlets.length > 0 && (
@@ -255,6 +204,22 @@ export default function RouteREP() {
               {/* Carte de navigation */}
               <div className="mb-4">
                 {(() => {
+                  // Verifier d'abord s'il y a une route planifiee
+                  if (!todayRoute || routeStops.length === 0) {
+                    // Pas de route planifiee pour aujourd'hui
+                    return (
+                      <Card className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Icon name="map" size="2xl" variant="grey" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">Aucune route planifiee</h3>
+                          <p className="text-sm text-gray-600">Pas de route assignee pour aujourd'hui</p>
+                        </div>
+                      </Card>
+                    );
+                  }
+                  
                   const nextStop = routeStops.find(s => s.status === 'planned');
                   return nextStop ? (
                     <NavigationCard
@@ -268,7 +233,6 @@ export default function RouteREP() {
                       }}
                       onStartNavigation={() => {
                         const url = `https://www.google.com/maps/dir/?api=1&destination=${nextStop.latitude},${nextStop.longitude}`;
-                        // Ouvrir directement Google Maps dans une nouvelle fenêtre
                         window.open(url, '_blank');
                       }}
                     />

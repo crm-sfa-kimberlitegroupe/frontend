@@ -65,7 +65,9 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
       <div className="max-w-md mx-auto">
         <div className="flex justify-around items-center h-16">
           {filteredItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.id === 'visits' 
+              ? location.pathname.startsWith('/dashboard/visits')
+              : location.pathname === item.path;
             return (
               <Link
                 key={item.id}

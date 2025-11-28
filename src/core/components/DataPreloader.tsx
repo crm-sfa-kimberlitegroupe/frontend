@@ -90,57 +90,65 @@ export const DataPreloader: React.FC<DataPreloaderProps> = ({ onComplete, childr
 
   // Afficher l'écran de chargement
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
         {/* Logo ou titre de l'application */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-20 h-20 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="cart" size="2xl" variant="white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">SFA Mobile</h1>
-          <p className="text-sm text-gray-600 mt-2">Préparation de votre espace de travail...</p>
+          <p className="text-sm text-gray-600 mt-2">Preparation de votre espace de travail...</p>
         </div>
 
         {/* Barre de progression */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>{progress.currentTask}</span>
-            <span>{progress.percentage}%</span>
+            <span className="font-semibold text-sky-600">{progress.percentage}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
             <div 
-              className="bg-gradient-to-r from-primary to-primary-600 h-full rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${progress.percentage}%` }}
+              className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+              style={{ 
+                width: `${progress.percentage}%`,
+                background: 'linear-gradient(90deg, #0284c7, #0ea5e9, #38bdf8)',
+                minWidth: progress.percentage > 0 ? '8px' : '0px'
+              }}
             >
-              <div className="h-full bg-white/20 animate-pulse"></div>
+              {/* Effet de brillance animee */}
+              <div 
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"
+                style={{ animationDuration: '1.5s' }}
+              ></div>
             </div>
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>{progress.loaded} sur {progress.total} éléments</span>
+            <span>{progress.loaded} sur {progress.total} elements</span>
             {progress.isComplete && (
-              <span className="text-success font-medium">✓ Terminé</span>
+              <span className="text-emerald-600 font-medium">Termine</span>
             )}
           </div>
         </div>
 
-        {/* Message d'erreur si nécessaire */}
+        {/* Message d'erreur si necessaire */}
         {error && (
-          <div className="bg-danger-50 border border-danger-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-danger-700">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
         {/* Animation de chargement */}
         <div className="flex justify-center space-x-2">
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-sky-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-sky-700 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
 
         {/* Conseils pendant le chargement */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <p className="text-xs text-blue-700">
-            💡 <strong>Astuce:</strong> Une fois le chargement terminé, vous pourrez naviguer dans l'application sans temps d'attente !
+        <div className="mt-8 p-4 bg-sky-50 rounded-lg border border-sky-100">
+          <p className="text-xs text-sky-700">
+            <strong>Astuce:</strong> Une fois le chargement termine, vous pourrez naviguer dans l'application sans temps d'attente !
           </p>
         </div>
       </div>

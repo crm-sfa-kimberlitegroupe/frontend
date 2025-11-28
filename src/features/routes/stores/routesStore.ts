@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { apiClient } from '@/core/api/client';
 import routesService, { type RoutePlan, type CreateRoutePlanDto } from '../services/routesService';
 
@@ -64,6 +64,7 @@ interface RoutesState {
   // Actions utilitaires
   setCurrentRoute: (route: RoutePlan | null) => void;
   setSelectedRoute: (route: RoutePlan | null) => void;
+  updateRouteStopStatusLocally: (outletId: string, newStatus: 'PLANNED' | 'IN_PROGRESS' | 'VISITED') => void;
   clearRoute: () => void;
   clearError: () => void;
   refreshData: () => Promise<void>;
@@ -73,15 +74,9 @@ interface RoutesState {
 const routeStatsService = {
   async getStats(): Promise<RouteStats> {
     try {
-      console.log('[RouteStatsService] Chargement des statistiques...');
-      
-      // Appeler l'API pour récupérer les vraies statistiques
       const response = await apiClient.get('/routes/stats');
-      
-      console.log('[RouteStatsService] Statistiques chargées:', response);
       return response;
-    } catch (error) {
-      console.error('[RouteStatsService] Erreur chargement statistiques:', error);
+    } catch {
       
       // Fallback avec des statistiques par défaut en cas d'erreur
       return {
@@ -101,20 +96,21 @@ const routeStatsService = {
 
 export const useRoutesStore = create<RoutesState>()(
   devtools(
-    (set, get) => ({
-      // État initial
-      routes: [],
-      filteredRoutes: [],
-      currentRoute: null,
-      todayRoute: null,
-      selectedRoute: null,
-      stats: null,
-      isLoading: false,
-      isLoadingStats: false,
-      isCreatingRoute: false,
-      isUpdatingRoute: false,
-      error: null,
-      filters: {},
+    persist(
+      (set, get) => ({
+        // État initial
+        routes: [],
+        filteredRoutes: [],
+        currentRoute: null,
+        todayRoute: null,
+        selectedRoute: null,
+        stats: null,
+        isLoading: false,
+        isLoadingStats: false,
+        isCreatingRoute: false,
+        isUpdatingRoute: false,
+        error: null,
+        filters: {},
 
       // Charger toutes les routes
       loadRoutes: async (filters) => {
@@ -148,18 +144,9 @@ export const useRoutesStore = create<RoutesState>()(
       loadTodayRoute: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-          console.log('[RoutesStore] Chargement route du jour pour userId:', userId);
-          
-          // Utiliser le service API pour récupérer la vraie route du jour
-          // getTodayRoute() utilise l'utilisateur connecté automatiquement
+          // userId est passé mais getTodayRoute() utilise l'utilisateur connecté
+          void userId;
           const todayRoute = await routesService.getTodayRoute();
-          
-          console.log('[RoutesStore] Route du jour chargée:', {
-            routeId: todayRoute?.id,
-            status: todayRoute?.status,
-            stopsCount: todayRoute?.routeStops?.length || 0,
-            date: todayRoute?.date
-          });
           
           set({ 
             todayRoute,
@@ -167,7 +154,6 @@ export const useRoutesStore = create<RoutesState>()(
             isLoading: false 
           });
         } catch (error) {
-          console.error('[RoutesStore] Erreur chargement route du jour:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors du chargement de la route du jour',
             isLoading: false,
@@ -215,19 +201,10 @@ export const useRoutesStore = create<RoutesState>()(
       createRoute: async (routeData: CreateRoutePlanDto) => {
         set({ isCreatingRoute: true, error: null });
         try {
-          console.log('[RoutesStore] Création de route:', routeData);
-          
-          // Utiliser le service API pour créer la route
-          const newRoute = await routesService.create(routeData);
-          
-          console.log('[RoutesStore] Route créée:', newRoute);
-          
-          // Recharger toutes les routes pour avoir les données à jour
+          await routesService.create(routeData);
           await get().loadRoutes();
-          
           set({ isCreatingRoute: false });
         } catch (error) {
-          console.error('[RoutesStore] Erreur création route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la création de la route',
             isCreatingRoute: false 
@@ -239,14 +216,7 @@ export const useRoutesStore = create<RoutesState>()(
       updateRoute: async (id: string, routeData: Partial<RoutePlan>) => {
         set({ isUpdatingRoute: true, error: null });
         try {
-          console.log('[RoutesStore] Mise à jour route:', id, routeData);
-          
-          // Utiliser le service API pour mettre à jour la route
           const updatedRoute = await routesService.update(id, routeData);
-          
-          console.log('[RoutesStore] Route mise à jour:', updatedRoute);
-          
-          // Recharger toutes les routes pour avoir les données à jour
           await get().loadRoutes();
           
           // Mettre à jour la route sélectionnée si c'est celle-ci
@@ -266,7 +236,6 @@ export const useRoutesStore = create<RoutesState>()(
           
           set({ isUpdatingRoute: false });
         } catch (error) {
-          console.error('[RoutesStore] Erreur mise à jour route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la mise à jour de la route',
             isUpdatingRoute: false 
@@ -301,14 +270,7 @@ export const useRoutesStore = create<RoutesState>()(
       deleteRoute: async (id: string) => {
         set({ isLoading: true, error: null });
         try {
-          console.log('[RoutesStore] Suppression route:', id);
-          
-          // Utiliser le service API pour supprimer la route
           await routesService.delete(id);
-          
-          console.log('[RoutesStore] Route supprimée:', id);
-          
-          // Recharger toutes les routes pour avoir les données à jour
           await get().loadRoutes();
           
           // Nettoyer les références si c'était la route courante
@@ -324,7 +286,6 @@ export const useRoutesStore = create<RoutesState>()(
           
           set({ isLoading: false });
         } catch (error) {
-          console.error('[RoutesStore] Erreur suppression route:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Erreur lors de la suppression de la route',
             isLoading: false 
@@ -395,6 +356,49 @@ export const useRoutesStore = create<RoutesState>()(
         set({ selectedRoute: route });
       },
 
+      // Mettre à jour le statut d'un stop localement (sans appel API)
+      updateRouteStopStatusLocally: (outletId: string, newStatus: 'PLANNED' | 'IN_PROGRESS' | 'VISITED') => {
+        const state = get();
+        
+        // Mettre à jour todayRoute si elle existe
+        if (state.todayRoute) {
+          const updatedTodayRoute = {
+            ...state.todayRoute,
+            routeStops: state.todayRoute.routeStops?.map(stop => 
+              stop.outletId === outletId 
+                ? { ...stop, status: newStatus }
+                : stop
+            ) || []
+          };
+          
+          set({ 
+            todayRoute: updatedTodayRoute,
+            currentRoute: updatedTodayRoute
+          });
+        }
+        
+        // Mettre à jour routes si nécessaire
+        if (state.routes.length > 0) {
+          const updatedRoutes = state.routes.map(route => {
+            const hasStop = route.routeStops?.some(stop => stop.outletId === outletId);
+            if (hasStop) {
+              return {
+                ...route,
+                routeStops: route.routeStops?.map(stop => 
+                  stop.outletId === outletId 
+                    ? { ...stop, status: newStatus }
+                    : stop
+                ) || []
+              };
+            }
+            return route;
+          });
+          
+          set({ routes: updatedRoutes });
+          get().applyFilters();
+        }
+      },
+
       // Vider toutes les routes
       clearRoute: () => {
         set({
@@ -422,7 +426,20 @@ export const useRoutesStore = create<RoutesState>()(
           get().loadRouteStats()
         ]);
       },
-    }),
+      }),
+      {
+        name: 'routes-storage',
+        partialize: (state) => ({
+          // Persister les données importantes, pas les états de chargement
+          routes: state.routes,
+          todayRoute: state.todayRoute,
+          selectedRoute: state.selectedRoute,
+          stats: state.stats,
+          filters: state.filters,
+          // Ne pas persister: isLoading, isLoadingToday, isCreating, isUpdatingRoute, error
+        }),
+      }
+    ),
     {
       name: 'routes-store',
     }

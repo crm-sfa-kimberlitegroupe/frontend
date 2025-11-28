@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { vendorStockService, type VendorStockItem, type StockStats, type LowStockItem } from '../services/vendorStockService';
 
 // Type pour les mouvements de stock (à définir selon vos besoins)
@@ -47,12 +47,13 @@ interface VendorStockState {
   stats: StockStats | null;
   selectedStockItem: VendorStockItem | null;
   
-  // États de chargement
+  // Etats de chargement
   isLoading: boolean;
   isLoadingStats: boolean;
   isLoadingMovements: boolean;
   isAddingStock: boolean;
   isUnloadingStock: boolean;
+  isRemovingProduct: boolean;
   error: string | null;
   
   // Filtres
@@ -65,6 +66,7 @@ interface VendorStockState {
   loadLowStockItems: (limit?: number) => Promise<void>;
   loadStockMovements: (filters?: StockMovementFilters) => Promise<void>;
   addStock: (skuId: string, quantity: number, unitPrice?: number) => Promise<void>;
+  removeProduct: (skuId: string) => Promise<{ success: boolean; message: string }>;
   unloadAllStock: () => Promise<void>;
   updateStockItem: (id: string, data: Partial<VendorStockItem>) => Promise<void>;
   
@@ -83,7 +85,8 @@ interface VendorStockState {
 
 export const useVendorStockStore = create<VendorStockState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       // État initial
       portfolio: [],
       filteredPortfolio: [],
@@ -96,6 +99,7 @@ export const useVendorStockStore = create<VendorStockState>()(
       isLoadingMovements: false,
       isAddingStock: false,
       isUnloadingStock: false,
+      isRemovingProduct: false,
       error: null,
       filters: {
         sortBy: 'name',
@@ -109,156 +113,14 @@ export const useVendorStockStore = create<VendorStockState>()(
       loadStock: async () => {
         set({ isLoading: true, error: null });
         try {
-          // Utiliser des données simulées pour le développement
-          const mockPortfolio: VendorStockItem[] = [
-            {
-              id: '1',
-              skuId: 'coca-33cl',
-              quantity: 24,
-              sku: {
-                id: 'coca-33cl',
-                ean: '5449000000996',
-                fullDescription: 'Coca-Cola Original 33cl Canette',
-                shortDescription: 'Coca-Cola 33cl',
-                photo: null,
-                priceHt: 250,
-                packSize: {
-                  name: '33cl',
-                  displayName: '33cl',
-                  packFormat: {
-                    name: 'canette',
-                    displayName: 'Canette',
-                    brand: {
-                      name: 'coca-cola',
-                      displayName: 'Coca-Cola',
-                      subCategory: {
-                        name: 'sodas',
-                        displayName: 'Sodas',
-                        category: {
-                          name: 'boissons',
-                          displayName: 'Boissons'
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: '2',
-              skuId: 'castel-65cl',
-              quantity: 18,
-              sku: {
-                id: 'castel-65cl',
-                ean: '3760074580026',
-                fullDescription: 'Castel Beer 65cl Bouteille',
-                shortDescription: 'Castel Beer 65cl',
-                photo: null,
-                priceHt: 300,
-                packSize: {
-                  name: '65cl',
-                  displayName: '65cl',
-                  packFormat: {
-                    name: 'bouteille',
-                    displayName: 'Bouteille',
-                    brand: {
-                      name: 'castel',
-                      displayName: 'Castel',
-                      subCategory: {
-                        name: 'bieres',
-                        displayName: 'Bières',
-                        category: {
-                          name: 'boissons',
-                          displayName: 'Boissons'
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: '3',
-              skuId: 'fanta-33cl',
-              quantity: 5, // Stock faible
-              sku: {
-                id: 'fanta-33cl',
-                ean: '5449000017314',
-                fullDescription: 'Fanta Orange 33cl Canette',
-                shortDescription: 'Fanta Orange 33cl',
-                photo: null,
-                priceHt: 250,
-                packSize: {
-                  name: '33cl',
-                  displayName: '33cl',
-                  packFormat: {
-                    name: 'canette',
-                    displayName: 'Canette',
-                    brand: {
-                      name: 'fanta',
-                      displayName: 'Fanta',
-                      subCategory: {
-                        name: 'sodas',
-                        displayName: 'Sodas',
-                        category: {
-                          name: 'boissons',
-                          displayName: 'Boissons'
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: '4',
-              skuId: 'sprite-33cl',
-              quantity: 2, // Stock très faible
-              sku: {
-                id: 'sprite-33cl',
-                ean: '5449000017321',
-                fullDescription: 'Sprite 33cl Canette',
-                shortDescription: 'Sprite 33cl',
-                photo: null,
-                priceHt: 250,
-                packSize: {
-                  name: '33cl',
-                  displayName: '33cl',
-                  packFormat: {
-                    name: 'canette',
-                    displayName: 'Canette',
-                    brand: {
-                      name: 'sprite',
-                      displayName: 'Sprite',
-                      subCategory: {
-                        name: 'sodas',
-                        displayName: 'Sodas',
-                        category: {
-                          name: 'boissons',
-                          displayName: 'Boissons'
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              updatedAt: new Date().toISOString()
-            }
-          ];
-          
-          // Simuler un délai réseau
-          await new Promise(resolve => setTimeout(resolve, 300));
+          const portfolio = await vendorStockService.getMyPortfolio();
           
           set({ 
-            portfolio: mockPortfolio, 
-            filteredPortfolio: mockPortfolio,
+            portfolio, 
+            filteredPortfolio: portfolio,
             isLoading: false 
           });
           
-          // Appliquer les filtres si ils existent
           get().applyFilters();
         } catch (error) {
           set({ 
@@ -272,19 +134,10 @@ export const useVendorStockStore = create<VendorStockState>()(
       loadStats: async () => {
         set({ isLoadingStats: true, error: null });
         try {
-          // Utiliser des statistiques simulées
-          const mockStats: StockStats = {
-            totalProducts: 4,
-            totalQuantity: 49,
-            lowStockCount: 2,
-            todayMovements: 8
-          };
-          
-          // Simuler un délai réseau
-          await new Promise(resolve => setTimeout(resolve, 200));
+          const stats = await vendorStockService.getStats();
           
           set({ 
-            stats: mockStats,
+            stats,
             isLoadingStats: false 
           });
         } catch (error) {
@@ -296,44 +149,13 @@ export const useVendorStockStore = create<VendorStockState>()(
       },
 
       // Charger les alertes de stock faible
-      loadLowStockItems: async () => {
+      loadLowStockItems: async (threshold = 10) => {
         set({ isLoading: true, error: null });
         try {
-          // Utiliser des alertes simulées
-          const mockLowStockItems: LowStockItem[] = [
-            {
-              id: '3',
-              quantity: 5,
-              alertThreshold: 10,
-              skuId: 'fanta-33cl',
-              userId: 'user-1',
-              updatedAt: new Date().toISOString(),
-              sku: {
-                id: 'fanta-33cl',
-                shortDescription: 'Fanta Orange 33cl',
-                photo: null
-              }
-            },
-            {
-              id: '4',
-              quantity: 2,
-              alertThreshold: 10,
-              skuId: 'sprite-33cl',
-              userId: 'user-1',
-              updatedAt: new Date().toISOString(),
-              sku: {
-                id: 'sprite-33cl',
-                shortDescription: 'Sprite 33cl',
-                photo: null
-              }
-            }
-          ];
-          
-          // Simuler un délai réseau
-          await new Promise(resolve => setTimeout(resolve, 250));
+          const lowStockItems = await vendorStockService.getLowStockItems(threshold);
           
           set({ 
-            lowStockItems: mockLowStockItems,
+            lowStockItems,
             isLoading: false 
           });
         } catch (error) {
@@ -389,25 +211,123 @@ export const useVendorStockStore = create<VendorStockState>()(
         }
       },
 
-      // Décharger tout le stock
-      unloadAllStock: async () => {
-        set({ isUnloadingStock: true, error: null });
+      // Supprimer un produit specifique du stock
+      removeProduct: async (skuId: string) => {
+        set({ isRemovingProduct: true, error: null });
         try {
-          await vendorStockService.unloadAllStock();
+          const result = await vendorStockService.removeProduct(skuId);
           
-          // Recharger les données après déchargement
-          await Promise.all([
-            get().loadStock(),
-            get().loadStats(),
-            get().loadLowStockItems()
-          ]);
+          if (result.success) {
+            // Retirer le produit du portfolio local
+            const currentPortfolio = get().portfolio;
+            const updatedPortfolio = currentPortfolio.filter(item => item.skuId !== skuId);
+            
+            set({
+              portfolio: updatedPortfolio,
+              filteredPortfolio: updatedPortfolio,
+              isRemovingProduct: false
+            });
+            
+            // Recharger les stats et alertes
+            await Promise.all([
+              get().loadStats(),
+              get().loadLowStockItems()
+            ]);
+          } else {
+            set({ isRemovingProduct: false });
+          }
           
-          set({ isUnloadingStock: false });
+          return { success: result.success, message: result.message };
         } catch (error) {
+          const message = error instanceof Error ? error.message : 'Erreur lors de la suppression';
           set({ 
-            error: error instanceof Error ? error.message : 'Erreur lors du déchargement du stock',
+            error: message,
+            isRemovingProduct: false 
+          });
+          return { success: false, message };
+        }
+      },
+
+      // Decharger tout le stock (mise a jour optimiste)
+      unloadAllStock: async () => {
+        console.log('[unloadAllStock] Debut du dechargement...');
+        
+        const currentPortfolio = get().portfolio;
+        const currentLowStockItems = get().lowStockItems;
+        const currentStats = get().stats;
+        
+        console.log('[unloadAllStock] Portfolio actuel:', currentPortfolio.length, 'produits');
+        console.log('[unloadAllStock] Portfolio data:', currentPortfolio);
+        
+        // Verifier s'il y a du stock a decharger
+        if (currentPortfolio.length === 0) {
+          console.log('[unloadAllStock] Aucun produit dans le portfolio, annulation');
+          return;
+        }
+        
+        // Recuperer tous les skuIds
+        const skuIds = currentPortfolio.map(item => item.skuId);
+        console.log('[unloadAllStock] SKU IDs a supprimer:', skuIds);
+        
+        // Mise a jour optimiste : vider le store IMMEDIATEMENT
+        console.log('[unloadAllStock] Mise a jour optimiste - vidage du store...');
+        set({ 
+          isUnloadingStock: true, 
+          error: null,
+          portfolio: [],
+          filteredPortfolio: [],
+          lowStockItems: [],
+          stats: currentStats ? {
+            ...currentStats,
+            totalProducts: 0,
+            totalQuantity: 0,
+            lowStockCount: 0
+          } : null
+        });
+        
+        try {
+          // Appeler l'API pour confirmer la suppression
+          console.log('[unloadAllStock] Appel API removeMultipleProducts...');
+          const result = await vendorStockService.removeMultipleProducts(skuIds);
+          console.log('[unloadAllStock] Reponse API:', result);
+          
+          if (result.success) {
+            console.log('[unloadAllStock] Succes! Nettoyage du cache...');
+            // Nettoyer le cache localStorage
+            localStorage.removeItem('lowStockAlerts');
+            localStorage.removeItem('lowStockAlertsUpdatedAt');
+            
+            set({ isUnloadingStock: false });
+            
+            // Recharger les stats fraiches
+            console.log('[unloadAllStock] Rechargement des stats...');
+            await get().loadStats();
+            console.log('[unloadAllStock] Termine avec succes!');
+          } else {
+            console.log('[unloadAllStock] Echec API:', result.message);
+            // Rollback en cas d'echec : restaurer les donnees
+            set({ 
+              portfolio: currentPortfolio,
+              filteredPortfolio: currentPortfolio,
+              lowStockItems: currentLowStockItems,
+              stats: currentStats,
+              error: result.message,
+              isUnloadingStock: false 
+            });
+            console.log('[unloadAllStock] Rollback effectue');
+          }
+        } catch (error) {
+          console.error('[unloadAllStock] Erreur:', error);
+          // Rollback en cas d'erreur : restaurer les donnees
+          set({ 
+            portfolio: currentPortfolio,
+            filteredPortfolio: currentPortfolio,
+            lowStockItems: currentLowStockItems,
+            stats: currentStats,
+            error: error instanceof Error ? error.message : 'Erreur lors du dechargement du stock',
             isUnloadingStock: false 
           });
+          console.log('[unloadAllStock] Rollback effectue apres erreur');
         }
       },
 
@@ -582,7 +502,21 @@ export const useVendorStockStore = create<VendorStockState>()(
           get().loadStockMovements(get().movementFilters)
         ]);
       },
-    }),
+      }),
+      {
+        name: 'vendor-stock-store',
+        // Persister seulement les donnees, pas les etats de chargement
+        partialize: (state) => ({
+          portfolio: state.portfolio,
+          filteredPortfolio: state.filteredPortfolio,
+          lowStockItems: state.lowStockItems,
+          stockMovements: state.stockMovements,
+          stats: state.stats,
+          filters: state.filters,
+          movementFilters: state.movementFilters,
+        }),
+      }
+    ),
     {
       name: 'vendor-stock-store',
     }

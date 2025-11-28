@@ -68,7 +68,14 @@ class DataPreloaderService {
   }
 
   /**
-   * Effectuer le préchargement
+   * Delai minimum entre les etapes pour une animation fluide
+   */
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Effectuer le prechargement
    */
   private async performPreload(): Promise<void> {
     const tasks = [
@@ -84,9 +91,11 @@ class DataPreloaderService {
 
     const total = tasks.length;
     let loaded = 0;
+    const MIN_STEP_DELAY = 200; // Delai minimum en ms pour voir la progression
 
     for (const task of tasks) {
       try {
+        // Notifier le debut de la tache
         this.notifyProgress({
           total,
           loaded,
@@ -95,24 +104,38 @@ class DataPreloaderService {
           isComplete: false
         });
 
+        // Executer la tache avec un delai minimum
+        const startTime = Date.now();
         await task.load();
+        const elapsed = Date.now() - startTime;
+        
+        // Attendre le reste du delai minimum si necessaire
+        if (elapsed < MIN_STEP_DELAY) {
+          await this.delay(MIN_STEP_DELAY - elapsed);
+        }
+        
         loaded++;
 
+        // Notifier la fin de la tache
         this.notifyProgress({
           total,
           loaded,
           percentage: Math.round((loaded / total) * 100),
-          currentTask: task.name,
+          currentTask: loaded === total ? 'Finalisation...' : task.name,
           isComplete: loaded === total
         });
       } catch (error) {
         console.error(`Erreur lors de: ${task.name}`, error);
-        // Continuer même si une tâche échoue
+        // Continuer meme si une tache echoue
         loaded++;
+        await this.delay(MIN_STEP_DELAY);
       }
     }
 
-    // Marquer le préchargement comme terminé dans le localStorage
+    // Petit delai final avant de terminer
+    await this.delay(300);
+
+    // Marquer le prechargement comme termine dans le localStorage
     localStorage.setItem('dataPreloaded', 'true');
     localStorage.setItem('dataPreloadedAt', new Date().toISOString());
   }
@@ -156,18 +179,18 @@ class DataPreloaderService {
     const outletsStore = useOutletsStore.getState();
     
     try {
-      console.log('🏪 [DataPreloader] Début chargement outlets...');
+      console.log('[DataPreloader] Début chargement outlets...');
       // Charger tous les PDV assignés
       await outletsStore.loadOutlets();
       
       const finalState = useOutletsStore.getState();
-      console.log('🏪 [DataPreloader] Outlets chargés:', {
+      console.log('[DataPreloader] Outlets chargés:', {
         count: finalState.outlets.length,
         loading: finalState.loading,
         error: finalState.error
       });
     } catch (error) {
-      console.error('❌ [DataPreloader] Erreur chargement outlets:', error);
+      console.error('[DataPreloader] Erreur chargement outlets:', error);
     }
   }
 
@@ -288,8 +311,11 @@ class DataPreloaderService {
 
   /**
    * Réinitialiser le cache de préchargement
+   * IMPORTANT : Ne vide PAS les visites en cours (IN_PROGRESS)
    */
   clearPreloadCache(): void {
+    console.log('🧹 [DataPreloader] Nettoyage du cache de préchargement');
+    
     localStorage.removeItem('dataPreloaded');
     localStorage.removeItem('dataPreloadedAt');
     localStorage.removeItem('lowStockAlerts');
@@ -297,7 +323,11 @@ class DataPreloaderService {
     
     // Réinitialiser tous les stores
     useOrdersStore.getState().clearOrders();
-    useVisitsStore.getState().clearVisit('');
+    
+    // IMPORTANT : Nettoyer uniquement les visites TERMINÉES, pas celles en cours
+    useVisitsStore.getState().clearCompletedVisits();
+    console.log('[DataPreloader] Visites en cours préservées');
+    
     useOutletsStore.getState().clearOutlets();
     useProductsStore.getState().clearProducts();
     useVendorStockStore.getState().clearStock();

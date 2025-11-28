@@ -1,13 +1,49 @@
+import { useState } from 'react';
 import Card from '@/core/ui/Card';
 import { Icon } from '@/core/ui/Icon';
 import type { VendorStockItem } from '../services/vendorStockService';
+import { useVendorStockStore } from '../stores/vendorStockStore';
+import ConfirmModal from './ConfirmModal';
 
 interface PortfolioListProps {
   items: VendorStockItem[];
   onRefresh?: () => void;
 }
 
-export default function PortfolioList({ items }: PortfolioListProps) {
+export default function PortfolioList({ items, onRefresh }: PortfolioListProps) {
+  const { removeProduct, isRemovingProduct } = useVendorStockStore();
+  
+  // Etat pour la modal de confirmation
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{
+    skuId: string;
+    name: string;
+    quantity: number;
+  } | null>(null);
+
+  const handleDeleteClick = (item: VendorStockItem) => {
+    setProductToDelete({
+      skuId: item.skuId,
+      name: item.sku.shortDescription,
+      quantity: item.quantity,
+    });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    const result = await removeProduct(productToDelete.skuId);
+    setShowDeleteModal(false);
+    setProductToDelete(null);
+    
+    if (result.success) {
+      onRefresh?.();
+    } else {
+      alert(result.message);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -82,11 +118,39 @@ export default function PortfolioList({ items }: PortfolioListProps) {
                 <span className="text-sm font-medium text-gray-900">
                   {item.sku.priceHt.toLocaleString()} FCFA
                 </span>
+                {/* Bouton supprimer */}
+                <button
+                  onClick={() => handleDeleteClick(item)}
+                  disabled={isRemovingProduct}
+                  className="mt-1 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                  title="Supprimer du stock"
+                >
+                  <Icon name="trash" size="md" />
+                </button>
               </div>
             </div>
           </Card>
         );
       })}
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setProductToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer ce produit"
+        message={productToDelete 
+          ? `Voulez-vous vraiment supprimer "${productToDelete.name}" de votre stock ?\n\nQuantite actuelle: ${productToDelete.quantity} unites\n\nCette action est irreversible.`
+          : ''
+        }
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+        isLoading={isRemovingProduct}
+      />
     </div>
   );
 }

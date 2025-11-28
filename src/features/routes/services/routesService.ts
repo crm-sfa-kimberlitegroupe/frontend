@@ -83,15 +83,9 @@ const routesService = {
       if (filters?.date) params.append('date', filters.date);
       if (filters?.status) params.append('status', filters.status);
 
-      console.log('Appel API routes avec params:', params.toString());
       const response = await api.get(`/routes?${params.toString()}`);
-      console.log('Réponse API routes:', response);
-      console.log('Type de response:', typeof response, Array.isArray(response));
-      
-      // apiClient.get retourne directement les données parsées, pas un objet { data: ... }
       return Array.isArray(response) ? response : [];
-    } catch (error) {
-      console.error('Erreur lors de la récupération des routes:', error);
+    } catch {
       return [];
     }
   },
@@ -136,10 +130,8 @@ const routesService = {
     try {
       const today = new Date().toISOString().split('T')[0];
       const response = await api.get(`/routes/my-routes?date=${today}`);
-      // Retourne la première route du jour ou null
       return Array.isArray(response) && response.length > 0 ? response[0] : null;
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la route du jour:', error);
+    } catch {
       return null;
     }
   },
@@ -165,36 +157,8 @@ const routesService = {
 
   // Récupérer les PDV du secteur du vendeur
   async getVendorSectorOutlets(vendorId: string): Promise<any> {
-    try {
-      console.log('[RoutesService] Appel getVendorSectorOutlets pour vendorId:', vendorId);
-      const url = `/territories/vendors/${vendorId}/outlets`;
-      console.log('[RoutesService] URL appelée:', url);
-      
-      const response = await api.get(url);
-      
-      console.log('[RoutesService] Réponse reçue:', response);
-      console.log('[RoutesService] Type de réponse:', typeof response);
-      
-      // Vérifier si la réponse a une structure { success, data, message }
-      if (response?.data) {
-        console.log('[RoutesService] Structure avec data détectée');
-        console.log('[RoutesService] Nombre de PDV:', response.data.outlets?.length || 0);
-      } else {
-        console.log('[RoutesService] Structure directe détectée');
-        console.log('[RoutesService] Nombre de PDV:', response?.outlets?.length || 0);
-      }
-      
-      return response;
-    } catch (error: unknown) {
-      console.error('[RoutesService] Erreur getVendorSectorOutlets:', error);
-      console.error('[RoutesService] Détails erreur:', {
-        message: (error as Error).message,
-        status: (error as any).status,
-        statusText: (error as any).statusText,
-        url: `/territories/vendors/${vendorId}/outlets`
-      });
-      throw error;
-    }
+    const response = await api.get(`/territories/vendors/${vendorId}/outlets`);
+    return response;
   },
 
   // Générer des routes pour plusieurs jours
@@ -229,24 +193,11 @@ const routesService = {
     outletId: string, 
     status: 'PLANNED' | 'IN_PROGRESS' | 'VISITED'
   ) {
-    try {
-      console.log('[RoutesService] updateRouteStopStatus:', {
-        routePlanId,
-        outletId,
-        status
-      });
-      
-      const response = await api.patch(
-        `/route-plans/${routePlanId}/stops/${outletId}/status`,
-        { status }
-      );
-      
-      console.log('[RoutesService] Statut mis à jour:', response);
-      return response.data;
-    } catch (error) {
-      console.error('[RoutesService] Erreur mise à jour statut:', error);
-      throw error;
-    }
+    const response = await api.patch(
+      `/route-plans/${routePlanId}/stops/${outletId}/status`,
+      { status }
+    );
+    return response.data;
   },
 };
 

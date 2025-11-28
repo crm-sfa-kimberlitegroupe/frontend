@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button, Card, Badge } from '@/core/ui';
 import { Icon } from '@/core/ui/Icon';
 import { visitsService } from '../services/visits.service';
@@ -27,14 +27,15 @@ export default function VisitDetailNew({
   status = 'IN_PROGRESS',
   routePlanId
 }: VisitDetailProps) {
-  const navigate = useNavigate();
   
   // Utiliser le store Zustand au lieu de localStorage
-  const { getActiveVisit } = useVisitsStore();
+  const { getVenteIds, getMerchIds } = useVisitsStore();
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
   const [notes, setNotes] = useState('');
   const [hasVente, setHasVente] = useState(false);
+  const [ventesCount, setVentesCount] = useState(0);
   const [hasMerchandising, setHasMerchandising] = useState(false);
+  const [merchCount, setMerchCount] = useState(0);
   const [merchData] = useState<{
     checklist?: Record<string, unknown>;
     planogram?: Record<string, unknown>;
@@ -52,6 +53,11 @@ export default function VisitDetailNew({
   const [venteId, setVenteId] = useState<string | null>(null);
   const [merchId, setMerchId] = useState<string | null>(null);
 
+
+
+  console.log("visitIdvisitId",visitId)
+
+
   // Mettre à jour currentVisitId quand visitId change
   useEffect(() => {
     setCurrentVisitId(visitId);
@@ -59,16 +65,29 @@ export default function VisitDetailNew({
 
   // Récupérer les données sauvegardées du store et utiliser le visitId passé en prop
   useEffect(() => {
-    // Récupérer les données depuis le store Zustand
-    const activeVisit = getActiveVisit(outletId);
     
-    if (activeVisit?.venteId) {
-      setVenteId(activeVisit.venteId);
+    // Vérifier s'il y a des ventes (array)
+    const venteIds = getVenteIds(outletId);
+    if (venteIds.length > 0) {
+      // Prendre la dernière vente ajoutée
+      setVenteId(venteIds[venteIds.length - 1]);
       setHasVente(true);
+      setVentesCount(venteIds.length);
+    } else {
+      setHasVente(false);
+      setVentesCount(0);
     }
-    if (activeVisit?.merchId) {
-      setMerchId(activeVisit.merchId);
+    
+    // Vérifier s'il y a des merchandising (array)
+    const merchIds = getMerchIds(outletId);
+    if (merchIds.length > 0) {
+      // Prendre le dernier merchandising ajouté
+      setMerchId(merchIds[merchIds.length - 1]);
       setHasMerchandising(true);
+      setMerchCount(merchIds.length);
+    } else {
+      setHasMerchandising(false);
+      setMerchCount(0);
     }
     
     // Utiliser le visitId qui a été créé avant d'arriver ici
@@ -76,35 +95,44 @@ export default function VisitDetailNew({
       setCurrentVisitId(visitId);
       setCurrentStatus('IN_PROGRESS');
     }
-  }, [visitId, outletId, getActiveVisit]);
+  }, [visitId, outletId, getVenteIds, getMerchIds]);
 
-  // Fonction pour créer une vente
-  const handleCreateVente = () => {
-    // Utiliser currentVisitId si disponible, sinon créer sans visitId
+  // Générer l'URL pour créer une vente
+  const getVenteUrl = () => {
     const realVisitId = currentVisitId;
-    console.log('🛒 Navigation vers création vente avec visitId:', realVisitId || 'sans visite');
+    
+    // DEBUG: Vérifier l'état du store
+    const storeState = useVisitsStore.getState();
+    const allVisits = storeState.activeVisits;
+    const visitInStore = Object.values(allVisits).find(v => v.visitId === realVisitId);
+    
+    console.log('🛒 [getVenteUrl] DEBUG:', {
+      currentVisitId: realVisitId,
+      outletId,
+      toutesLesVisites: Object.keys(allVisits),
+      visitesAvecIds: Object.values(allVisits).map(v => ({ outletId: v.outletId, visitId: v.visitId })),
+      visiteCorrespondante: visitInStore ? 'TROUVÉE' : 'NON TROUVÉE'
+    });
     
     if (realVisitId) {
-      navigate(`/dashboard/orders/create?outletId=${outletId}&visitId=${realVisitId}&fromVisit=true`);
+      return `/dashboard/orders/create?outletId=${outletId}&visitId=${realVisitId}&fromVisit=true`;
     } else {
-      // Créer vente sans visitId - sera associée plus tard lors de la completion
-      navigate(`/dashboard/orders/create?outletId=${outletId}&fromVisit=true`);
+      return `/dashboard/orders/create?outletId=${outletId}&fromVisit=true`;
     }
   };
 
-  // Fonction pour créer un merchandising
-  const handleCreateMerchandising = () => {
-    // Utiliser currentVisitId si disponible, sinon créer sans visitId
+  // Générer l'URL pour créer un merchandising
+  const getMerchandisingUrl = () => {
     const realVisitId = currentVisitId;
-    console.log(' Navigation vers merchandising avec visitId:', realVisitId || 'sans visite');
+    console.log('Génération URL merchandising avec visitId:', realVisitId || 'sans visite');
     
     if (realVisitId) {
-      navigate(`/dashboard/merchandising?outletId=${outletId}&visitId=${realVisitId}&fromVisit=true&pdvName=${encodeURIComponent(pdvName || '')}`);
+      return `/dashboard/merchandising?outletId=${outletId}&visitId=${realVisitId}&fromVisit=true&pdvName=${encodeURIComponent(pdvName || '')}`;
     } else {
-      // Créer merchandising sans visitId - sera associé plus tard lors de la completion
-      navigate(`/dashboard/merchandising?outletId=${outletId}&fromVisit=true&pdvName=${encodeURIComponent(pdvName || '')}`);
+      return `/dashboard/merchandising?outletId=${outletId}&fromVisit=true&pdvName=${encodeURIComponent(pdvName || '')}`;
     }
   };
+
 
   // Fonction pour terminer la visite et créer tout en une fois
   const handleTerminerVisite = async () => {
@@ -291,67 +319,149 @@ export default function VisitDetailNew({
       {/* Actions principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Vente */}
-        <Card className="p-4">
+        <Card className={`p-4 transition-all duration-300 ${hasVente ? 'border-2 border-emerald-500 bg-emerald-50' : 'border border-gray-200'}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Icon name="cart" size="md" variant="primary" />
-              Vente
+              <Icon name="cart" size="md" variant={hasVente ? "green" : "primary"} />
+              Ventes
             </h3>
             {hasVente && (
-              <Badge variant="success">
-                <Icon name="checkCircle" size="xs" className="mr-1" />
-                Effectuée
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="success" className="text-base px-3 py-1">
+                  <Icon name="checkCircle" size="sm" className="mr-1" />
+                  {ventesCount}
+                </Badge>
+              </div>
             )}
           </div>
-          <Button 
-            variant={hasVente ? "success" : "primary"}
-            size="md" 
-            fullWidth
-            onClick={handleCreateVente}
-            disabled={hasVente}
-            className={hasVente ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-sky-600 hover:bg-sky-700"}
+
+          {/* Liste des ventes si existantes */}
+          {hasVente && (
+            <div className="mb-3 space-y-2">
+              {getVenteIds(outletId).map((venteId, index) => (
+                <div 
+                  key={venteId}
+                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-emerald-200 hover:border-emerald-400 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <span className="text-emerald-700 font-bold text-sm">#{index + 1}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Vente #{index + 1}</p>
+                      <p className="text-xs text-gray-500">ID: {venteId.slice(0, 8)}...</p>
+                    </div>
+                  </div>
+                  <Icon name="checkCircle" size="sm" variant="green" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bouton d'ajout */}
+          <Link 
+            to={getVenteUrl()}
+            className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+              hasVente 
+                ? "border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white" 
+                : "bg-sky-600 hover:bg-sky-700 text-white"
+            }`}
           >
-            <Icon name={hasVente ? "checkCircle" : "cart"} size="sm" className="mr-2" />
-            {hasVente ? " Vente enregistrée" : "Enregistrer une vente"}
-          </Button>
-          <p className="text-sm text-gray-600 mt-2">
-            {hasVente ? " La vente a été enregistrée avec succès pour cette visite" : 
-             !currentVisitId ? "Vous pouvez créer une vente - elle sera liée à la visite lors de la finalisation" :
-             "Créez une nouvelle vente pour ce point de vente"}
-          </p>
+            <Icon name="plus" size="sm" className="mr-2" />
+            {hasVente ? `Ajouter la vente #${ventesCount + 1}` : "🛒 Créer ma première vente"}
+          </Link>
+          
+          {/* Message informatif */}
+          <div className={`mt-3 p-2 rounded-lg ${hasVente ? 'bg-emerald-100' : 'bg-blue-50'}`}>
+            <p className="text-xs text-center font-medium">
+              {hasVente ? (
+                <>
+                  <span className="text-emerald-700">✨ {ventesCount} vente{ventesCount > 1 ? 's' : ''} enregistrée{ventesCount > 1 ? 's' : ''}</span>
+                  <br />
+                  <span className="text-gray-600">Continuez à vendre !</span>
+                </>
+              ) : (
+                <span className="text-blue-700">
+                  {!currentVisitId 
+                    ? "La vente sera liée à la visite lors de la finalisation" 
+                    : "Commencez par enregistrer votre première vente"}
+                </span>
+              )}
+            </p>
+          </div>
         </Card>
 
         {/* Merchandising */}
-        <Card className="p-4">
+        <Card className={`p-4 transition-all duration-300 ${hasMerchandising ? 'border-2 border-purple-500 bg-purple-50' : 'border border-gray-200'}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Icon name="camera" size="md" variant="primary" />
+              <Icon name="camera" size="md" variant={hasMerchandising ? "primary" : "primary"} />
               Merchandising
             </h3>
             {hasMerchandising && (
-              <Badge variant="success">
-                <Icon name="checkCircle" size="xs" className="mr-1" />
-                Effectué
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="warning" className="text-base px-3 py-1 bg-purple-600 text-white">
+                  <Icon name="checkCircle" size="sm" className="mr-1" />
+                  {merchCount}
+                </Badge>
+              </div>
             )}
           </div>
-          <Button 
-            variant={hasMerchandising ? "outline" : "primary"}
-            size="md" 
-            fullWidth
-            onClick={handleCreateMerchandising}
-            disabled={hasMerchandising}
-            className={hasMerchandising ? "" : "bg-sky-600 hover:bg-sky-700"}
+
+          {/* Liste des merchandising si existants */}
+          {hasMerchandising && (
+            <div className="mb-3 space-y-2">
+              {getMerchIds(outletId).map((merchId, index) => (
+                <div 
+                  key={merchId}
+                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-purple-200 hover:border-purple-400 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                      <span className="text-purple-700 font-bold text-sm">#{index + 1}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Merchandising #{index + 1}</p>
+                      <p className="text-xs text-gray-500">ID: {merchId.slice(0, 8)}...</p>
+                    </div>
+                  </div>
+                  <Icon name="camera" size="sm" variant="primary" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bouton d'ajout */}
+          <Link 
+            to={getMerchandisingUrl()}
+            className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+              hasMerchandising 
+                ? "border-2 border-purple-600 text-purple-700 hover:bg-purple-600 hover:text-white" 
+                : "bg-sky-600 hover:bg-sky-700 text-white"
+            }`}
           >
-            <Icon name="camera" size="sm" className="mr-2" />
-            {hasMerchandising ? "Merchandising enregistré" : "Enregistrer merchandising"}
-          </Button>
-          <p className="text-sm text-gray-600 mt-2">
-            {hasMerchandising ? "Le merchandising a été effectué" :
-             !currentVisitId ? "Vous pouvez faire le merchandising - il sera lié à la visite lors de la finalisation" :
-             "Prenez des photos et remplissez la checklist"}
-          </p>
+            <Icon name="plus" size="sm" className="mr-2" />
+            {hasMerchandising ? `Ajouter le merchandising #${merchCount + 1}` : "📸 Faire mon premier merchandising"}
+          </Link>
+          
+          {/* Message informatif */}
+          <div className={`mt-3 p-2 rounded-lg ${hasMerchandising ? 'bg-purple-100' : 'bg-blue-50'}`}>
+            <p className="text-xs text-center font-medium">
+              {hasMerchandising ? (
+                <>
+                  <span className="text-purple-700">✨ {merchCount} merchandising enregistré{merchCount > 1 ? 's' : ''}</span>
+                  <br />
+                  <span className="text-gray-600">Continuez le bon travail !</span>
+                </>
+              ) : (
+                <span className="text-blue-700">
+                  {!currentVisitId 
+                    ? "Le merchandising sera lié à la visite lors de la finalisation" 
+                    : "Prenez des photos et remplissez la checklist"}
+                </span>
+              )}
+            </p>
+          </div>
         </Card>
       </div>
 

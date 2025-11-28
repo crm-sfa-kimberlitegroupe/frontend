@@ -223,6 +223,54 @@ class VisitsService {
       return null;
     }
   }
+
+  /**
+   * Mettre à jour les ventes d'une visite
+   */
+  async updateVisitOrders(visitId: string, orderIds: string[]): Promise<Visit> {
+    const response = await api.put(`/visits/${visitId}/orders`, { orderIds });
+    return response.data.data;
+  }
+
+  /**
+   * Ajouter une vente à une visite
+   */
+  async addOrderToVisit(visitId: string, orderId: string): Promise<Visit> {
+    const response = await api.post(`/visits/${visitId}/orders/${orderId}`);
+    return response.data.data;
+  }
+
+  /**
+   * Supprimer une vente d'une visite
+   */
+  async removeOrderFromVisit(visitId: string, orderId: string): Promise<Visit> {
+    const response = await api.delete(`/visits/${visitId}/orders/${orderId}`);
+    return response.data.data;
+  }
+
+  /**
+   * Mettre à jour les merchandising d'une visite
+   */
+  async updateVisitMerchandising(visitId: string, merchIds: string[]): Promise<Visit> {
+    const response = await api.put(`/visits/${visitId}/merchandising`, { merchIds });
+    return response.data.data;
+  }
+
+  /**
+   * Ajouter un merchandising à une visite
+   */
+  async addMerchandisingToVisit(visitId: string, merchId: string): Promise<Visit> {
+    const response = await api.post(`/visits/${visitId}/merchandising/${merchId}`);
+    return response.data.data;
+  }
+
+  /**
+   * Supprimer un merchandising d'une visite
+   */
+  async removeMerchandisingFromVisit(visitId: string, merchId: string): Promise<Visit> {
+    const response = await api.delete(`/visits/${visitId}/merchandising/${merchId}`);
+    return response.data.data;
+  }
 }
 
 export const visitsService = new VisitsService();
