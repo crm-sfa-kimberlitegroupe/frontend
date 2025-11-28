@@ -77,7 +77,7 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
           outletId: activeVisitFromStore.outletId,
           pdvName: encodeURIComponent(activeVisitFromStore.pdvName),
           address: encodeURIComponent(activeVisitFromStore.address || ''),
-          status: activeVisitFromStore.status,
+          status: activeVisitFromStore.status || '',
           routePlanId: activeVisitFromStore.routePlanId || todayRoute?.id || ''
         });
         

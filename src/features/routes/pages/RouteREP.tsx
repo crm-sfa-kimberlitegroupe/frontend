@@ -24,7 +24,7 @@ export default function RouteREP() {
   } = useRouteVisits();
   
   // Garder les outlets pour la carte
-  const { outlets, loading: outletsLoading, error: outletsError } = useOutletsStore();
+  const { outlets } = useOutletsStore();
 
   // Convertir les visits du hook en format RouteStop pour la carte
   const routeStops = visits.map((visit, index) => {
