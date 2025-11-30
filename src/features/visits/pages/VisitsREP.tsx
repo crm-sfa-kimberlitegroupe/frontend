@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/core/ui';
 import { useToggle } from '@/core/hooks';
 import { useAuthStore } from '@/core/auth';
-import { visitsService } from '../services/visits.service';
+import { visitsService, type Visit } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
 import { useVisitsStore, type VisitData } from '../stores/visitsStore';
 import { useRoutesStore } from '../../routes/stores/routesStore';
@@ -20,20 +20,9 @@ export default function VisitsREP() {
   
   // Utiliser les stores préchargés
   const user = useAuthStore((state) => state.user);
-  const { startVisit, findVisitByPdvName, getAllActiveVisits } = useVisitsStore();
+  const { startVisit } = useVisitsStore();
   const { todayRoute, updateRouteStopStatusLocally } = useRoutesStore();
 
-
-  // Logs uniquement si todayRoute change
-  useEffect(() => {
-    console.log("VisitsREP - todayRoute:", todayRoute);
-    console.log("VisitsREP - routeStops:", todayRoute?.routeStops?.map(s => ({
-      id: s.id,
-      outletId: s.outletId,
-      status: s.status,
-      outletName: s.outlet?.name
-    })));
-  }, [todayRoute]);
 
   
   // États pour la modale d'initialisation
@@ -44,50 +33,43 @@ export default function VisitsREP() {
 
 
 const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId: string; address?: string; status: string; scheduledTime?: string; sequence?: number }) => {
-  let createdVisit: { id: string } | null = null;
+  let createdVisit: Visit | null = null;
   
   try {
-    // Vérifier si une visite est déjà en cours pour éviter les doublons
+    // ========================================
+    // CAS 1: Visite TERMINÉE - Juste consulter
+    // ========================================
+    if (visit.status === 'COMPLETED') {
+      const params = new URLSearchParams({
+        outletId: visit.outletId,
+        pdvName: encodeURIComponent(visit.pdvName),
+        address: encodeURIComponent(visit.address || ''),
+        status: 'COMPLETED',
+        routePlanId: todayRoute?.id || ''
+      });
+      navigate(`/dashboard/visits/detail/${visit.id}?${params.toString()}`);
+      return;
+    }
+    
+    // ========================================
+    // CAS 2: Visite EN COURS
+    // ========================================
     if (visit.status === 'IN_PROGRESS') {
-      console.log('Visite déjà en cours pour:', visit.pdvName);
+      const storeState = useVisitsStore.getState();
+      const activeVisits = storeState.activeVisits;
+      const visitFromStore = activeVisits[visit.outletId];
       
-      // 🎯 RECHERCHER DANS LE STORE PAR NOM DE PDV
-      console.log('🔍 Recherche dans le store pour:', visit.pdvName);
-      console.log('📊 Toutes les visites actives dans le store:', getAllActiveVisits());
-      
-      const activeVisitFromStore = findVisitByPdvName(visit.pdvName);
-      
-      if (activeVisitFromStore) {
-        
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-        console.log('✅ Visite trouvée dans le store:', activeVisitFromStore);
-
-        
-        // Utiliser les données du store (plus fiables)
+      if (visitFromStore && visitFromStore.visitId) {
         const params = new URLSearchParams({
-          visitId: activeVisitFromStore.visitId,
-          outletId: activeVisitFromStore.outletId,
-          pdvName: encodeURIComponent(activeVisitFromStore.pdvName),
-          address: encodeURIComponent(activeVisitFromStore.address || ''),
-          status: activeVisitFromStore.status || '',
-          routePlanId: activeVisitFromStore.routePlanId || todayRoute?.id || ''
+          outletId: visit.outletId,
+          pdvName: encodeURIComponent(visit.pdvName),
+          address: encodeURIComponent(visit.address || ''),
+          status: 'IN_PROGRESS',
+          routePlanId: todayRoute?.id || ''
         });
-        
-        // Utiliser le VRAI visitId du store
-        navigate(`/dashboard/visits/detail/${activeVisitFromStore.visitId}?${params.toString()}`);
+        navigate(`/dashboard/visits/detail/${visitFromStore.visitId}?${params.toString()}`);
         return;
       } else {
-        console.warn('⚠️ Visite EN_PROGRESS mais pas trouvée dans le store. Utilisation des données de route.');
-        
-        // Fallback : utiliser les données de la route
         const params = new URLSearchParams({
           outletId: visit.outletId,
           pdvName: encodeURIComponent(visit.pdvName),
@@ -95,17 +77,31 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
           status: visit.status,
           routePlanId: todayRoute?.id || ''
         });
-        
         navigate(`/dashboard/visits/detail/${visit.id}?${params.toString()}`);
         return;
       }
     }
     
+    // ========================================
+    // CAS 3: Visite PLANIFIÉE - Faire check-in
+    // ========================================
     if (visit.status === 'PLANNED') {
       setInitPdvName(visit.pdvName);
       setShowInitModal(true);
       
-      console.log('Démarrage de la visite pour:', visit.pdvName);
+      // ====================================================================
+      // AVANT CHECK-IN: Données du RouteStop (ID local, pas encore de visite)
+      // ====================================================================
+      console.log('');
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║           AVANT CHECK-IN - DONNÉES DU ROUTESTOP           ║');
+      console.log('╠══════════════════════════════════════════════════════════════╣');
+      console.log('║ ID RouteStop (local):', visit.id);
+      console.log('║ PDV:', visit.pdvName);
+      console.log('║ OutletId:', visit.outletId);
+      console.log('║ Status:', visit.status);
+      console.log('╚══════════════════════════════════════════════════════════════╝');
+      console.log('');
       
       // Récupérer les coordonnées GPS
       let lat: number | undefined;
@@ -118,8 +114,8 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
           });
           lat = position.coords.latitude;
           lng = position.coords.longitude;
-        } catch (error) {
-          console.log('Impossible de récupérer la position GPS:', error);
+        } catch {
+          // GPS non disponible
         }
       }
 
@@ -127,11 +123,25 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
         const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
         createdVisit = newVisit;
         
-        console.log('Visite créée avec check-in:', newVisit);
-        
         if (!newVisit || !newVisit.id) {
           throw new Error('Service checkIn n\'a pas retourné de visite valide');
         }
+        
+        // ====================================================================
+        // ✅ APRÈS CHECK-IN: Réponse du Backend (NOUVEAU ID généré!)
+        // ====================================================================
+        console.log('');
+        console.log('╔══════════════════════════════════════════════════════════════╗');
+        console.log('║        ✅ APRÈS CHECK-IN - RÉPONSE DU BACKEND                ║');
+        console.log('╠══════════════════════════════════════════════════════════════╣');
+        console.log('║ 🆔 ID VISITE (BACKEND):', newVisit.id);
+        console.log('║ UserId:', newVisit.userId);
+        console.log('║ OutletId:', newVisit.outletId);
+        console.log('║ CheckinAt:', newVisit.checkinAt);
+        console.log('║ CheckinLat:', newVisit.checkinLat);
+        console.log('║ CheckinLng:', newVisit.checkinLng);
+        console.log('╚══════════════════════════════════════════════════════════════╝');
+        console.log('');
         
       } catch (checkInError) {
         console.error('Erreur lors du check-in:', checkInError);
@@ -143,46 +153,48 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
           outletId: visit.outletId,
           visitId: createdVisit.id,
           routeStopId: visit.id,
+          userId: createdVisit.userId,
           pdvName: visit.pdvName,
           address: visit.address,
+          checkinAt: createdVisit.checkinAt,
           scheduledTime: visit.scheduledTime,
+          checkinLat: createdVisit.checkinLat,
+          checkinLng: createdVisit.checkinLng,
           sequence: visit.sequence || 0,
           routePlanId: todayRoute?.id,
+          notes: createdVisit.notes,
         };
         
         startVisit(visitData);
-        console.log('Visite complète stockée dans le store:', visitData);
+        
+        // ====================================================================
+        // 💾 STOCKÉ DANS LE STORE: Comparaison des IDs
+        // ====================================================================
+        console.log('');
+        console.log('╔══════════════════════════════════════════════════════════════╗');
+        console.log('║           💾 STOCKÉ DANS LE STORE - COMPARAISON              ║');
+        console.log('╠══════════════════════════════════════════════════════════════╣');
+        console.log('║ ❌ routeStopId (ancien ID local):', visit.id);
+        console.log('║ ✅ visitId (NOUVEAU ID BACKEND):', createdVisit.id);
+        console.log('║');
+        console.log('║ 👉 L\'ID utilisé pour les opérations sera:', createdVisit.id);
+        console.log('╚══════════════════════════════════════════════════════════════╝');
+        console.log('');
       }
 
-      // Mettre à jour le statut du routeStop à IN_PROGRESS
+      // Mettre à jour le statut du routeStop
       if (todayRoute?.id) {
-        console.log('Mise à jour du statut:', {
-          routePlanId: todayRoute.id,
-          outletId: visit.outletId,
-          newStatus: 'IN_PROGRESS'
-        });
-        
         await routesService.updateRouteStopStatus(todayRoute.id, visit.outletId, 'IN_PROGRESS');
-        console.log('Statut du stop de route mis à jour vers IN_PROGRESS');
-        
-        // Mettre à jour le store localement immédiatement
         updateRouteStopStatusLocally(visit.outletId, 'IN_PROGRESS');
-        console.log('Store local mis à jour immédiatement');
       }
       
-      // Fermer la modale
       setShowInitModal(false);
     }
     
-    // Naviguer vers la page de détail de la visite (après la modale si c'était PLANNED)
+    // Naviguer vers la page de détail
     setTimeout(() => {
-      // Utiliser l'ID de la vraie visite créée si disponible, sinon l'ID original
       const visitIdToUse = visit.status === 'PLANNED' && createdVisit?.id ? createdVisit.id : visit.id;
-      console.log('ID utilisé pour ouvrir le détail:', visitIdToUse);
-      console.log('Ancien ID (visit.id):', visit.id);
-      console.log('Nouveau ID (createdVisit.id):', createdVisit?.id);
       
-      // Navigation vers la page de détail avec tous les paramètres nécessaires
       const params = new URLSearchParams({
         outletId: visit.outletId,
         pdvName: encodeURIComponent(visit.pdvName),
@@ -194,8 +206,7 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
       navigate(`/dashboard/visits/detail/${visitIdToUse}?${params.toString()}`);
     }, visit.status === 'PLANNED' ? 1500 : 0);
     
-  } catch (error) {
-    console.error('Erreur lors du démarrage de la visite:', error);
+  } catch {
     setShowInitModal(false);
     alert('Erreur lors du démarrage de la visite. Veuillez réessayer.');
   }

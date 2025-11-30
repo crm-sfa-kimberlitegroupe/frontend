@@ -5,6 +5,7 @@ import { Icon } from '@/core/ui/Icon';
 import { visitsService } from '../services/visits.service';
 import routesService from '../../routes/services/routesService';
 import { useVisitsStore } from '../stores/visitsStore';
+import { useRoutesStore } from '../../routes/stores/routesStore';
 
 interface VisitDetailProps {
   onBack: () => void;
@@ -28,26 +29,20 @@ export default function VisitDetailNew({
   routePlanId
 }: VisitDetailProps) {
   
-  // Utiliser le store Zustand au lieu de localStorage
-  const { getVenteIds, getMerchIds } = useVisitsStore();
+  // Utiliser les stores Zustand
+  const { getVenteIds, getMerchIds, completeVisit: completeVisitInStore, activeVisits } = useVisitsStore();
+  const { updateRouteStopStatusLocally } = useRoutesStore();
+  
+  // Recuperer le vrai visitId depuis le store (celui cree lors du check-in)
+  const storeVisitId = activeVisits[outletId]?.visitId;
+  const realVisitId = storeVisitId || visitId; // Priorite au store, puis prop
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
   const [notes, setNotes] = useState('');
   const [hasVente, setHasVente] = useState(false);
   const [ventesCount, setVentesCount] = useState(0);
   const [hasMerchandising, setHasMerchandising] = useState(false);
   const [merchCount, setMerchCount] = useState(0);
-  const [merchData] = useState<{
-    checklist?: Record<string, unknown>;
-    planogram?: Record<string, unknown>;
-    score?: number;
-    photos?: Array<{
-      fileKey: string;
-      lat?: number;
-      lng?: number;
-      meta?: Record<string, unknown>;
-    }>;
-  } | null>(null);
-  const [currentVisitId, setCurrentVisitId] = useState<string | null>(visitId);
+  const [currentVisitId, setCurrentVisitId] = useState<string | null>(realVisitId);
   const [lastVisit] = useState('15 Oct 2024');
   const [currentStatus, setCurrentStatus] = useState<'PLANNED' | 'IN_PROGRESS' | 'COMPLETED'>(status || 'IN_PROGRESS');
   const [venteId, setVenteId] = useState<string | null>(null);
@@ -55,47 +50,84 @@ export default function VisitDetailNew({
 
 
 
-  console.log("visitIdvisitId",visitId)
 
-
-  // Mettre à jour currentVisitId quand visitId change
+  // Mettre a jour currentVisitId quand visitId ou storeVisitId change
   useEffect(() => {
-    setCurrentVisitId(visitId);
-  }, [visitId]);
+    const newVisitId = storeVisitId || visitId;
+    setCurrentVisitId(newVisitId);
+  }, [visitId, storeVisitId]);
 
-  // Récupérer les données sauvegardées du store et utiliser le visitId passé en prop
+  // Synchroniser currentStatus avec le prop status
   useEffect(() => {
-    
-    // Vérifier s'il y a des ventes (array)
-    const venteIds = getVenteIds(outletId);
-    if (venteIds.length > 0) {
-      // Prendre la dernière vente ajoutée
-      setVenteId(venteIds[venteIds.length - 1]);
-      setHasVente(true);
-      setVentesCount(venteIds.length);
-    } else {
-      setHasVente(false);
-      setVentesCount(0);
+    if (status) {
+      setCurrentStatus(status);
     }
+  }, [status]);
+
+  // Récupérer les données - depuis le store (visite en cours) ou depuis le backend (visite terminée)
+  useEffect(() => {
+    const loadVisitData = async () => {
+      // Si visite COMPLETED, charger depuis le backend par outletId
+      if (status === 'COMPLETED') {
+        try {
+          // Utiliser outletId au lieu de visitId car visitId peut être le routeStopId
+          const visitData = await visitsService.getLatestVisitByOutlet(outletId);
+          console.log('[VisitDetailNew] Visite terminée chargée depuis backend:', visitData);
+          
+          // Vérifier les orders (ventes)
+          if (visitData.orders && visitData.orders.length > 0) {
+            setHasVente(true);
+            setVentesCount(visitData.orders.length);
+            setVenteId(visitData.orders[0].id);
+          }
+          
+          // Vérifier les merchChecks (merchandising)
+          if (visitData.merchChecks && visitData.merchChecks.length > 0) {
+            setHasMerchandising(true);
+            setMerchCount(visitData.merchChecks.length);
+            setMerchId(visitData.merchChecks[0].id);
+          }
+          
+          // Notes de la visite
+          if (visitData.notes) {
+            setNotes(visitData.notes);
+          }
+        } catch (error) {
+          console.error('[VisitDetailNew] Erreur chargement visite terminée:', error);
+        }
+        return;
+      }
+      
+      // Sinon, charger depuis le store (visite en cours)
+      const venteIds = getVenteIds(outletId);
+      if (venteIds.length > 0) {
+        setVenteId(venteIds[venteIds.length - 1]);
+        setHasVente(true);
+        setVentesCount(venteIds.length);
+      } else {
+        setHasVente(false);
+        setVentesCount(0);
+      }
+      
+      const merchIds = getMerchIds(outletId);
+      if (merchIds.length > 0) {
+        setMerchId(merchIds[merchIds.length - 1]);
+        setHasMerchandising(true);
+        setMerchCount(merchIds.length);
+      } else {
+        setHasMerchandising(false);
+        setMerchCount(0);
+      }
+      
+      // Utiliser le vrai visitId
+      const correctVisitId = storeVisitId || visitId;
+      if (correctVisitId) {
+        setCurrentVisitId(correctVisitId);
+      }
+    };
     
-    // Vérifier s'il y a des merchandising (array)
-    const merchIds = getMerchIds(outletId);
-    if (merchIds.length > 0) {
-      // Prendre le dernier merchandising ajouté
-      setMerchId(merchIds[merchIds.length - 1]);
-      setHasMerchandising(true);
-      setMerchCount(merchIds.length);
-    } else {
-      setHasMerchandising(false);
-      setMerchCount(0);
-    }
-    
-    // Utiliser le visitId qui a été créé avant d'arriver ici
-    if (visitId) {
-      setCurrentVisitId(visitId);
-      setCurrentStatus('IN_PROGRESS');
-    }
-  }, [visitId, outletId, getVenteIds, getMerchIds]);
+    loadVisitData();
+  }, [visitId, outletId, status, storeVisitId, getVenteIds, getMerchIds]);
 
   // Générer l'URL pour créer une vente
   const getVenteUrl = () => {
@@ -106,7 +138,7 @@ export default function VisitDetailNew({
     const allVisits = storeState.activeVisits;
     const visitInStore = Object.values(allVisits).find(v => v.visitId === realVisitId);
     
-    console.log('🛒 [getVenteUrl] DEBUG:', {
+    console.log('[getVenteUrl] DEBUG:', {
       currentVisitId: realVisitId,
       outletId,
       toutesLesVisites: Object.keys(allVisits),
@@ -134,16 +166,22 @@ export default function VisitDetailNew({
   };
 
 
-  // Fonction pour terminer la visite et créer tout en une fois
+  // Fonction pour terminer la visite (UPDATE uniquement, pas de creation)
   const handleTerminerVisite = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir terminer cette visite ?')) {
+    // Verifier qu'une visite existe deja
+    if (!currentVisitId) {
+      alert('Erreur: Aucune visite en cours. Veuillez d\'abord faire un check-in.');
+      return;
+    }
+
+    if (!confirm('Etes-vous sur de vouloir terminer cette visite ?')) {
       return;
     }
 
     try {
       setIsCreatingVisit(true);
 
-      // Récupérer les coordonnées GPS si disponibles
+      // Recuperer les coordonnees GPS si disponibles
       let lat: number | undefined;
       let lng: number | undefined;
       
@@ -155,132 +193,86 @@ export default function VisitDetailNew({
           lat = position.coords.latitude;
           lng = position.coords.longitude;
         } catch (error) {
-          console.log('Impossible de récupérer la position GPS:', error);
+          console.log('[VisitDetailNew] Impossible de recuperer la position GPS:', error);
         }
       }
 
-      // Si une vraie visite existe déjà (avec visitId), la compléter
-      if (currentVisitId) {
-        console.log(' [DEBUG] visitId prop:', visitId);
-        console.log(' [DEBUG] currentVisitId state:', currentVisitId);
-        
-        // Vérifier d'abord si la visite existe
-        const visitExists = await visitsService.checkVisitExists(currentVisitId);
-        console.log(' [DEBUG] Visite existe?', visitExists);
-        
-        if (!visitExists) {
-          console.warn(' Visite introuvable, nettoyage du store et création d\'une nouvelle visite');
-          // Nettoyer le store et créer une nouvelle visite
-          if (onVisitCompleted) {
-            onVisitCompleted();
-          }
-          // Continuer vers la création d'une nouvelle visite
-        } else {
-          const completeData = {
-            visitId: currentVisitId,
-            checkoutLat: lat,
-            checkoutLng: lng,
-            notes,
-            orderId: venteId || undefined,
-            merchId: merchId || undefined,
-          };
-          
-          console.log(' [VisitDetailNew] Completion de la visite:', completeData);
-          await visitsService.completeVisit(completeData);
-
-          // Mettre à jour le statut du routeStop à VISITED
-          if (routePlanId) {
-            try {
-              await routesService.updateRouteStopStatus(routePlanId, outletId, 'VISITED');
-              console.log(' [VisitDetailNew] Statut du stop de route mis à jour vers VISITED');
-            } catch (error) {
-              console.error(' [VisitDetailNew] Erreur lors de la mise à jour du statut:', error);
-              // Ne pas faire échouer toute l'opération pour cette erreur
-            }
-          }
-
-          // Les données sont automatiquement nettoyées par le store lors de onVisitCompleted
-          
-          // Message de succès et retour
-          let successMessage = 'Visite terminée et enregistrée avec succès!';
-          if (hasVente && hasMerchandising) {
-            successMessage += '\n Vente enregistrée\n Merchandising enregistré';
-          } else if (hasVente) {
-            successMessage += '\n Vente enregistrée';
-          } else if (hasMerchandising) {
-            successMessage += '\n Merchandising enregistré';
-          }
-          
-          alert(successMessage);
-          
-          // Notifier que la visite est terminée pour nettoyer le store
-          if (onVisitCompleted) {
-            onVisitCompleted();
-          }
-          
-          onBack();
-          return; // Sortir de la fonction
+      console.log('[VisitDetailNew] Completion de la visite existante:', currentVisitId);
+      
+      // Verifier que la visite existe dans la base de donnees
+      const visitExists = await visitsService.checkVisitExists(currentVisitId);
+      
+      if (!visitExists) {
+        console.error('[VisitDetailNew] Visite introuvable dans la base de donnees:', currentVisitId);
+        alert('Erreur: La visite n\'existe plus dans la base de donnees. Veuillez recommencer.');
+        // Nettoyer le store
+        if (onVisitCompleted) {
+          onVisitCompleted();
         }
+        onBack();
+        return;
       }
 
-      // Créer une visite complète (si pas de visite existante ou si elle n'existe plus)
-      const visitData = {
-        outletId,
-        checkinLat: lat,
-        checkinLng: lng,
+      // Preparer les donnees pour l'UPDATE de la visite
+      const completeData = {
+        visitId: currentVisitId,
+        checkoutLat: lat,
+        checkoutLng: lng,
         notes,
-        score: undefined,
-        merchCheck: hasMerchandising ? merchData : undefined,
         orderId: venteId || undefined,
+        merchId: merchId || undefined,
       };
       
-      console.log(' [VisitDetailNew] Envoi des données de visite:', visitData);
-      const visit = await visitsService.createCompleteVisit(visitData);
+      console.log('[VisitDetailNew] Envoi UPDATE visite:', completeData);
       
-      console.log(' [VisitDetailNew] Visite créée avec succès:', visit);
+      // UPDATE de la visite existante (pas de creation)
+      await visitsService.completeVisit(completeData);
       
-      // Vérifier que la visite a bien été créée
-      if (!visit || !visit.id) {
-        console.error(' [VisitDetailNew] Visite invalide retournée par l\'API:', visit);
-        throw new Error('La visite n\'a pas pu être créée correctement');
-      }
-      
-      setCurrentVisitId(visit.id);
+      console.log('[VisitDetailNew] Visite mise a jour avec succes');
 
-      // Mettre à jour le statut du routeStop à VISITED
+      // Mettre a jour le statut dans le store Zustand vers COMPLETED
+      completeVisitInStore(outletId);
+      console.log('[VisitDetailNew] Store mis a jour - statut COMPLETED pour outletId:', outletId);
+      
+      // Mettre a jour le statut local
+      setCurrentStatus('COMPLETED');
+
+      // Mettre a jour le statut du routeStop a VISITED dans le routesStore (pour changement de couleur immediat)
+      updateRouteStopStatusLocally(outletId, 'VISITED');
+      console.log('[VisitDetailNew] RoutesStore mis a jour - statut VISITED pour outletId:', outletId);
+
+      // Mettre a jour le statut du routeStop a VISITED via l'API
       if (routePlanId) {
         try {
           await routesService.updateRouteStopStatus(routePlanId, outletId, 'VISITED');
-          console.log(' [VisitDetailNew] Statut du stop de route mis à jour vers VISITED');
+          console.log('[VisitDetailNew] Statut du stop de route mis a jour vers VISITED (API)');
         } catch (error) {
-          console.error(' [VisitDetailNew] Erreur lors de la mise à jour du statut:', error);
-          // Ne pas faire échouer toute l'opération pour cette erreur
+          console.error('[VisitDetailNew] Erreur lors de la mise a jour du statut route:', error);
+          // Ne pas faire echouer toute l'operation pour cette erreur
         }
-      } else {
-        console.warn(' [VisitDetailNew] Pas de routePlanId fourni, impossible de mettre à jour le statut');
       }
 
-      // Message de succès avec détails
-      let successMessage = 'Visite terminée et enregistrée avec succès!';
+      // Message de succes
+      let successMessage = 'Visite terminee et enregistree avec succes!';
       if (hasVente && hasMerchandising) {
-        successMessage += '\n Vente enregistrée\n Merchandising enregistré';
+        successMessage += '\nVente enregistree\nMerchandising enregistre';
       } else if (hasVente) {
-        successMessage += '\n Vente enregistrée';
+        successMessage += '\nVente enregistree';
       } else if (hasMerchandising) {
-        successMessage += '\n Merchandising enregistré';
+        successMessage += '\nMerchandising enregistre';
       }
       
       alert(successMessage);
       
-      // Notifier que la visite est terminée pour nettoyer le store
+      // Notifier que la visite est terminee (pour nettoyage eventuel)
       if (onVisitCompleted) {
         onVisitCompleted();
       }
       
       onBack();
     } catch (error) {
-      console.error('Erreur lors de la création de la visite:', error);
-      alert('Erreur lors de l\'enregistrement de la visite. Veuillez réessayer.');
+      console.error('[VisitDetailNew] Erreur lors de la mise a jour de la visite:', error);
+      alert('Erreur lors de l\'enregistrement de la visite. Veuillez reessayer.');
     } finally {
       setIsCreatingVisit(false);
     }
@@ -358,28 +350,42 @@ export default function VisitDetailNew({
             </div>
           )}
 
-          {/* Bouton d'ajout */}
-          <Link 
-            to={getVenteUrl()}
-            className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
-              hasVente 
-                ? "border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white" 
-                : "bg-sky-600 hover:bg-sky-700 text-white"
-            }`}
-          >
-            <Icon name="plus" size="sm" className="mr-2" />
-            {hasVente ? `Ajouter la vente #${ventesCount + 1}` : "🛒 Créer ma première vente"}
-          </Link>
+          {/* Bouton d'ajout - Masqué si visite terminée */}
+          {currentStatus !== 'COMPLETED' ? (
+            <Link 
+              to={getVenteUrl()}
+              className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                hasVente 
+                  ? "border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white" 
+                  : "bg-sky-600 hover:bg-sky-700 text-white"
+              }`}
+            >
+              <Icon name="plus" size="sm" className="mr-2" />
+              {hasVente ? `Ajouter la vente #${ventesCount + 1}` : "🛒 Créer ma première vente"}
+            </Link>
+          ) : (
+            !hasVente && (
+              <div className="text-center text-gray-500 text-sm py-2">
+                Aucune vente enregistrée
+              </div>
+            )
+          )}
           
           {/* Message informatif */}
-          <div className={`mt-3 p-2 rounded-lg ${hasVente ? 'bg-emerald-100' : 'bg-blue-50'}`}>
+          <div className={`mt-3 p-2 rounded-lg ${hasVente ? 'bg-emerald-100' : currentStatus === 'COMPLETED' ? 'bg-gray-100' : 'bg-blue-50'}`}>
             <p className="text-xs text-center font-medium">
               {hasVente ? (
                 <>
                   <span className="text-emerald-700">✨ {ventesCount} vente{ventesCount > 1 ? 's' : ''} enregistrée{ventesCount > 1 ? 's' : ''}</span>
-                  <br />
-                  <span className="text-gray-600">Continuez à vendre !</span>
+                  {currentStatus !== 'COMPLETED' && (
+                    <>
+                      <br />
+                      <span className="text-gray-600">Continuez à vendre !</span>
+                    </>
+                  )}
                 </>
+              ) : currentStatus === 'COMPLETED' ? (
+                <span className="text-gray-500">Pas de vente durant cette visite</span>
               ) : (
                 <span className="text-blue-700">
                   {!currentVisitId 
@@ -431,28 +437,42 @@ export default function VisitDetailNew({
             </div>
           )}
 
-          {/* Bouton d'ajout */}
-          <Link 
-            to={getMerchandisingUrl()}
-            className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
-              hasMerchandising 
-                ? "border-2 border-purple-600 text-purple-700 hover:bg-purple-600 hover:text-white" 
-                : "bg-sky-600 hover:bg-sky-700 text-white"
-            }`}
-          >
-            <Icon name="plus" size="sm" className="mr-2" />
-            {hasMerchandising ? `Ajouter le merchandising #${merchCount + 1}` : "📸 Faire mon premier merchandising"}
-          </Link>
+          {/* Bouton d'ajout - Masqué si visite terminée */}
+          {currentStatus !== 'COMPLETED' ? (
+            <Link 
+              to={getMerchandisingUrl()}
+              className={`inline-flex items-center justify-center w-full px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                hasMerchandising 
+                  ? "border-2 border-purple-600 text-purple-700 hover:bg-purple-600 hover:text-white" 
+                  : "bg-sky-600 hover:bg-sky-700 text-white"
+              }`}
+            >
+              <Icon name="plus" size="sm" className="mr-2" />
+              {hasMerchandising ? `Ajouter le merchandising #${merchCount + 1}` : "📸 Faire mon premier merchandising"}
+            </Link>
+          ) : (
+            !hasMerchandising && (
+              <div className="text-center text-gray-500 text-sm py-2">
+                Aucun merchandising enregistré
+              </div>
+            )
+          )}
           
           {/* Message informatif */}
-          <div className={`mt-3 p-2 rounded-lg ${hasMerchandising ? 'bg-purple-100' : 'bg-blue-50'}`}>
+          <div className={`mt-3 p-2 rounded-lg ${hasMerchandising ? 'bg-purple-100' : currentStatus === 'COMPLETED' ? 'bg-gray-100' : 'bg-blue-50'}`}>
             <p className="text-xs text-center font-medium">
               {hasMerchandising ? (
                 <>
                   <span className="text-purple-700">✨ {merchCount} merchandising enregistré{merchCount > 1 ? 's' : ''}</span>
-                  <br />
-                  <span className="text-gray-600">Continuez le bon travail !</span>
+                  {currentStatus !== 'COMPLETED' && (
+                    <>
+                      <br />
+                      <span className="text-gray-600">Continuez le bon travail !</span>
+                    </>
+                  )}
                 </>
+              ) : currentStatus === 'COMPLETED' ? (
+                <span className="text-gray-500">Pas de merchandising durant cette visite</span>
               ) : (
                 <span className="text-blue-700">
                   {!currentVisitId 
@@ -471,13 +491,19 @@ export default function VisitDetailNew({
           <Icon name="note" size="md" variant="primary" />
           Notes sur la visite
         </h3>
-        <textarea 
-          className="w-full border border-gray-300 rounded-lg p-3 text-lg"
-          rows={4}
-          placeholder="Ajouter des notes sur cette visite..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
+        {currentStatus === 'COMPLETED' ? (
+          <div className="w-full border border-gray-200 rounded-lg p-3 text-lg bg-gray-50 min-h-[100px]">
+            {notes || <span className="text-gray-400 italic">Aucune note enregistrée</span>}
+          </div>
+        ) : (
+          <textarea 
+            className="w-full border border-gray-300 rounded-lg p-3 text-lg"
+            rows={4}
+            placeholder="Ajouter des notes sur cette visite..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        )}
       </Card>
 
       {/* Résumé des actions effectuées */}
@@ -503,32 +529,64 @@ export default function VisitDetailNew({
         </Card>
       )}
 
-      {/* Bouton TERMINER */}
-      <Button 
-        variant="success" 
-        size="lg" 
-        fullWidth
-        disabled={isCreatingVisit}
-        onClick={handleTerminerVisite}
-        className="bg-emerald-600 hover:bg-emerald-700"
-      >
-        {isCreatingVisit ? (
-          <>
-            <Icon name="refresh" size="md" className="mr-2 animate-spin" />
-            Enregistrement de la visite...
-          </>
-        ) : (
-          <>
-            <Icon name="checkCircle" size="md" className="mr-2" />
-            TERMINER LA VISITE
-          </>
-        )}
-      </Button>
-      
-      {!hasVente && !hasMerchandising && (
-        <p className="text-sm text-gray-500 text-center mt-2">
-          La visite sera enregistrée même si aucune action n'a été effectuée
-        </p>
+      {/* Bouton TERMINER ou Badge TERMINÉE */}
+      {currentStatus === 'COMPLETED' ? (
+        <Card className="p-6 bg-emerald-50 border-2 border-emerald-500">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center">
+              <Icon name="checkCircle" size="lg" className="text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-emerald-700">Visite Terminée</h3>
+            <p className="text-emerald-600 text-center">
+              Cette visite a été complétée avec succès
+            </p>
+            {(hasVente || hasMerchandising) && (
+              <div className="flex gap-4 mt-2">
+                {hasVente && (
+                  <div className="flex items-center gap-2 bg-emerald-100 px-3 py-1 rounded-full">
+                    <Icon name="cart" size="sm" variant="green" />
+                    <span className="text-emerald-700 font-medium">{ventesCount} vente{ventesCount > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {hasMerchandising && (
+                  <div className="flex items-center gap-2 bg-purple-100 px-3 py-1 rounded-full">
+                    <Icon name="camera" size="sm" variant="primary" />
+                    <span className="text-purple-700 font-medium">{merchCount} merch</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <>
+          <Button 
+            variant="success" 
+            size="lg" 
+            fullWidth
+            disabled={isCreatingVisit}
+            onClick={handleTerminerVisite}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            {isCreatingVisit ? (
+              <>
+                <Icon name="refresh" size="md" className="mr-2 animate-spin" />
+                Enregistrement de la visite...
+              </>
+            ) : (
+              <>
+                <Icon name="checkCircle" size="md" className="mr-2" />
+                TERMINER LA VISITE
+              </>
+            )}
+          </Button>
+          
+          {!hasVente && !hasMerchandising && (
+            <p className="text-sm text-gray-500 text-center mt-2">
+              La visite sera enregistrée même si aucune action n'a été effectuée
+            </p>
+          )}
+        </>
       )}
     </div>
   );

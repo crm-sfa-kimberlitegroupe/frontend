@@ -154,10 +154,33 @@ class VisitsService {
    */
   async checkVisitExists(visitId: string): Promise<boolean> {
     try {
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║        CHECK VISIT EXISTS - APPEL API                     ║');
+      console.log('╠══════════════════════════════════════════════════════════════╣');
+      console.log('║ URL appelée: GET /visits/' + visitId);
+      
       const response = await api.get(`/visits/${visitId}`);
-      return !!response.data.data;
-    } catch (error) {
-      console.log('Visite non trouvée:', visitId);
+      
+      console.log('║ Réponse brute:', response);
+      console.log('║ response.data:', response.data);
+      console.log('║ response.data.data:', response.data?.data);
+      
+      // Le backend peut retourner soit { data: visit } soit directement la visit
+      const visit = response.data?.data || response.data;
+      const exists = !!(visit && visit.id);
+      
+      console.log('║ Visit extraite:', visit);
+      console.log('║ Existe?:', exists);
+      console.log('╚══════════════════════════════════════════════════════════════╝');
+      
+      return exists;
+    } catch (err) {
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║        ❌ CHECK VISIT EXISTS - ERREUR                        ║');
+      console.log('╠══════════════════════════════════════════════════════════════╣');
+      console.log('║ visitId:', visitId);
+      console.log('║ Erreur:', err);
+      console.log('╚══════════════════════════════════════════════════════════════╝');
       return false;
     }
   }
@@ -188,11 +211,30 @@ class VisitsService {
   }
 
   /**
-   * Récupérer une visite par ID
+   * Récupérer une visite par ID avec ses relations (orders, merchChecks)
    */
   async getVisitById(id: string): Promise<Visit> {
+    console.log('[visitsService] Chargement visite par ID:', id);
     const response = await api.get(`/visits/${id}`);
-    return response.data.data;
+    const visit = response.data?.data || response.data;
+    return visit;
+  }
+
+  /**
+   * Récupérer la dernière visite d'un PDV par outletId
+   */
+  async getLatestVisitByOutlet(outletId: string): Promise<Visit> {
+    console.log('[visitsService] Chargement dernière visite pour outlet:', outletId);
+    const response = await api.get(`/visits/outlet/${outletId}/latest`);
+    console.log('[visitsService] Réponse getLatestVisitByOutlet:', response.data);
+    
+    const visit = response.data?.data || response.data;
+    
+    console.log('[visitsService] Visite extraite:', visit);
+    console.log('[visitsService] Orders:', visit?.orders?.length || 0);
+    console.log('[visitsService] MerchChecks:', visit?.merchChecks?.length || 0);
+    
+    return visit;
   }
 
   /**

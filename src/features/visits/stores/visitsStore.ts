@@ -1,47 +1,69 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+
+
+
+
+
+
+
+
 interface ActiveVisit {
   // IDs principaux
   outletId: string;
-  visitId: string;
-  routeStopId: string;  // ID du RouteStop dans la route
+  visitId: string;          // ID de la visite créée par le BACKEND (important!)
+  routeStopId: string;      // ID du RouteStop dans la route (différent de visitId)
+  userId?: string;          // ID de l'utilisateur (du backend)
   
   // Informations du PDV
   pdvName: string;
   address?: string;
   
   // Données temporelles
-  createdAt: string;
-  checkInTime?: string;   // Heure réelle de check-in
-  checkOutTime?: string;  // Heure réelle de check-out
-  scheduledTime?: string; // Heure prévue dans la route
+  createdAt: string;        // Timestamp de création dans le store
+  checkinAt?: string;       // Timestamp du check-in (du backend)
+  checkoutAt?: string;      // Timestamp du check-out (du backend)
+  scheduledTime?: string;   // Heure prévue dans la route
+  
+  // Données GPS du check-in (du backend)
+  checkinLat?: number;
+  checkinLng?: number;
   
   // Données de route
-  sequence: number;       // Ordre dans la route
-  routePlanId?: string;   // ID du plan de route
+  sequence: number;         // Ordre dans la route
+  routePlanId?: string;     // ID du plan de route
   
   // Statut et actions
   status: 'IN_PROGRESS' | 'COMPLETED';
-  venteIds?: string[];    // IDs des ventes associées (array)
-  merchIds?: string[];    // IDs des merchandising associés (array)
+  venteIds?: string[];      // IDs des ventes associées (array)
+  merchIds?: string[];      // IDs des merchandising associés (array)
+  
+  // Notes et score
+  notes?: string;
+  score?: number;
 }
 
 export interface VisitData {
   // IDs principaux
   outletId: string;
-  visitId: string;
-  routeStopId: string;
+  visitId: string;          // ID de la visite créée par le BACKEND
+  routeStopId: string;      // ID du RouteStop (différent!)
+  userId?: string;          // ID de l'utilisateur (du backend)
   
   // Informations du PDV
   pdvName: string;
   address?: string;
   
-  // Données temporelles
+  // Données temporelles (du backend)
   createdAt?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
-  scheduledTime?: string;
+  checkinAt?: string;       // Timestamp du check-in
+  checkoutAt?: string;      // Timestamp du check-out
+  scheduledTime?: string;   // Heure prévue dans la route
+  
+  // Données GPS du check-in (du backend)
+  checkinLat?: number;
+  checkinLng?: number;
   
   // Données de route
   sequence: number;
@@ -49,6 +71,10 @@ export interface VisitData {
   
   // Statut et actions
   status?: 'IN_PROGRESS' | 'COMPLETED';
+  
+  // Notes et score
+  notes?: string;
+  score?: number;
 }
 
 interface VisitsStore {
@@ -73,6 +99,7 @@ interface VisitsStore {
   updateVisitAddVenteId: (visitId: string, venteId: string) => void;  // Update visite par visitId
   removeVenteId: (outletId: string, venteId: string) => void;
   getVenteIds: (outletId: string) => string[];
+  
   addMerchId: (outletId: string, merchId: string) => void;
   updateVisitAddMerchId: (visitId: string, merchId: string) => void;  // Update visite par visitId
   removeMerchId: (outletId: string, merchId: string) => void;
@@ -99,24 +126,40 @@ export const useVisitsStore = create<VisitsStore>()(
       _version: 1,
       
       startVisit: (visitData: VisitData) => {
-        console.log('[VisitsStore] Démarrage visite:', visitData);
         set((state) => ({
           activeVisits: {
             ...state.activeVisits,
             [visitData.outletId]: {
+              // IDs principaux (visitId vient du BACKEND!)
               outletId: visitData.outletId,
-              visitId: visitData.visitId,
-              routeStopId: visitData.routeStopId,
+              visitId: visitData.visitId,           // ID généré par le backend
+              routeStopId: visitData.routeStopId,   // ID du routeStop (différent!)
+              userId: visitData.userId,
+              
+              // Infos PDV
               pdvName: visitData.pdvName,
               address: visitData.address,
+              
+              // Données temporelles du backend
+              createdAt: new Date().toISOString(),
+              checkinAt: visitData.checkinAt,       // Timestamp du backend
               scheduledTime: visitData.scheduledTime,
+              
+              // Coordonnées GPS du check-in
+              checkinLat: visitData.checkinLat,
+              checkinLng: visitData.checkinLng,
+              
+              // Route
               sequence: visitData.sequence,
               routePlanId: visitData.routePlanId,
-              createdAt: new Date().toISOString(),
-              checkInTime: new Date().toISOString(),
+              
+              // Statut
               status: 'IN_PROGRESS',
-              venteIds: [],    // Initialiser le tableau des ventes
-              merchIds: [],    // Initialiser le tableau des merchandising
+              venteIds: [],
+              merchIds: [],
+              
+              // Notes
+              notes: visitData.notes,
             },
           },
           _persistedAt: new Date().toISOString(),
@@ -328,6 +371,8 @@ export const useVisitsStore = create<VisitsStore>()(
           };
         });
       },
+
+      
       
       // Récupérer les IDs des ventes
       getVenteIds: (outletId: string) => {
@@ -457,7 +502,7 @@ export const useVisitsStore = create<VisitsStore>()(
         );
       },
       
-      // 🆕 Rechercher une visite par visitId
+      //Rechercher une visite par visitId
       findVisitByVisitId: (visitId: string) => {
         const state = get();
         const visits = Object.values(state.activeVisits);
