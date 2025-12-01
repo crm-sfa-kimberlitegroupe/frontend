@@ -66,22 +66,16 @@ class VisitsService {
    * Utilisé quand le vendeur termine directement sa visite avec les actions
    */
   async createCompleteVisit(data: CreateVisitData): Promise<Visit> {
-    console.log('[visitsService] Envoi vers POST /visits/complete:', data);
     const response = await api.post('/visits/complete', data);
-    console.log('[visitsService] Réponse complète:', response);
-    console.log('[visitsService] response.data:', response.data);
     
     // Le backend peut retourner soit { statusCode, message, data } soit directement la visite
     const visit = response.data.data || response.data;
     
-    // Vérifier si c'est bien un objet visite (doit avoir un id)
+    // Verifier si c'est bien un objet visite (doit avoir un id)
     if (!visit || !visit.id) {
-      console.error('[visitsService] Pas de visite valide dans la réponse');
-      console.error('[visitsService] Structure reçue:', JSON.stringify(response.data, null, 2));
-      throw new Error('La réponse de l\'API ne contient pas de visite valide');
+      throw new Error('La reponse de l\'API ne contient pas de visite valide');
     }
     
-    console.log('[visitsService] Visite reçue avec ID:', visit.id);
     return visit;
   }
 
@@ -98,41 +92,24 @@ class VisitsService {
    * Check-in : Début d'une visite
    */
   async checkIn(outletId: string, lat?: number, lng?: number, notes?: string): Promise<Visit> {
-    console.log('[visitsService] Appel API check-in avec:', { outletId, checkinLat: lat, checkinLng: lng, notes });
+    const response = await api.post('/visits/check-in', {
+      outletId,
+      checkinLat: lat,
+      checkinLng: lng,
+      notes,
+    });
     
-    try {
-      const response = await api.post('/visits/check-in', {
-        outletId,
-        checkinLat: lat,
-        checkinLng: lng,
-        notes,
-      });
-      
-      console.log('[visitsService] Réponse brute API:', response);
-      console.log('[visitsService] response.data:', response.data);
-      console.log('[visitsService] response.data.data:', response.data.data);
-      
-      // Essayer différentes structures de réponse
-      let visit = response.data.data;
-      if (!visit && response.data) {
-        // Peut-être que la visite est directement dans response.data
-        visit = response.data;
-        console.log('[visitsService] Essai avec response.data directement:', visit);
-      }
-      
-      if (!visit || !visit.id) {
-        console.error('[visitsService] Aucune visite valide dans la réponse');
-        console.error('[visitsService] Structure complète:', JSON.stringify(response.data, null, 2));
-        throw new Error('Réponse API invalide - pas de visite retournée');
-      }
-      
-      console.log('[visitsService] Visite extraite avec succès:', visit);
-      return visit;
-      
-    } catch (error) {
-      console.error('[visitsService] Erreur lors du check-in:', error);
-      throw error;
+    // Essayer differentes structures de reponse
+    let visit = response.data.data;
+    if (!visit && response.data) {
+      visit = response.data;
     }
+    
+    if (!visit || !visit.id) {
+      throw new Error('Reponse API invalide - pas de visite retournee');
+    }
+    
+    return visit;
   }
 
   /**
@@ -154,33 +131,10 @@ class VisitsService {
    */
   async checkVisitExists(visitId: string): Promise<boolean> {
     try {
-      console.log('╔══════════════════════════════════════════════════════════════╗');
-      console.log('║        CHECK VISIT EXISTS - APPEL API                     ║');
-      console.log('╠══════════════════════════════════════════════════════════════╣');
-      console.log('║ URL appelée: GET /visits/' + visitId);
-      
       const response = await api.get(`/visits/${visitId}`);
-      
-      console.log('║ Réponse brute:', response);
-      console.log('║ response.data:', response.data);
-      console.log('║ response.data.data:', response.data?.data);
-      
-      // Le backend peut retourner soit { data: visit } soit directement la visit
       const visit = response.data?.data || response.data;
-      const exists = !!(visit && visit.id);
-      
-      console.log('║ Visit extraite:', visit);
-      console.log('║ Existe?:', exists);
-      console.log('╚══════════════════════════════════════════════════════════════╝');
-      
-      return exists;
-    } catch (err) {
-      console.log('╔══════════════════════════════════════════════════════════════╗');
-      console.log('║        ❌ CHECK VISIT EXISTS - ERREUR                        ║');
-      console.log('╠══════════════════════════════════════════════════════════════╣');
-      console.log('║ visitId:', visitId);
-      console.log('║ Erreur:', err);
-      console.log('╚══════════════════════════════════════════════════════════════╝');
+      return !!(visit && visit.id);
+    } catch {
       return false;
     }
   }
@@ -214,7 +168,6 @@ class VisitsService {
    * Récupérer une visite par ID avec ses relations (orders, merchChecks)
    */
   async getVisitById(id: string): Promise<Visit> {
-    console.log('[visitsService] Chargement visite par ID:', id);
     const response = await api.get(`/visits/${id}`);
     const visit = response.data?.data || response.data;
     return visit;
@@ -224,16 +177,8 @@ class VisitsService {
    * Récupérer la dernière visite d'un PDV par outletId
    */
   async getLatestVisitByOutlet(outletId: string): Promise<Visit> {
-    console.log('[visitsService] Chargement dernière visite pour outlet:', outletId);
     const response = await api.get(`/visits/outlet/${outletId}/latest`);
-    console.log('[visitsService] Réponse getLatestVisitByOutlet:', response.data);
-    
     const visit = response.data?.data || response.data;
-    
-    console.log('[visitsService] Visite extraite:', visit);
-    console.log('[visitsService] Orders:', visit?.orders?.length || 0);
-    console.log('[visitsService] MerchChecks:', visit?.merchChecks?.length || 0);
-    
     return visit;
   }
 
@@ -260,8 +205,7 @@ class VisitsService {
     try {
       const response = await api.get('/visits/active');
       return response.data.data || null;
-    } catch (error) {
-      console.log('Aucune visite active trouvée');
+    } catch {
       return null;
     }
   }

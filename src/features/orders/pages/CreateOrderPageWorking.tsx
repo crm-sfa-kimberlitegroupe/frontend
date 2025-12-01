@@ -76,8 +76,7 @@ export const CreateOrderPage = () => {
       const stockData = Array.isArray(response) ? response : (response.data || response);
       
       setAvailableStock(stockData);
-    } catch (error) {
-      console.error('Erreur chargement stock:', error);
+    } catch {
       setError('Erreur lors du chargement du stock');
     } finally {
       setLoadingStock(false);
@@ -193,12 +192,10 @@ export const CreateOrderPage = () => {
       
       // Utiliser le service api comme dans ProductHierarchy
       const response = await api.post('/orders', orderData);
-      console.log('[CreateOrderPage] Réponse API:', response);
       
       // Le backend retourne { success, message, order }
       // Extraire l'order correctement selon la structure de reponse
       const newOrder = response?.order || response?.data?.order || response?.data;
-      console.log('[CreateOrderPage] Order extrait:', newOrder);
 
 
 
@@ -206,13 +203,11 @@ export const CreateOrderPage = () => {
 
       if (newOrder) {
         addOrder(newOrder);
-        console.log('[CreateOrderPage] Vente creee et ajoutee au store:', newOrder.id);
       }
       
-      // Mettre à jour la visite existante avec l'ID de la vente
+      // Mettre a jour la visite existante avec l'ID de la vente
       if (newOrder?.id && visitId) {
         updateVisitAddVenteId(visitId, newOrder.id);
-        console.log('[CreateOrderPage] Visite mise a jour avec vente:', { visitId, venteId: newOrder.id });
       }
       
       setSuccess(true);
@@ -226,7 +221,6 @@ export const CreateOrderPage = () => {
         }
       }, 2000);
     } catch (err: unknown) {
-      console.error('Erreur création vente:', err);
       if (err && typeof err === 'object' && 'response' in err) {
         const response = (err as { response?: { data?: { message?: string } } }).response;
         setError(response?.data?.message || 'Erreur lors de la création de la vente');

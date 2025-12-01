@@ -89,19 +89,7 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
       setInitPdvName(visit.pdvName);
       setShowInitModal(true);
       
-      // ====================================================================
-      // AVANT CHECK-IN: Données du RouteStop (ID local, pas encore de visite)
-      // ====================================================================
-      console.log('');
-      console.log('╔══════════════════════════════════════════════════════════════╗');
-      console.log('║           AVANT CHECK-IN - DONNÉES DU ROUTESTOP           ║');
-      console.log('╠══════════════════════════════════════════════════════════════╣');
-      console.log('║ ID RouteStop (local):', visit.id);
-      console.log('║ PDV:', visit.pdvName);
-      console.log('║ OutletId:', visit.outletId);
-      console.log('║ Status:', visit.status);
-      console.log('╚══════════════════════════════════════════════════════════════╝');
-      console.log('');
+
       
       // Récupérer les coordonnées GPS
       let lat: number | undefined;
@@ -119,33 +107,11 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
         }
       }
 
-      try {
-        const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
-        createdVisit = newVisit;
-        
-        if (!newVisit || !newVisit.id) {
-          throw new Error('Service checkIn n\'a pas retourné de visite valide');
-        }
-        
-        // ====================================================================
-        // ✅ APRÈS CHECK-IN: Réponse du Backend (NOUVEAU ID généré!)
-        // ====================================================================
-        console.log('');
-        console.log('╔══════════════════════════════════════════════════════════════╗');
-        console.log('║        ✅ APRÈS CHECK-IN - RÉPONSE DU BACKEND                ║');
-        console.log('╠══════════════════════════════════════════════════════════════╣');
-        console.log('║ 🆔 ID VISITE (BACKEND):', newVisit.id);
-        console.log('║ UserId:', newVisit.userId);
-        console.log('║ OutletId:', newVisit.outletId);
-        console.log('║ CheckinAt:', newVisit.checkinAt);
-        console.log('║ CheckinLat:', newVisit.checkinLat);
-        console.log('║ CheckinLng:', newVisit.checkinLng);
-        console.log('╚══════════════════════════════════════════════════════════════╝');
-        console.log('');
-        
-      } catch (checkInError) {
-        console.error('Erreur lors du check-in:', checkInError);
-        throw checkInError;
+      const newVisit = await visitsService.checkIn(visit.outletId, lat, lng);
+      createdVisit = newVisit;
+      
+      if (!newVisit || !newVisit.id) {
+        throw new Error('Service checkIn n\'a pas retourné de visite valide');
       }
 
       if (createdVisit?.id) {
@@ -166,20 +132,6 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
         };
         
         startVisit(visitData);
-        
-        // ====================================================================
-        // 💾 STOCKÉ DANS LE STORE: Comparaison des IDs
-        // ====================================================================
-        console.log('');
-        console.log('╔══════════════════════════════════════════════════════════════╗');
-        console.log('║           💾 STOCKÉ DANS LE STORE - COMPARAISON              ║');
-        console.log('╠══════════════════════════════════════════════════════════════╣');
-        console.log('║ ❌ routeStopId (ancien ID local):', visit.id);
-        console.log('║ ✅ visitId (NOUVEAU ID BACKEND):', createdVisit.id);
-        console.log('║');
-        console.log('║ 👉 L\'ID utilisé pour les opérations sera:', createdVisit.id);
-        console.log('╚══════════════════════════════════════════════════════════════╝');
-        console.log('');
       }
 
       // Mettre à jour le statut du routeStop
@@ -229,8 +181,6 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
       visitStatus = 'PLANNED';
     }
     
-    console.log(`[VisitsREP] Stop ${outlet?.name}: ${stop.status} → ${visitStatus}`);
-    
     return {
       id: stop.id,
       pdvName: outlet?.name || 'PDV Inconnu',
@@ -245,12 +195,6 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
     };
   }) || [];
 
-  // Log des visites construites uniquement si elles changent
-  useEffect(() => {
-    console.log("VisitsREP - visits construites:", visits.length, visits);
-  }, [visits.length]);
-
-  
   // Récupérer le secteur depuis l'utilisateur (simuler pour le développement)
   const sector = user ? {
     id: 'sector-1',

@@ -2,13 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 
-
-
-
-
-
-
-
 interface ActiveVisit {
   // IDs principaux
   outletId: string;
@@ -78,10 +71,13 @@ export interface VisitData {
 }
 
 interface VisitsStore {
-  // Visites actives indexées par outletId
+  // Visites actives indexees par outletId
   activeVisits: Record<string, ActiveVisit>;
   
-  // Métadonnées de persistance
+  // Signal pour declencher le rechargement des donnees apres ajout de vente
+  lastVenteAddedAt: number;
+  
+  // Metadonnees de persistance
   _persistedAt?: string;
   _version?: number;
   
@@ -121,6 +117,7 @@ export const useVisitsStore = create<VisitsStore>()(
   persist(
     (set, get) => ({
       activeVisits: {},
+      lastVenteAddedAt: 0,
       isSyncing: false,
       _persistedAt: new Date().toISOString(),
       _version: 1,
@@ -188,7 +185,6 @@ export const useVisitsStore = create<VisitsStore>()(
       },
       
       clearVisit: (outletId: string) => {
-        console.log('[VisitsStore] Suppression visite:', outletId);
         set((state) => {
           const newActiveVisits = { ...state.activeVisits };
           delete newActiveVisits[outletId];
@@ -200,16 +196,14 @@ export const useVisitsStore = create<VisitsStore>()(
       },
       
       clearAllVisits: () => {
-        console.warn('[VisitsStore] Suppression TOUTES les visites - Utilisez clearCompletedVisits() à la place');
         set({ 
           activeVisits: {},
           _persistedAt: new Date().toISOString()
         });
       },
       
-      // Nouvelle méthode : Supprimer uniquement les visites terminées
+      // Supprimer uniquement les visites terminees
       clearCompletedVisits: () => {
-        console.log('[VisitsStore] Nettoyage des visites terminées');
         set((state) => {
           const activeVisits = Object.entries(state.activeVisits)
             .filter(([, visit]) => visit.status === 'IN_PROGRESS')
@@ -222,9 +216,8 @@ export const useVisitsStore = create<VisitsStore>()(
         });
       },
       
-      // Nouvelle méthode : Nettoyer les visites expirées (> 24h)
+      // Nettoyer les visites expirees (> 24h)
       cleanupExpiredVisits: () => {
-        console.log('[VisitsStore] Nettoyage des visites expirées');
         set((state) => {
           const now = new Date().getTime();
           const maxAge = 24 * 60 * 60 * 1000; // 24 heures
@@ -236,11 +229,6 @@ export const useVisitsStore = create<VisitsStore>()(
               return age < maxAge; // Garder seulement si < 24h
             })
             .reduce((acc, [key, visit]) => ({ ...acc, [key]: visit }), {});
-          
-          const removedCount = Object.keys(state.activeVisits).length - Object.keys(activeVisits).length;
-          if (removedCount > 0) {
-            console.log(`[VisitsStore] ${removedCount} visite(s) expirée(s) supprimée(s)`);
-          }
           
           return { 
             activeVisits,
@@ -270,58 +258,31 @@ export const useVisitsStore = create<VisitsStore>()(
           };
         });
       },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       
-      //Mettre à jour une visite existante : ajouter une vente (par visitId)
+      // Mettre a jour une visite existante : ajouter une vente (par visitId)
       updateVisitAddVenteId: (visitId: string, venteId: string) => {
-        console.log('🔄 [updateVisitAddVenteId] DÉBUT - Paramètres reçus:', { visitId, venteId });
-        
         set((state) => {
-          console.log('🔍 [updateVisitAddVenteId] Visites dans le store:', Object.keys(state.activeVisits));
-          console.log('🔍 [updateVisitAddVenteId] Détail des visites:', 
-            Object.entries(state.activeVisits).map(([key, v]) => ({ 
-              outletId: key, 
-              visitId: v.visitId,
-              pdvName: v.pdvName 
-            }))
-          );
-          
           // Chercher la visite par son visitId
           const entry = Object.entries(state.activeVisits).find(
             ([, visit]) => visit.visitId === visitId
           );
           
+          // Meme si la visite n'est pas dans le store (visite COMPLETED),
+          // on met a jour le timestamp pour signaler qu'une vente a ete ajoutee
           if (!entry) {
-            console.error(`[updateVisitAddVenteId] ÉCHEC - Visite NON TROUVÉE avec visitId: ${visitId}`);
-            console.error('[updateVisitAddVenteId] visitIds disponibles:', 
-              Object.values(state.activeVisits).map(v => v.visitId)
-            );
-            return state;
+            return {
+              ...state,
+              lastVenteAddedAt: Date.now()
+            };
           }
           
           const [outletId, visit] = entry;
           const currentVenteIds = visit.venteIds || [];
           
-          // Éviter les doublons
+          // Eviter les doublons
           if (currentVenteIds.includes(venteId)) {
-            console.warn(`[updateVisitAddVenteId] Doublon détecté - venteId ${venteId} déjà présent`);
             return state;
           }
-          
           
           return {
             activeVisits: {
@@ -330,27 +291,12 @@ export const useVisitsStore = create<VisitsStore>()(
                 ...visit, 
                 venteIds: [...currentVenteIds, venteId]
               }
-            }
+            },
+            lastVenteAddedAt: Date.now()
           };
         });
-        
       },
       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       // Supprimer une vente de la visite
       removeVenteId: (outletId: string, venteId: string) => {
@@ -371,8 +317,6 @@ export const useVisitsStore = create<VisitsStore>()(
           };
         });
       },
-
-      
       
       // Récupérer les IDs des ventes
       getVenteIds: (outletId: string) => {
@@ -402,7 +346,7 @@ export const useVisitsStore = create<VisitsStore>()(
         });
       },
       
-      //Mettre à jour une visite existante : ajouter un merchandising (par visitId)
+      // Mettre a jour une visite existante : ajouter un merchandising (par visitId)
       updateVisitAddMerchId: (visitId: string, merchId: string) => {
         set((state) => {
           // Chercher la visite par son visitId
@@ -411,17 +355,14 @@ export const useVisitsStore = create<VisitsStore>()(
           );
           
           if (!entry) {
-            console.warn(`⚠️ [VisitsStore] Visite non trouvée avec visitId: ${visitId}`);
             return state;
           }
           
           const [outletId, visit] = entry;
           const currentMerchIds = visit.merchIds || [];
           
-          // Éviter les doublons
+          // Eviter les doublons
           if (currentMerchIds.includes(merchId)) return state;
-          
-          console.log(`[VisitsStore] Ajout merchandising ${merchId} à la visite ${visitId} (outlet: ${outletId})`);
           
           return {
             activeVisits: {
@@ -523,15 +464,10 @@ export const useVisitsStore = create<VisitsStore>()(
         _persistedAt: state._persistedAt,
         _version: state._version
       }),
-      // Fonction appelée lors de la réhydratation depuis localStorage
+      // Fonction appelee lors de la rehydratation depuis localStorage
       onRehydrateStorage: () => (state) => {
         if (state) {
-          console.log('💾 [VisitsStore] Réhydratation depuis localStorage:', {
-            visites: Object.keys(state.activeVisits).length,
-            persistedAt: state._persistedAt
-          });
-          
-          // Nettoyer automatiquement les visites expirées au chargement
+          // Nettoyer automatiquement les visites expirees au chargement
           state.cleanupExpiredVisits();
         }
       },
