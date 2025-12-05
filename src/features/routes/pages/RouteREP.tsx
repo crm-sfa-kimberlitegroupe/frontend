@@ -19,8 +19,7 @@ export default function RouteREP() {
   // Utiliser le hook useRouteVisits qui contient la logique avancée
   const { 
     visits, 
-    routePlan: todayRoute, 
-    loading: routeLoading
+    routePlan: todayRoute
   } = useRouteVisits();
   
   // Garder les outlets pour la carte
@@ -81,7 +80,8 @@ export default function RouteREP() {
     };
   });
   
-  // Utiliser les erreurs du hook
+  // Plus besoin de useRouteVisits - les données sont déjà dans le store
+  // Les données ont été préchargées par le DataPreloader
   
   // Statistiques calculées
   const routeStats = {
@@ -92,8 +92,6 @@ export default function RouteREP() {
     estimatedTime: routeStops.length > 0 ? '2h 30min' : '0 min' // Simulé
   };
   
-  // Le chargement est maintenant géré par le hook useRouteVisits
-
   const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
       case 'completed':
@@ -120,26 +118,6 @@ export default function RouteREP() {
     }
   };
 
-  // État de chargement du hook
-  if (routeLoading) {
-    return (
-      <div className="pb-20 bg-gray-50 min-h-screen">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            {/* Spinner CSS + Icône de secours */}
-            <div className="relative mx-auto mb-6">
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre route</h2>
-            <p className="text-gray-600 mb-4">Préparation de votre itinéraire du jour...</p>
-            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-              <Icon name="map" size="sm" variant="grey" />
-              <span>Calcul des distances et horaires</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">

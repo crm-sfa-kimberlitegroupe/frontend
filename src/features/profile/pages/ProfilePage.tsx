@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../../core/auth';
-import { usersService, type UserPerformance, type ManagerInfo } from '@/features/users/services';
+import { useUsersStore } from '@/features/users/stores/usersStore';
+import type { UserPerformance } from '@/features/users/services';
 import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
-import { Icon } from '../../../core/ui/Icon';
 
 // Import des composants modulaires
 import ProfileHeader from '../components/ProfileHeader';
@@ -25,22 +25,24 @@ export default function ProfilePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Utiliser le store préchargé
+  const { currentUser, userPerformance, managerInfo, updateUser } = useUsersStore();
 
   const userRole: UserRole = (user?.role as UserRole) || 'REP';
 
-  // États pour les données du profil
+  // États pour les données du profil (depuis le store ou user)
   const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    photo: user?.photo || user?.photo || null,
-    territory: user?.territory || '',
-    matricule: user?.matricule || '',
-    hireDate: user?.hireDate || '',
-    manager: user?.manager || '',
-    isActive: user?.isActive ?? true,
+    firstName: currentUser?.firstName || user?.firstName || '',
+    lastName: currentUser?.lastName || user?.lastName || '',
+    email: currentUser?.email || user?.email || '',
+    phone: currentUser?.phone || user?.phone || '',
+    photo: currentUser?.photoUrl || user?.photo || null,
+    territory: currentUser?.territoryName || user?.territory || '',
+    matricule: currentUser?.matricule || user?.matricule || '',
+    hireDate: currentUser?.hireDate || user?.hireDate || '',
+    manager: currentUser?.manager || user?.manager || '',
+    isActive: currentUser?.isActive ?? user?.isActive ?? true,
   });
 
   const [settings, setSettings] = useState({
@@ -61,7 +63,11 @@ export default function ProfilePage() {
     storageUsed: 45.2,
   });
 
-  const [performanceKPIs, setPerformanceKPIs] = useState<UserPerformance>({
+  // Plus besoin de useEffect - les données sont déjà dans le store
+  // Les données ont été préchargées par le DataPreloader
+  
+  // Utiliser les performances depuis le store
+  const performanceKPIs: UserPerformance = userPerformance || {
     coverage: 0,
     strikeRate: 0,
     visitsThisMonth: 0,
@@ -71,69 +77,13 @@ export default function ProfilePage() {
     visitedOutlets: 0,
     ordersThisMonth: 0,
     averageOrderValue: 0,
-  });
-
-  const [managerInfo, setManagerInfo] = useState<ManagerInfo | null>(null);
-
-  // Charger les données utilisateur au montage
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (user?.id) {
-        try {
-          setLoading(true);
-          
-          const userData = await usersService.getById(user.id);
-          
-          setProfileData({
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            phone: userData.phone || '',
-            photo: userData.photoUrl || userData.photo || null,
-            territory: userData.territoryName || userData.territory || '',
-            matricule: userData.matricule || '',
-            hireDate: userData.hireDate || '',
-            manager: userData.manager || '',
-            isActive: userData.isActive,
-          });
-          
-          // Charger les performances (seulement pour REP)
-          if (userData.role === 'REP') {
-            try {
-              const performance = await usersService.getPerformance(user.id);
-              setPerformanceKPIs(performance);
-            } catch {
-              // Erreur silencieuse pour les performances
-            }
-          }
-
-          // Charger les informations du manager (pour tous les rôles sauf SUP qui n'ont généralement pas de manager)
-          try {
-            const manager = await usersService.getManager(user.id);
-            setManagerInfo(manager);
-          } catch {
-            // Erreur silencieuse si pas de manager
-            setManagerInfo(null);
-          }
-        } catch {
-          alert('Erreur lors du chargement des données');
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
-  }, [user?.id]);
+  };
 
   const handleSave = async () => {
     if (!user?.id) return;
     
     try {
-      setLoading(true);
-      await usersService.update(user.id, {
+      await updateUser(user.id, {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         phone: profileData.phone || '',
@@ -143,8 +93,6 @@ export default function ProfilePage() {
       alert('Modifications enregistrées avec succès');
     } catch {
       alert('Erreur lors de la sauvegarde');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -177,23 +125,6 @@ export default function ProfilePage() {
     setProfileData(prev => ({ ...prev, photo: photoUrl }));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          {/* Spinner CSS + Icône de secours */}
-          <div className="relative mx-auto mb-6">
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de votre profil</h2>
-          <p className="text-gray-600 mb-4">Récupération de vos informations personnelles...</p>
-          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-            <Icon name="settings" size="sm" variant="grey" />
-            <span>Chargement sécurisé</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">

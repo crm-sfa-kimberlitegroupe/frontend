@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/core/ui';
 import { useToggle } from '@/core/hooks';
@@ -16,7 +16,6 @@ export default function VisitsREP() {
   const navigate = useNavigate();
   // Hook réutilisable pour le toggle
   const [showPDVForm, , setShowPDVForm] = useToggle(false);
-  const [isLoading, setIsLoading] = useState(true);
   
   // Utiliser les stores préchargés
   const user = useAuthStore((state) => state.user);
@@ -202,32 +201,8 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
     name: 'Secteur Centre-Ville'
   } : null;
   
-  // Simuler un temps de chargement pour les données des stores
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000); // 1 seconde de chargement
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // État de chargement
-  if (isLoading) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement de vos visites</h2>
-            <p className="text-gray-600 mb-4">Récupération de votre planning du jour...</p>
-            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-              <span>Synchronisation des données</span>
-            </div>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
+  // Plus besoin de useEffect - les données sont déjà dans les stores
+  // Les données ont été préchargées par le DataPreloader
 
 
 
@@ -239,8 +214,8 @@ const handleVisitSelect = async (visit: { id: string; pdvName: string; outletId:
 
   // Plus besoin de gestion d'erreur car les données sont préchargées
 
-  // Pas de secteur assigné (seulement après le chargement)
-  if (!sector && !isLoading) {
+  // Pas de secteur assigné
+  if (!sector) {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">

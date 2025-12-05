@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { User, UserPerformance, ManagerInfo } from '../services/usersService';
+import { persist } from 'zustand/middleware';
+import { usersService, type User, type UserPerformance, type ManagerInfo } from '../services/usersService';
 
 interface UsersState {
   // États
@@ -18,7 +19,7 @@ interface UsersState {
   clearError: () => void;
 }
 
-export const useUsersStore = create<UsersState>((set, get) => ({
+export const useUsersStore = create<UsersState>()(persist((set, get) => ({
   // États initiaux
   currentUser: null,
   userPerformance: null,
@@ -26,90 +27,40 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  // Charger les données de l'utilisateur actuel
+  // Charger les données de l'utilisateur actuel (vraie API)
   loadCurrentUser: async (userId: string) => {
     try {
-      // Simuler des données utilisateur (remplacer par vraie API plus tard)
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const mockUser: User = {
-        id: userId,
-        email: 'kouassi.kouassi@sfa-ci.com',
-        firstName: 'Kouassi',
-        lastName: 'Kouassi',
-        role: 'REP',
-        phone: '+225 01 02 03 04',
-        photoUrl: null,
-        territory: 'Zone Abidjan Nord',
-        territoryName: 'Zone Abidjan Nord',
-        territoryId: 'territory-1',
-        assignedSectorId: 'sector-1',
-        matricule: 'REP-001',
-        hireDate: '2023-01-15',
-        manager: 'Admin Zone Abidjan',
-        managerId: 'admin-1',
-        isActive: true,
-        status: 'ACTIVE',
-        lastLogin: new Date().toISOString(),
-      };
-
-      set({ currentUser: mockUser });
-    } catch (error) {
+      const userData = await usersService.getById(userId);
+      set({ currentUser: userData });
+    } catch (err) {
+      console.error('Erreur chargement utilisateur:', err);
       set({ 
-        error: error instanceof Error ? error.message : 'Erreur lors du chargement de l\'utilisateur',
+        error: err instanceof Error ? err.message : 'Erreur lors du chargement de l\'utilisateur',
         currentUser: null 
       });
     }
   },
 
-  // Charger les performances de l'utilisateur
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  loadUserPerformance: async (_userId: string) => {
+  // Charger les performances de l'utilisateur (vraie API)
+  loadUserPerformance: async (userId: string) => {
     try {
-      // Simuler des données de performance
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      const mockPerformance: UserPerformance = {
-        coverage: 85.5,
-        strikeRate: 72.3,
-        visitsThisMonth: 45,
-        salesThisMonth: 125000,
-        perfectStoreScore: 78.9,
-        totalOutlets: 52,
-        visitedOutlets: 45,
-        ordersThisMonth: 38,
-        averageOrderValue: 3289.47,
-      };
-
-      set({ userPerformance: mockPerformance });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erreur lors du chargement des performances',
-        userPerformance: null 
-      });
+      const performance = await usersService.getPerformance(userId);
+      set({ userPerformance: performance });
+    } catch (err) {
+      console.error('Erreur chargement performances:', err);
+      // Performances optionnelles - pas d'erreur bloquante
+      set({ userPerformance: null });
     }
   },
 
-  // Charger les informations du manager
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  loadManagerInfo: async (_userId: string) => {
+  // Charger les informations du manager (vraie API)
+  loadManagerInfo: async (userId: string) => {
     try {
-      // Simuler des données du manager
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const mockManager: ManagerInfo = {
-        id: 'admin-1',
-        firstName: 'Koffi',
-        lastName: 'Kouadio',
-        email: 'admin.zone-abidjan@sfa-ci.com',
-        phone: '+225 05 06 07 08',
-        role: 'ADMIN',
-        photoUrl: null,
-      };
-
-      set({ managerInfo: mockManager });
-    } catch (error) {
-      // Manager optionnel - pas d'erreur si non trouvé
+      const manager = await usersService.getManager(userId);
+      set({ managerInfo: manager });
+    } catch (err) {
+      console.error('Erreur chargement manager:', err);
+      // Manager optionnel - pas d'erreur si non trouve
       set({ managerInfo: null });
     }
   },
@@ -128,34 +79,35 @@ export const useUsersStore = create<UsersState>((set, get) => ({
 
       await Promise.allSettled(promises);
       
-    } catch (error) {
+    } catch (err) {
+      console.error('Erreur chargement donnees utilisateur:', err);
       set({ 
-        error: error instanceof Error ? error.message : 'Erreur lors du chargement des données utilisateur'
+        error: err instanceof Error ? err.message : 'Erreur lors du chargement des donnees utilisateur'
       });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  // Mettre à jour l'utilisateur
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  updateUser: async (_userId: string, data: Partial<User>) => {
+  // Mettre a jour l'utilisateur (vraie API)
+  updateUser: async (userId: string, data: Partial<User>) => {
     set({ isLoading: true, error: null });
     
     try {
-      // Simuler la mise à jour
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const currentUser = get().currentUser;
-      if (currentUser) {
-        const updatedUser = { ...currentUser, ...data };
-        set({ currentUser: updatedUser });
-      }
-      
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erreur lors de la mise à jour'
+      const updatedUser = await usersService.update(userId, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone || '',
+        matricule: data.matricule || '',
+        hireDate: data.hireDate || '',
       });
+      set({ currentUser: updatedUser });
+    } catch (err) {
+      console.error('Erreur mise a jour utilisateur:', err);
+      set({ 
+        error: err instanceof Error ? err.message : 'Erreur lors de la mise a jour'
+      });
+      throw err;
     } finally {
       set({ isLoading: false });
     }
@@ -165,6 +117,15 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   clearError: () => {
     set({ error: null });
   },
+}), {
+  name: 'users-profile-storage',
+  partialize: (state) => ({
+    // Persister les données importantes, pas les états de chargement
+    currentUser: state.currentUser,
+    userPerformance: state.userPerformance,
+    managerInfo: state.managerInfo,
+    // Ne pas persister: isLoading, error
+  }),
 }));
 
 export default useUsersStore;

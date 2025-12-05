@@ -12,7 +12,7 @@ import { useProductsStore } from '@/features/products/stores/productsStore';
 import { useVendorStockStore } from '@/features/vendor-stock/stores/vendorStockStore';
 import { useRoutesStore } from '@/features/routes/stores/routesStore';
 import { useStatsStore } from '@/features/stats/stores/statsStore';
-// Tous les stores sont maintenant créés !
+import { useUsersStore } from '@/features/users/stores/usersStore';
 import { vendorStockService } from '@/features/vendor-stock/services/vendorStockService';
 
 export interface PreloadProgress {
@@ -79,6 +79,7 @@ class DataPreloaderService {
    */
   private async performPreload(): Promise<void> {
     const tasks = [
+      { name: 'Chargement du profil utilisateur', load: () => this.loadUserProfile() },
       { name: 'Chargement des commandes du jour', load: () => this.loadTodayOrders() },
       { name: 'Chargement des visites', load: () => this.loadVisits() },
       { name: 'Chargement des points de vente', load: () => this.loadOutlets() },
@@ -138,6 +139,23 @@ class DataPreloaderService {
     // Marquer le prechargement comme termine dans le localStorage
     localStorage.setItem('dataPreloaded', 'true');
     localStorage.setItem('dataPreloadedAt', new Date().toISOString());
+  }
+
+  /**
+   * Charger le profil utilisateur
+   */
+  private async loadUserProfile(): Promise<void> {
+    const authStore = useAuthStore.getState();
+    const user = authStore.user;
+    const usersStore = useUsersStore.getState();
+
+    if (user?.id) {
+      try {
+        await usersStore.loadAllUserData(user.id, user.role);
+      } catch (error) {
+        console.error('Erreur chargement profil utilisateur:', error);
+      }
+    }
   }
 
   /**
@@ -333,7 +351,7 @@ class DataPreloaderService {
     useVendorStockStore.getState().clearStock();
     useRoutesStore.getState().clearRoute();
     useStatsStore.getState().clearStats();
-    // Tous les stores sont maintenant intégrés !
+    // Ne pas vider le profil utilisateur car il reste valide après déconnexion
   }
 
   /**
