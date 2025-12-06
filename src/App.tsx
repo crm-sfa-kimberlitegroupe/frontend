@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/core/auth';
 import { ProtectedRoute } from './core/components/ProtectedRoute';
+import OfflineIndicator from './core/components/OfflineIndicator';
 
 // Pages publiques
 import LoginPage from './features/auth/pages/LoginPage';
@@ -75,6 +76,7 @@ function App() {
 
   return (
     <Router>
+      <OfflineIndicator />
       <Routes>
         {/* Routes publiques */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

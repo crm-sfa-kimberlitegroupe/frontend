@@ -11,7 +11,8 @@
     "fix-mime": "node scripts/fix-mime-types.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "pwa:test": "node scripts/pwa-test.js"
+    "pwa:test": "node scripts/pwa-test.js",
+    "test:offline": "node scripts/test-offline.cjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
