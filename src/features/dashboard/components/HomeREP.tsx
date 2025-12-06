@@ -258,7 +258,7 @@ export default function HomeREP() {
               {todayStats.revenue}
             </p>
             <p className="text-sm text-gray-600 mt-1">
-              Chiffre d'affaires
+              vente du jour
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {todayStats.ordersPlaced} vente{todayStats.ordersPlaced > 1 ? 's' : ''}
