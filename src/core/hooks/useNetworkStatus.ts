@@ -15,6 +15,15 @@ interface NavigatorWithConnection extends Navigator {
   webkitConnection?: NetworkConnection;
 }
 
+interface SyncManager {
+  register(tag: string): Promise<void>;
+  getTags(): Promise<string[]>;
+}
+
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: SyncManager;
+}
+
 export interface NetworkStatus {
   isOnline: boolean;
   effectiveType?: string;
@@ -49,7 +58,10 @@ export function useNetworkStatus() {
       // Déclencher la synchronisation
       if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
         navigator.serviceWorker.ready.then((registration) => {
-          return registration.sync.register('sync-offline-queue');
+          const syncRegistration = registration as ServiceWorkerRegistrationWithSync;
+          if (syncRegistration.sync) {
+            return syncRegistration.sync.register('sync-offline-queue');
+          }
         }).catch((error) => {
           console.error('[Network] Erreur lors de la synchronisation:', error);
         });
