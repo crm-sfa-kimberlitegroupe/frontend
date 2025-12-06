@@ -7,6 +7,8 @@ interface RouteStatsCardProps {
   remaining: number;
   totalDistance: string;
   estimatedTime: string;
+  remainingDistance?: string;
+  remainingTime?: string;
   currentTime?: string;
 }
 
@@ -16,6 +18,8 @@ export default function RouteStatsCard({
   remaining,
   totalDistance,
   estimatedTime,
+  remainingDistance,
+  remainingTime,
   currentTime,
 }: RouteStatsCardProps) {
   const progress = (completed / totalStops) * 100;
@@ -70,11 +74,25 @@ export default function RouteStatsCard({
         </div>
       </div>
 
-      {/* Temps estimé */}
-      <div className="mt-3 pt-3 border-t border-gray-200">
+      {/* Temps et distance restants */}
+      <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-600">Temps estimé restant</span>
-          <span className="text-sm font-semibold text-gray-900">{estimatedTime}</span>
+          <span className="text-xs text-gray-600 flex items-center gap-1">
+            <Icon name="truck" size="xs" variant="grey" />
+            Distance restante
+          </span>
+          <span className="text-sm font-semibold text-gray-900">
+            {remainingDistance || totalDistance}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-600 flex items-center gap-1">
+            <Icon name="clock" size="xs" variant="grey" />
+            Temps restant
+          </span>
+          <span className="text-sm font-semibold text-primary">
+            {remainingTime || estimatedTime}
+          </span>
         </div>
       </div>
     </Card>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Card from '../../../core/ui/Card';
 import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
@@ -10,6 +10,10 @@ import { useRouteVisits } from '../../visits/hooks/useRouteVisits';
 import NavigationCard from '../components/NavigationCard';
 import RouteStatsCard from '../components/RouteStatsCard';
 import PDVFormWizard from '../../visits/components/PDVFormWizard';
+import {
+  calculateDistanceToStop,
+  calculateRouteStats,
+} from '../utils/routeCalculations';
 
 export default function RouteREP() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -25,72 +29,106 @@ export default function RouteREP() {
   // Garder les outlets pour la carte
   const { outlets } = useOutletsStore();
 
-  // Convertir les visits du hook en format RouteStop pour la carte
-  const routeStops = visits.map((visit, index) => {
-    const outlet = outlets.find(o => o.id === visit.outletId);
-    return {
-      id: parseInt(visit.id) || (index + 1),
-      name: visit.pdvName,
-      address: visit.address || outlet?.address || '',
-      latitude: outlet?.lat || 0,
-      longitude: outlet?.lng || 0,
-      lat: outlet?.lat || 0,
-      lng: outlet?.lng || 0,
-      status: visit.status === 'COMPLETED' ? 'completed' as const :
-              visit.status === 'IN_PROGRESS' ? 'in_progress' as const : 'planned' as const,
-      time: visit.scheduledTime,
-      estimatedTime: visit.scheduledTime,
-      actualTime: visit.checkOutTime,
-      distance: '2.5 km', // TODO: Calculer la vraie distance
-      notes: ''
-    };
-  });
-  
-  const allOutlets = outlets.map((outlet, index) => {
-    // Chercher si ce PDV a une visite associée
-    const associatedVisit = visits.find(visit => visit.outletId === outlet.id);
-    
-    // Déterminer le statut basé sur la visite
-    let outletStatus: 'completed' | 'planned' | 'in_progress' | 'territory' = 'territory';
-    
-    if (associatedVisit) {
-      if (associatedVisit.status === 'COMPLETED') {
-        outletStatus = 'completed';
-      } else if (associatedVisit.status === 'IN_PROGRESS') {
-        outletStatus = 'in_progress';
-      } else if (associatedVisit.status === 'PLANNED') {
-        outletStatus = 'planned';
-      }
+  // Position actuelle du vendeur
+  const userLocation = useMemo(() => {
+    if (latitude && longitude) {
+      return { latitude, longitude };
     }
+    return null;
+  }, [latitude, longitude]);
+
+  // Convertir les visits du hook en format RouteStop pour la carte
+  const routeStops = useMemo(() => {
+    return visits.map((visit, index) => {
+      const outlet = outlets.find(o => o.id === visit.outletId);
+      const stopLat = outlet?.lat || 0;
+      const stopLng = outlet?.lng || 0;
+      
+      // Calculer la distance reelle depuis la position du vendeur
+      const { distance, time } = calculateDistanceToStop(
+        userLocation,
+        stopLat,
+        stopLng
+      );
+
+      return {
+        id: parseInt(visit.id) || (index + 1),
+        name: visit.pdvName,
+        address: visit.address || outlet?.address || '',
+        latitude: stopLat,
+        longitude: stopLng,
+        lat: stopLat,
+        lng: stopLng,
+        status: visit.status === 'COMPLETED' ? 'completed' as const :
+                visit.status === 'IN_PROGRESS' ? 'in_progress' as const : 'planned' as const,
+        time: visit.scheduledTime,
+        estimatedTime: visit.scheduledTime,
+        actualTime: visit.checkOutTime,
+        distance,
+        travelTime: time,
+        notes: ''
+      };
+    });
+  }, [visits, outlets, userLocation]);
+  
+  const allOutlets = useMemo(() => {
+    return outlets.map((outlet, index) => {
+      // Chercher si ce PDV a une visite associee
+      const associatedVisit = visits.find(visit => visit.outletId === outlet.id);
+      
+      // Determiner le statut base sur la visite
+      let outletStatus: 'completed' | 'planned' | 'in_progress' | 'territory' = 'territory';
+      
+      if (associatedVisit) {
+        if (associatedVisit.status === 'COMPLETED') {
+          outletStatus = 'completed';
+        } else if (associatedVisit.status === 'IN_PROGRESS') {
+          outletStatus = 'in_progress';
+        } else if (associatedVisit.status === 'PLANNED') {
+          outletStatus = 'planned';
+        }
+      }
+
+      // Calculer la distance reelle depuis la position du vendeur
+      const { distance, time } = calculateDistanceToStop(
+        userLocation,
+        outlet.lat || 0,
+        outlet.lng || 0
+      );
+      
+      return {
+        id: parseInt(outlet.id) || index + 1000,
+        name: outlet.name,
+        address: outlet.address,
+        latitude: outlet.lat || 0,
+        longitude: outlet.lng || 0,
+        lat: outlet.lat || 0,
+        lng: outlet.lng || 0,
+        status: outletStatus,
+        time: associatedVisit?.scheduledTime || '00:00',
+        estimatedTime: associatedVisit?.scheduledTime || '00:00',
+        actualTime: associatedVisit?.checkOutTime,
+        distance,
+        travelTime: time,
+        notes: ''
+      };
+    });
+  }, [outlets, visits, userLocation]);
+  
+  // Statistiques calculees en temps reel basees sur la position GPS
+  const routeStats = useMemo(() => {
+    const stats = calculateRouteStats(routeStops, userLocation);
     
     return {
-      id: parseInt(outlet.id) || index + 1000, // Éviter les ID = 0, utiliser index + offset
-      name: outlet.name,
-      address: outlet.address,
-      latitude: outlet.lat || 0,
-      longitude: outlet.lng || 0,
-      lat: outlet.lat || 0,
-      lng: outlet.lng || 0,
-      status: outletStatus, // Statut basé sur les visites
-      time: associatedVisit?.scheduledTime || '00:00',
-      estimatedTime: associatedVisit?.scheduledTime || '00:00',
-      actualTime: associatedVisit?.checkOutTime,
-      distance: '0 km', // TODO: Calculer la vraie distance
-      notes: ''
+      totalStops: routeStops.length,
+      completed: routeStops.filter(stop => stop.status === 'completed').length,
+      remaining: routeStops.filter(stop => stop.status !== 'completed').length,
+      totalDistance: stats.totalDistanceFormatted,
+      estimatedTime: stats.estimatedTimeFormatted,
+      remainingDistance: stats.remainingDistanceFormatted,
+      remainingTime: stats.remainingTimeFormatted,
     };
-  });
-  
-  // Plus besoin de useRouteVisits - les données sont déjà dans le store
-  // Les données ont été préchargées par le DataPreloader
-  
-  // Statistiques calculées
-  const routeStats = {
-    totalStops: routeStops.length,
-    completed: routeStops.filter(stop => stop.status === 'completed').length,
-    remaining: routeStops.filter(stop => stop.status !== 'completed').length,
-    totalDistance: routeStops.length > 0 ? '15.2 km' : '0 km', // Simulé
-    estimatedTime: routeStops.length > 0 ? '2h 30min' : '0 min' // Simulé
-  };
+  }, [routeStops, userLocation]);
   
   const getStatusColor = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'gray' => {
     switch (status) {
@@ -204,7 +242,7 @@ export default function RouteREP() {
                       nextStop={{
                         name: nextStop.name,
                         distance: nextStop.distance,
-                        time: '8 min',
+                        time: nextStop.travelTime,
                         estimatedArrival: nextStop.time,
                         latitude: nextStop.latitude,
                         longitude: nextStop.longitude,
@@ -229,6 +267,8 @@ export default function RouteREP() {
                   remaining={routeStats.remaining}
                   totalDistance={routeStats.totalDistance}
                   estimatedTime={routeStats.estimatedTime}
+                  remainingDistance={routeStats.remainingDistance}
+                  remainingTime={routeStats.remainingTime}
                   currentTime={new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 />
               </div>
@@ -333,13 +373,16 @@ export default function RouteREP() {
                               <Icon name="truck" size="xs" variant="grey" />
                               {stop.distance}
                             </span>
+                            <span className="text-xs text-primary flex items-center gap-1">
+                              <Icon name="clock" size="xs" variant="primary" />
+                              {stop.travelTime}
+                            </span>
                           </div>
                         </div>
                         <Badge variant={getStatusColor(stop.status)} size="sm">
                           {getStatusLabel(stop.status)}
                         </Badge>
                       </div>
-                      {/* Boutons désactivés temporairement */}
                       {stop.status === 'planned' && (
                         <Button 
                           variant="outline" 
@@ -388,13 +431,15 @@ export default function RouteREP() {
                                 <Icon name="truck" size="xs" variant="grey" />
                                 {stop.distance}
                               </span>
+                              <span className="text-xs text-primary flex items-center gap-1">
+                                {stop.travelTime}
+                              </span>
                             </div>
                           </div>
                           <Badge variant={getStatusColor(stop.status)} size="sm">
                             {getStatusLabel(stop.status)}
                           </Badge>
                         </div>
-                        {/* Bouton visite désactivé temporairement */}
                       </div>
                     </div>
                   </Card>
