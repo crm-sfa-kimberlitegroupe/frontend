@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/Icon';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { syncService } from '../services/syncService';
 
 export default function OfflineIndicator() {
   const networkStatus = useNetworkStatus();
@@ -13,50 +14,24 @@ export default function OfflineIndicator() {
 
   useEffect(() => {
     const loadPendingRequestsCount = async () => {
-      try {
-        const db = await openDatabase();
-        const transaction = db.transaction(['offlineQueue'], 'readonly');
-        const store = transaction.objectStore('offlineQueue');
-        const request = store.count();
-        
-        request.onsuccess = () => {
-          setPendingRequests(request.result);
-        };
-      } catch (error) {
-        console.error('[OfflineIndicator] Erreur chargement queue:', error);
-      }
+      const count = await syncService.getPendingCount();
+      setPendingRequests(count);
     };
 
-    // Écouter les messages du Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'SYNC_COMPLETE') {
-          console.log('[OfflineIndicator] Synchronisation terminée:', event.data.results);
-          
-          // Afficher une notification de succès
-          const successCount = event.data.results.filter((r: { success: boolean }) => r.success).length;
-          if (successCount > 0) {
-            console.log(`${successCount} requêtes synchronisées avec succès`);
-          }
-          
-          // Recharger le compteur
-          loadPendingRequestsCount();
-        }
-      });
-    }
-
-    // Charger le nombre de requêtes en attente
     loadPendingRequestsCount();
+    
+    // Ecouter les messages du Service Worker
+    const cleanup = syncService.listenToServiceWorker((results) => {
+      const successCount = results.filter(r => r.success).length;
+      if (successCount > 0) {
+        console.log(`[OfflineIndicator] ${successCount} requetes synchronisees avec succes`);
+      }
+      loadPendingRequestsCount();
+    });
+    
+    return cleanup;
   }, []);
 
-
-  const openDatabase = () => {
-    return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('SFA_OfflineDB', 1);
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-    });
-  };
 
   const getConnectionQuality = () => {
     if (!networkStatus.isOnline) return null;

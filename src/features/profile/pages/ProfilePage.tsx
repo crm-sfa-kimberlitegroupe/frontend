@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../core/auth';
 import { useUsersStore } from '@/features/users/stores/usersStore';
 import type { UserPerformance } from '@/features/users/services';
 import type { UserRole } from '../../../core/types';
 import Button from '../../../core/ui/Button';
+import { syncService, SyncStatus } from '../../../core/services/syncService';
 
 // Import des composants modulaires
 import ProfileHeader from '../components/ProfileHeader';
@@ -56,15 +57,43 @@ export default function ProfilePage() {
     photoQuality: 'high',
   });
 
-  const [syncStatus] = useState({
-    isOnline: true,
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    isOnline: navigator.onLine,
     lastSync: new Date(),
-    pendingItems: 3,
-    storageUsed: 45.2,
+    pendingItems: 0,
+    storageUsed: 0,
+    isSyncing: false,
   });
 
-  // Plus besoin de useEffect - les données sont déjà dans le store
-  // Les données ont été préchargées par le DataPreloader
+  // Charger le statut de synchronisation
+  useEffect(() => {
+    const loadSyncStatus = async () => {
+      const status = await syncService.getSyncStatus();
+      setSyncStatus(status);
+    };
+    
+    loadSyncStatus();
+    
+    // Ecouter les changements de connexion
+    const handleOnline = () => loadSyncStatus();
+    const handleOffline = () => loadSyncStatus();
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Ecouter les messages du Service Worker
+    const cleanup = syncService.listenToServiceWorker(() => {
+      loadSyncStatus();
+    });
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      cleanup();
+    };
+  }, []);
+  
+  // Les données du profil ont été préchargées par le DataPreloader
   
   // Utiliser les performances depuis le store
   const performanceKPIs: UserPerformance = userPerformance || {
@@ -96,8 +125,45 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSync = () => {
-    alert('Synchronisation en cours...');
+  const handleSync = async () => {
+    setSyncStatus(prev => ({ ...prev, isSyncing: true }));
+    
+    try {
+      const results = await syncService.triggerSync();
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      
+      // Recharger le statut
+      const newStatus = await syncService.getSyncStatus();
+      setSyncStatus(newStatus);
+      
+      if (results.length === 0) {
+        alert('Aucune donnee en attente de synchronisation');
+      } else if (failCount === 0) {
+        alert(`Synchronisation reussie ! ${successCount} element(s) synchronise(s)`);
+      } else {
+        alert(`Synchronisation partielle: ${successCount} reussi(s), ${failCount} echec(s)`);
+      }
+    } catch (error) {
+      console.error('[ProfilePage] Erreur sync:', error);
+      alert('Erreur lors de la synchronisation');
+    } finally {
+      setSyncStatus(prev => ({ ...prev, isSyncing: false }));
+    }
+  };
+
+  const handleClearCache = async () => {
+    if (confirm('Voulez-vous vraiment vider le cache ? Les donnees non synchronisees seront perdues.')) {
+      try {
+        await syncService.clearAll();
+        const newStatus = await syncService.getSyncStatus();
+        setSyncStatus(newStatus);
+        alert('Cache vide avec succes');
+      } catch (error) {
+        console.error('[ProfilePage] Erreur clear cache:', error);
+        alert('Erreur lors du vidage du cache');
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -190,7 +256,11 @@ export default function ProfilePage() {
 
         {/* Section 5: Synchronisation (si REP) */}
         {userRole === 'REP' && (
-          <SyncSection syncStatus={syncStatus} onSync={handleSync} />
+          <SyncSection 
+            syncStatus={syncStatus} 
+            onSync={handleSync}
+            onClearCache={handleClearCache}
+          />
         )}
 
         {/* Section 6: Sécurité */}

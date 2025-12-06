@@ -9,11 +9,13 @@ interface SyncSectionProps {
     lastSync: Date;
     pendingItems: number;
     storageUsed: number;
+    isSyncing?: boolean;
   };
   onSync: () => void;
+  onClearCache: () => void;
 }
 
-export default function SyncSection({ syncStatus, onSync }: SyncSectionProps) {
+export default function SyncSection({ syncStatus, onSync, onClearCache }: SyncSectionProps) {
   return (
     <Card className="p-5 mb-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 bg-gradient-to-br from-white to-cyan-50/30">
       <div className="flex items-center gap-2 mb-4">
@@ -67,13 +69,32 @@ export default function SyncSection({ syncStatus, onSync }: SyncSectionProps) {
       </div>
 
       <div className="space-y-3">
-        <Button variant="primary" size="lg" fullWidth onClick={onSync} className="bg-primary text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all active:scale-95 py-4 font-semibold">
+        <Button 
+          variant="primary" 
+          size="lg" 
+          fullWidth 
+          onClick={onSync}
+          disabled={syncStatus.isSyncing || !syncStatus.isOnline}
+          className="bg-primary text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all active:scale-95 py-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <span className="flex items-center justify-center gap-2">
-            <Icon name="refresh" size="md" variant="white" />
-            <span>Synchroniser maintenant</span>
+            <Icon 
+              name="refresh" 
+              size="md" 
+              variant="white" 
+              className={syncStatus.isSyncing ? 'animate-spin' : ''}
+            />
+            <span>{syncStatus.isSyncing ? 'Synchronisation...' : 'Synchroniser maintenant'}</span>
           </span>
         </Button>
-        <Button variant="outline" size="md" fullWidth className="bg-white border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors py-3 font-medium">
+        <Button 
+          variant="outline" 
+          size="md" 
+          fullWidth 
+          onClick={onClearCache}
+          disabled={syncStatus.isSyncing}
+          className="bg-white border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <span className="flex items-center justify-center gap-2">
             <Icon name="x" size="md" variant="red" />
             <span>Vider le cache</span>
