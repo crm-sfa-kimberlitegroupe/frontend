@@ -1,16 +1,172 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Card from '../../../core/ui/Card';
 import KPICard from '../../../core/ui/KPICard';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
+import { useAuthStore } from '../../../core/auth/authStore';
+import { useManagerDashboardStore, isPeriodCacheValid, PeriodType } from '../stores/managerDashboardStore';
+import { managerKpiService } from '../services/managerKpiService';
+import { territoriesService } from '../../territories/services/territoriesService';
 
 export default function HomeSUP() {
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
+  const [managerTerritories, setManagerTerritories] = useState<string[]>([]);
+  const [loadingTerritories, setLoadingTerritories] = useState(true);
+  
+  // Récupérer le user connecté (manager SUP)
+  const { user } = useAuthStore();
+  const managerId = user?.id;
 
+  // Store manager pour les KPIs
+  const {
+    caByPeriod,
+    cacheTimestamps,
+    territoryId: storedTerritoryId,
+    isLoading,
+    setCa,
+    setLoading,
+    setError,
+    setTerritoryId,
+  } = useManagerDashboardStore();
+
+  // CA actuel selon la période sélectionnée
+  const currentCA = caByPeriod[selectedPeriod];
+  
+  // Log pour debug - affiche le CA actuel à chaque rendu
+  console.log('[HomeSUP] 📊 Rendu - currentCA:', currentCA);
+  console.log('[HomeSUP] 📊 Rendu - isLoading:', isLoading);
+  console.log('[HomeSUP] 📊 Rendu - caByPeriod:', caByPeriod);
+
+  // Charger les territoires du manager au montage
+  useEffect(() => {
+    const loadManagerTerritories = async () => {
+      if (!managerId) {
+        console.log('[HomeSUP] ❌ Pas de managerId');
+        setLoadingTerritories(false);
+        return;
+      }
+
+      try {
+        console.log('[HomeSUP] 🔄 Chargement des territoires du manager:', managerId);
+        const territories = await territoriesService.getManagerTerritories(managerId);
+        const territoryIds = territories.map(t => t.id);
+        setManagerTerritories(territoryIds);
+        console.log('[HomeSUP] ✅ Territoires chargés:', territoryIds);
+      } catch (error) {
+        console.error('[HomeSUP] ❌ Erreur chargement territoires:', error);
+      } finally {
+        setLoadingTerritories(false);
+      }
+    };
+
+    loadManagerTerritories();
+  }, [managerId]);
+
+  // Charger le CA quand la période change ou les territoires sont chargés
+  useEffect(() => {
+    const loadCA = async () => {
+      if (loadingTerritories) {
+        console.log('[HomeSUP] ⏳ Attente du chargement des territoires...');
+        return;
+      }
+
+      if (managerTerritories.length === 0) {
+        console.log('[HomeSUP] ❌ Aucun territoire assigné au manager');
+        return;
+      }
+
+      console.log('========== [HomeSUP] DÉBUT CHARGEMENT CA ==========');
+      console.log('[HomeSUP] Période sélectionnée:', selectedPeriod);
+      console.log('[HomeSUP] Territoires du manager:', managerTerritories);
+
+      // Vérifier si le cache est valide pour cette période
+      const cacheTimestamp = cacheTimestamps[selectedPeriod];
+      const cacheKey = managerTerritories.join(',');
+      
+      if (isPeriodCacheValid(cacheTimestamp, cacheKey, storedTerritoryId)) {
+        console.log(`[HomeSUP] ✅ Cache valide pour période: ${selectedPeriod}`);
+        return;
+      }
+
+      try {
+        console.log(`[HomeSUP] 🔄 Chargement CA pour ${managerTerritories.length} territoires`);
+        setLoading(true);
+        setTerritoryId(cacheKey);
+
+        // Charger le CA pour chaque territoire en parallèle
+        const caPromises = managerTerritories.map(territoryId =>
+          managerKpiService.getCA(territoryId, selectedPeriod)
+        );
+        
+        const caResults = await Promise.all(caPromises);
+        
+        // Agréger les résultats
+        const totalCA = caResults.reduce((acc, ca) => ({
+          value: acc.value + ca.value,
+          orderCount: acc.orderCount + ca.orderCount,
+          totalHt: acc.totalHt + ca.totalHt,
+          totalTtc: acc.totalTtc + ca.totalTtc,
+          totalTax: acc.totalTax + ca.totalTax,
+          period: ca.period,
+          startDate: ca.startDate,
+          endDate: ca.endDate,
+        }), {
+          value: 0,
+          orderCount: 0,
+          totalHt: 0,
+          totalTtc: 0,
+          totalTax: 0,
+          period: selectedPeriod,
+          startDate: new Date().toISOString(),
+          endDate: new Date().toISOString(),
+        });
+        
+        console.log('[HomeSUP] ✅ CA total calculé:', totalCA);
+        setCa(selectedPeriod, totalCA);
+      } catch (error) {
+        console.error('[HomeSUP] ❌ Erreur chargement CA:', error);
+        setError(error instanceof Error ? error.message : 'Erreur de chargement');
+      } finally {
+        setLoading(false);
+        console.log('========== [HomeSUP] FIN CHARGEMENT CA ==========');
+      }
+    };
+
+    loadCA();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeriod, managerTerritories, loadingTerritories]);
+
+  // Formater les montants
+  const formatCA = (value: number | undefined | null): string => {
+    if (value === undefined || value === null) return '--';
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(1);
+    }
+    return (value / 1000).toFixed(0);
+  };
+
+  // Unité selon le montant
+  const getCAUnit = (value: number | undefined | null): string => {
+    if (value === undefined || value === null) return '';
+    if (value >= 1000000) return 'M FCFA';
+    return 'K FCFA';
+  };
+
+  // Label du CA selon la période
+  const getCALabel = (): string => {
+    switch (selectedPeriod) {
+      case 'today': return "CA du jour";
+      case 'week': return "CA de la semaine";
+      case 'month': return "CA du mois";
+      case 'quarter': return "CA du trimestre";
+      default: return "Chiffre d'Affaires";
+    }
+  };
+
+  // KPIs mockés pour les autres indicateurs (à implémenter plus tard)
   const kpis = {
     coverage: 87.5,
     strikeRate: 72.3,
-    todaySales: 1250000,
     todayVisits: 127,
   };
 
@@ -45,7 +201,7 @@ export default function HomeSUP() {
 
       {/* Filtres rapides */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {['today', 'week', 'month', 'quarter'].map((period) => (
+        {(['today', 'week', 'month', 'quarter'] as PeriodType[]).map((period) => (
           <button
             key={period}
             onClick={() => setSelectedPeriod(period)}
@@ -82,12 +238,11 @@ export default function HomeSUP() {
           trend={-2.1}
         />
         <KPICard
-          label="CA du jour"
-          value={(kpis.todaySales / 1000).toFixed(0)}
-          unit="K FCFA"
+          label={getCALabel()}
+          value={isLoading ? '--' : formatCA(currentCA?.value)}
+          unit={isLoading ? '' : getCAUnit(currentCA?.value)}
           icon="cart"
           color="primary"
-          trend={12.5}
         />
         <KPICard
           label="Visites effectuées"

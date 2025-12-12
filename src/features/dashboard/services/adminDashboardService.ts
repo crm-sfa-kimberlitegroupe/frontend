@@ -1,60 +1,10 @@
 import { apiClient } from '@/core/api/client';
 import { outletsService, OutletStats } from '@/features/pdv/services/outletsService';
 import { usersService, User } from '@/features/users/services/usersService';
-
-// Types
-export interface DashboardStats {
-  activeUsers: number;
-  totalUsers: number;
-  totalPDV: number;
-  pendingPDV: number;
-  approvedPDV: number;
-  todayVisits: number;
-  todayOrders: number;
-  monthlySales: number;
-}
-
-export interface Activity {
-  id: string;
-  user: string;
-  action: string;
-  pdv?: string;
-  time: string;
-  timestamp: Date;
-  type: 'visit' | 'order' | 'pdv' | 'user';
-}
-
-export interface VisitData {
-  name: string;
-  visites: number;
-  commandes: number;
-}
-
-export interface SalesData {
-  name: string;
-  ventes: number;
-}
-
-export interface Alert {
-  id: string;
-  type: 'danger' | 'warning' | 'info';
-  message: string;
-  count: number;
-  link?: string;
-}
-
-export interface DashboardResponse {
-  success: boolean;
-  stats: DashboardStats;
-  recentActivities: Activity[];
-  alerts: Alert[];
-  visitsData: VisitData[];
-  salesData: SalesData[];
-}
+import { AdminDashboardStats, Activity, Alert } from '../stores/adminDashboardStore';
 
 const api = apiClient;
 
-// Interface pour les visites du backend
 interface VisitResponse {
   id: string;
   checkinAt: string;
@@ -67,7 +17,6 @@ interface VisitResponse {
   };
 }
 
-// Fonction utilitaire pour formater le temps ecoule
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -82,77 +31,97 @@ function formatTimeAgo(date: Date): string {
   return date.toLocaleDateString('fr-FR');
 }
 
-// Service
-export const dashboardService = {
-  // Recuperer les statistiques des PDV
+export const adminDashboardService = {
   async getOutletStats(): Promise<OutletStats> {
     try {
+      console.log('[AdminDashboardService] Chargement stats PDV...');
       return await outletsService.getStats();
     } catch (error) {
-      console.error('[DashboardService] Erreur getOutletStats:', error);
+      console.error('[AdminDashboardService] Erreur getOutletStats:', error);
       return { total: 0, pending: 0, approved: 0, rejected: 0, inactive: 0 };
     }
   },
 
-  // Recuperer les utilisateurs actifs
   async getActiveUsersCount(): Promise<{ active: number; total: number }> {
     try {
+      console.log('[AdminDashboardService] Chargement utilisateurs...');
       const users = await usersService.getAll();
       const activeUsers = users.filter((u: User) => u.isActive || u.status === 'ACTIVE');
       return { active: activeUsers.length, total: users.length };
     } catch (error) {
-      console.error('[DashboardService] Erreur getActiveUsersCount:', error);
+      console.error('[AdminDashboardService] Erreur getActiveUsersCount:', error);
       return { active: 0, total: 0 };
     }
   },
 
-  // Recuperer les visites du jour
   async getTodayVisitsCount(): Promise<number> {
     try {
+      console.log('[AdminDashboardService] Chargement visites du jour...');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const params = new URLSearchParams({
         startDate: today.toISOString(),
         endDate: new Date().toISOString(),
       });
-      const response = await api.get(`/visits/my-visits?${params.toString()}`);
+      
+      // Utiliser l'endpoint admin qui récupère toutes les visites
+      const response = await api.get(`/visits/all?${params.toString()}`);
       const visits = response?.data || response || [];
-      return Array.isArray(visits) ? visits.length : 0;
+      const count = Array.isArray(visits) ? visits.length : 0;
+      console.log('[AdminDashboardService] Visites du jour:', count);
+      return count;
     } catch (error) {
-      console.error('[DashboardService] Erreur getTodayVisitsCount:', error);
+      console.error('[AdminDashboardService] Erreur getTodayVisitsCount:', error);
       return 0;
     }
   },
 
-  // Recuperer les commandes du jour
   async getTodayOrdersCount(): Promise<number> {
     try {
+      console.log('[AdminDashboardService] Chargement commandes du jour...');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const params = new URLSearchParams({
-        startDate: today.toISOString(),
-        endDate: new Date().toISOString(),
-      });
-      const response = await api.get(`/orders/my-orders?${params.toString()}`);
-      const orders = response || [];
-      return Array.isArray(orders) ? orders.length : 0;
+      
+      // Récupérer tous les vendeurs REP
+      const users = await usersService.getAll();
+      const vendors = users.filter((u: User) => u.role === 'REP');
+      
+      let totalOrders = 0;
+      
+      // Pour chaque vendeur, récupérer ses commandes du jour
+      for (const vendor of vendors) {
+        try {
+          const params = new URLSearchParams({
+            startDate: today.toISOString(),
+            endDate: new Date().toISOString(),
+          });
+          const response = await api.get(`/orders/vendor/${vendor.id}?${params.toString()}`);
+          const orders = response || [];
+          totalOrders += Array.isArray(orders) ? orders.length : 0;
+        } catch (error) {
+          console.error(`[AdminDashboardService] Erreur commandes vendeur ${vendor.id}:`, error);
+        }
+      }
+      
+      console.log('[AdminDashboardService] Commandes du jour:', totalOrders);
+      return totalOrders;
     } catch (error) {
-      console.error('[DashboardService] Erreur getTodayOrdersCount:', error);
+      console.error('[AdminDashboardService] Erreur getTodayOrdersCount:', error);
       return 0;
     }
   },
 
-  // Recuperer les activites recentes (visites et commandes)
   async getRecentActivities(): Promise<Activity[]> {
     try {
+      console.log('[AdminDashboardService] Chargement activités récentes...');
       const activities: Activity[] = [];
       
-      // Recuperer les visites recentes
-      const visitsResponse = await api.get('/visits/my-visits');
+      // Récupérer toutes les visites récentes
+      const visitsResponse = await api.get('/visits/all');
       const visits = visitsResponse?.data || visitsResponse || [];
       
       if (Array.isArray(visits)) {
-        (visits as VisitResponse[]).slice(0, 5).forEach((visit) => {
+        (visits as VisitResponse[]).slice(0, 10).forEach((visit) => {
           activities.push({
             id: visit.id,
             user: visit.user ? `${visit.user.firstName} ${visit.user.lastName}` : 'Utilisateur',
@@ -165,18 +134,19 @@ export const dashboardService = {
         });
       }
 
-      // Trier par date
       activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      return activities.slice(0, 5);
+      const result = activities.slice(0, 5);
+      console.log('[AdminDashboardService] Activités récentes:', result.length);
+      return result;
     } catch (error) {
-      console.error('[DashboardService] Erreur getRecentActivities:', error);
+      console.error('[AdminDashboardService] Erreur getRecentActivities:', error);
       return [];
     }
   },
 
-  // Generer les alertes basees sur les donnees reelles
   async getAlerts(): Promise<Alert[]> {
     try {
+      console.log('[AdminDashboardService] Chargement alertes...');
       const alerts: Alert[] = [];
       const outletStats = await this.getOutletStats();
 
@@ -190,7 +160,6 @@ export const dashboardService = {
         });
       }
 
-      // Verifier les utilisateurs inactifs
       try {
         const users = await usersService.getAll();
         const inactiveUsers = users.filter((u: User) => !u.isActive || u.status === 'INACTIVE' || u.status === 'SUSPENDED');
@@ -207,16 +176,22 @@ export const dashboardService = {
         // Ignorer les erreurs
       }
 
+      console.log('[AdminDashboardService] Alertes:', alerts.length);
       return alerts;
     } catch (error) {
-      console.error('[DashboardService] Erreur getAlerts:', error);
+      console.error('[AdminDashboardService] Erreur getAlerts:', error);
       return [];
     }
   },
 
-  // Recuperer toutes les stats du dashboard ADMIN
-  async getAdminStats(): Promise<DashboardResponse> {
+  async loadAllStats(): Promise<{
+    stats: AdminDashboardStats;
+    activities: Activity[];
+    alerts: Alert[];
+  }> {
     try {
+      console.log('[AdminDashboardService] Chargement complet des stats admin...');
+      
       const [outletStats, usersCount, todayVisits, todayOrders, activities, alerts] = await Promise.all([
         this.getOutletStats(),
         this.getActiveUsersCount(),
@@ -226,64 +201,25 @@ export const dashboardService = {
         this.getAlerts(),
       ]);
 
-      return {
-        success: true,
-        stats: {
-          activeUsers: usersCount.active,
-          totalUsers: usersCount.total,
-          totalPDV: outletStats.total,
-          pendingPDV: outletStats.pending,
-          approvedPDV: outletStats.approved,
-          todayVisits,
-          todayOrders,
-          monthlySales: 0, // A implementer si endpoint disponible
-        },
-        recentActivities: activities,
-        alerts,
-        visitsData: [],
-        salesData: [],
+      const stats: AdminDashboardStats = {
+        activeUsers: usersCount.active,
+        totalUsers: usersCount.total,
+        totalPDV: outletStats.total,
+        pendingPDV: outletStats.pending,
+        approvedPDV: outletStats.approved,
+        todayVisits,
+        todayOrders,
+        monthlySales: 0,
       };
+
+      console.log('[AdminDashboardService] Stats chargées:', stats);
+      
+      return { stats, activities, alerts };
     } catch (error) {
-      console.error('[DashboardService] Erreur getAdminStats:', error);
-      return {
-        success: false,
-        stats: {
-          activeUsers: 0,
-          totalUsers: 0,
-          totalPDV: 0,
-          pendingPDV: 0,
-          approvedPDV: 0,
-          todayVisits: 0,
-          todayOrders: 0,
-          monthlySales: 0,
-        },
-        recentActivities: [],
-        alerts: [],
-        visitsData: [],
-        salesData: [],
-      };
+      console.error('[AdminDashboardService] Erreur loadAllStats:', error);
+      throw error;
     }
   },
-
-  // Recuperer les stats du dashboard SUP
-  async getSupervisorStats(filters?: {
-    period?: string;
-    territory?: string;
-  }) {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.period) params.append('period', filters.period);
-      if (filters?.territory) params.append('territory', filters.territory);
-      const queryString = params.toString();
-      const response = await api.get(`/dashboard/supervisor${queryString ? '?' + queryString : ''}`);
-      return response;
-    } catch (error) {
-      console.error('[DashboardService] Erreur getSupervisorStats:', error);
-      return 0;
-    }
-  },
-
-
 };
 
-export default dashboardService;
+export default adminDashboardService;

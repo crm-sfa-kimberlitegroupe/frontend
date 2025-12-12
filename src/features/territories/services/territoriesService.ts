@@ -333,6 +333,21 @@ export const territoriesService = {
     );
     return response.data.data;
   },
+
+  // Récupérer tous les territoires d'un manager
+  async getManagerTerritories(managerId: string): Promise<Territory[]> {
+    try {
+      console.log('[TerritoriesService] Récupération des territoires du manager:', managerId);
+      const response = await api.get<{ success: boolean; data: Territory[]; message: string }>(
+        `/territories/managers/${managerId}/territories`
+      );
+      console.log('[TerritoriesService] Territoires reçus:', response.data.data);
+      return response.data.data;
+    } catch (error) {
+      console.error('[TerritoriesService] Erreur lors de la récupération des territoires:', error);
+      throw error;
+    }
+  },
 };
 
 export default territoriesService;

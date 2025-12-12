@@ -4,52 +4,72 @@ import Button from '../../../core/ui/Button';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
 import { outletsService, OutletStatusEnum, type Outlet } from '@/features/pdv/services';
+import PDVDetailModal from '@/features/pdv/components/PDVDetailModal';
 
 export default function VisitsADMIN() {
   const [selectedView, setSelectedView] = useState<'list' | 'validation'>('validation');
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [pendingPDV, setPendingPDV] = useState<Outlet[]>([]);
-  const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV validés pour l'onglet "Points de vente"
+  const [approvedPDV, setApprovedPDV] = useState<Outlet[]>([]); // PDV valides pour l'onglet "Points de vente"
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPDV, setSelectedPDV] = useState<Outlet | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtrer les PDV selon la recherche
+  const filteredApprovedPDV = approvedPDV.filter((pdv) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      pdv.name.toLowerCase().includes(query) ||
+      pdv.code.toLowerCase().includes(query) ||
+      pdv.channel.toLowerCase().includes(query) ||
+      (pdv.address && pdv.address.toLowerCase().includes(query)) ||
+      (pdv.segment && pdv.segment.toLowerCase().includes(query)) ||
+      (pdv.proposer && `${pdv.proposer.firstName} ${pdv.proposer.lastName}`.toLowerCase().includes(query))
+    );
+  });
+
+  const filteredPendingPDV = pendingPDV.filter((pdv) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      pdv.name.toLowerCase().includes(query) ||
+      pdv.code.toLowerCase().includes(query) ||
+      pdv.channel.toLowerCase().includes(query) ||
+      (pdv.address && pdv.address.toLowerCase().includes(query)) ||
+      (pdv.segment && pdv.segment.toLowerCase().includes(query)) ||
+      (pdv.proposer && `${pdv.proposer.firstName} ${pdv.proposer.lastName}`.toLowerCase().includes(query))
+    );
+  });
 
   // Charger les PDV depuis l'API
   useEffect(() => {
-    loadPDV();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedView]);
+    loadAllPDV();
+  }, []);
 
-  const loadPDV = async () => {
+  const loadAllPDV = async () => {
     try {
       setIsLoading(true);
       
-      console.log('[loadPDV] Chargement des PDV pour:', selectedView);
+      console.log('[loadAllPDV] Chargement de tous les PDV...');
       
-      if (selectedView === 'list') {
-        console.log('Chargement des PDV APPROVED...');
-        const data = await outletsService.getMyTerritoryOutlets({ 
-          status: OutletStatusEnum.APPROVED,
-        });
-        console.log('PDV APPROVED reçus:', data);
-        console.log('Nombre de PDV APPROVED:', data?.length || 0);
-        setApprovedPDV(data || []);
-      } else {
-        console.log('Chargement des PDV PENDING...');
-        const data = await outletsService.getMyTerritoryOutlets({  
-          status: OutletStatusEnum.PENDING,
-        });
-        console.log('PDV PENDING reçus:', data);
-        console.log('Nombre de PDV PENDING:', data?.length || 0);
-        setPendingPDV(data || []);
-      }
+      // Charger les deux listes en parallele
+      const [approvedData, pendingData] = await Promise.all([
+        outletsService.getMyTerritoryOutlets({ status: OutletStatusEnum.APPROVED }),
+        outletsService.getMyTerritoryOutlets({ status: OutletStatusEnum.PENDING }),
+      ]);
+      
+      console.log('PDV APPROVED:', approvedData?.length || 0);
+      console.log('PDV PENDING:', pendingData?.length || 0);
+      
+      setApprovedPDV(approvedData || []);
+      setPendingPDV(pendingData || []);
     } catch (error) {
-      console.error('[loadPDV] Erreur lors du chargement:', error);
-      // En cas d'erreur, initialiser avec un tableau vide
-      if (selectedView === 'list') {
-        setApprovedPDV([]);
-      } else {
-        setPendingPDV([]);
-      }
+      console.error('[loadAllPDV] Erreur lors du chargement:', error);
+      setApprovedPDV([]);
+      setPendingPDV([]);
     } finally {
       setIsLoading(false);
     }
@@ -60,8 +80,8 @@ export default function VisitsADMIN() {
     
     try {
       await outletsService.approve(id);
-      // Recharger la liste actuelle
-      await loadPDV();
+      // Recharger toutes les listes
+      await loadAllPDV();
     } catch {
       alert('Erreur lors de la validation du PDV');
     }
@@ -78,11 +98,21 @@ export default function VisitsADMIN() {
       setShowRejectModal(null);
       setRejectionReason('');
       
-      // Recharger la liste actuelle
-      await loadPDV();
+      // Recharger toutes les listes
+      await loadAllPDV();
     } catch {
       alert('Erreur lors du rejet du PDV');
     }
+  };
+
+  const handleViewDetails = (pdv: Outlet) => {
+    setSelectedPDV(pdv);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedPDV(null);
   };
 
 
@@ -105,6 +135,9 @@ export default function VisitsADMIN() {
             <div className="flex items-center justify-center gap-2">
               <Icon name="store" size="sm" variant={selectedView === 'list' ? 'primary' : 'grey'} />
               <span>Points de vente</span>
+              {approvedPDV && approvedPDV.length > 0 && (
+                <Badge variant="success" size="sm">{approvedPDV.length}</Badge>
+              )}
             </div>
           </button>
           <button
@@ -127,6 +160,41 @@ export default function VisitsADMIN() {
 
       </div>
 
+      {/* Barre de recherche */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200">
+        <div className="relative">
+          <Icon 
+            name="search" 
+            size="sm" 
+            variant="grey" 
+            className="absolute left-3 top-1/2 -translate-y-1/2" 
+          />
+          <input
+            type="text"
+            placeholder="Rechercher un point de vente..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <Icon name="x" size="sm" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-gray-500 mt-2">
+            {selectedView === 'list' 
+              ? `${filteredApprovedPDV.length} resultat(s) sur ${approvedPDV.length} PDV valides`
+              : `${filteredPendingPDV.length} resultat(s) sur ${pendingPDV.length} PDV en attente`
+            }
+          </p>
+        )}
+      </div>
+
       <div className="p-4">
         {/* Vue Points de vente */}
         {selectedView === 'list' && (
@@ -135,22 +203,29 @@ export default function VisitsADMIN() {
               <Card className="p-8 text-center">
                 <p className="text-gray-600">Chargement des points de vente...</p>
               </Card>
-            ) : !approvedPDV || approvedPDV.length === 0 ? (
+            ) : filteredApprovedPDV.length === 0 ? (
               <Card className="p-8 text-center">
                 <div className="flex justify-center mb-3">
                   <Icon name="store" size="2xl" variant="grey" />
                 </div>
-                <p className="text-lg font-semibold text-gray-900">Aucun point de vente validé</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {searchQuery ? 'Aucun resultat' : 'Aucun point de vente valide'}
+                </p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Aucun PDV validé trouvé pour votre territoire.
+                  {searchQuery 
+                    ? `Aucun PDV ne correspond a "${searchQuery}"`
+                    : 'Aucun PDV valide trouve pour votre territoire.'
+                  }
                 </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Les points de vente proposés par vos vendeurs apparaîtront dans l'onglet "À valider"
-                </p>
+                {!searchQuery && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Les points de vente proposes par vos vendeurs apparaitront dans l'onglet "A valider"
+                  </p>
+                )}
               </Card>
             ) : (
               <div className="space-y-4">
-                {approvedPDV.map((pdv) => (
+                {filteredApprovedPDV.map((pdv) => (
                   <Card key={pdv.id} className="p-4">
                     {/* En-tête PDV */}
                     <div className="flex items-start gap-3 mb-4">
@@ -208,17 +283,17 @@ export default function VisitsADMIN() {
                       )}
                     </div>
 
-                    {/* Bouton Voir détails */}
+                    {/* Bouton Voir details */}
                     <div className="mt-4">
                       <Button 
                         variant="primary" 
                         size="md" 
                         fullWidth
-                        onClick={() => alert(`Détails du PDV: ${pdv.name}\nCode: ${pdv.code}\nAdresse: ${pdv.address || 'Non renseignée'}`)}
+                        onClick={() => handleViewDetails(pdv)}
                       >
                         <span className="flex items-center justify-center gap-2">
                           <Icon name="eye" size="sm" variant="white" />
-                          <span>Voir détails</span>
+                          <span>Voir details</span>
                         </span>
                       </Button>
                     </div>
@@ -236,22 +311,29 @@ export default function VisitsADMIN() {
               <Card className="p-8 text-center">
                 <p className="text-gray-600">Chargement des PDV...</p>
               </Card>
-            ) : !pendingPDV || pendingPDV.length === 0 ? (
+            ) : filteredPendingPDV.length === 0 ? (
               <Card className="p-8 text-center">
                 <div className="flex justify-center mb-3">
-                  <Icon name="checkCircle" size="2xl" variant="green" />
+                  <Icon name={searchQuery ? "search" : "checkCircle"} size="2xl" variant={searchQuery ? "grey" : "green"} />
                 </div>
-                <p className="text-lg font-semibold text-gray-900">Aucun PDV en attente</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {searchQuery ? 'Aucun resultat' : 'Aucun PDV en attente'}
+                </p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Tous les PDV de votre territoire ont été traités
+                  {searchQuery 
+                    ? `Aucun PDV ne correspond a "${searchQuery}"`
+                    : 'Tous les PDV de votre territoire ont ete traites'
+                  }
                 </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Les nouveaux PDV proposés par vos vendeurs apparaîtront ici
-                </p>
+                {!searchQuery && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Les nouveaux PDV proposes par vos vendeurs apparaitront ici
+                  </p>
+                )}
               </Card>
             ) : (
               <div className="space-y-4">
-                {pendingPDV.map((pdv) => (
+                {filteredPendingPDV.map((pdv) => (
               <Card key={pdv.id} className="p-4">
                 {/* En-tête PDV */}
                 <div className="flex items-start gap-3 mb-4">
@@ -372,6 +454,12 @@ export default function VisitsADMIN() {
         )}
       </div>
 
+      {/* Modal de details du PDV */}
+      <PDVDetailModal
+        pdv={selectedPDV}
+        isOpen={showDetailModal}
+        onClose={handleCloseDetailModal}
+      />
     </div>
   );
 }
