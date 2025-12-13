@@ -52,7 +52,6 @@ export default function HomeSUP() {
       if (managerTerritories.length === 0) return;
 
       try {
-        setLoadingPerformances(true);
         
         // Charger les performances pour chaque territoire et agréger
         const performancePromises = managerTerritories.map(territoryId =>
@@ -103,8 +102,6 @@ export default function HomeSUP() {
         setLowPerformers(low);
       } catch (error) {
         console.error('[HomeSUP] Erreur chargement performances équipe:', error);
-      } finally {
-        setLoadingPerformances(false);
       }
     };
 
