@@ -3,183 +3,114 @@ import Card from '../../../core/ui/Card';
 import KPICard from '../../../core/ui/KPICard';
 import Badge from '../../../core/ui/Badge';
 import { Icon } from '../../../core/ui/Icon';
-import { useAuthStore } from '../../../core/auth/authStore';
-import { useManagerDashboardStore, isPeriodCacheValid, PeriodType } from '../stores/managerDashboardStore';
+import { PeriodType } from '../stores/managerDashboardStore';
+import { useManagerKpis } from '../hooks/useManagerKpis';
 import { managerKpiService } from '../services/managerKpiService';
-import { territoriesService } from '../../territories/services/territoriesService';
+import { 
+  formatCA, 
+  getCAUnit, 
+  getCALabel, 
+  formatTauxCouverture, 
+  formatHitRate, 
+  formatLPC, 
+  formatFrequenceVisite, 
+  formatDropsize, 
+  getDropsizeUnit, 
+  formatVenteParVisite, 
+  getVenteParVisiteUnit 
+} from '../utils/kpiFormatters';
+
+interface VendorPerformance {
+  id: string;
+  name: string;
+  sales: number;
+  visits: number;
+  rank?: number;
+}
 
 export default function HomeSUP() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
-  const [managerTerritories, setManagerTerritories] = useState<string[]>([]);
-  const [loadingTerritories, setLoadingTerritories] = useState(true);
-  
-  // Récupérer le user connecté (manager SUP)
-  const { user } = useAuthStore();
-  const managerId = user?.id;
+  const [topPerformers, setTopPerformers] = useState<VendorPerformance[]>([]);
+  const [lowPerformers, setLowPerformers] = useState<VendorPerformance[]>([]);
+  const [loadingPerformances, setLoadingPerformances] = useState(false);
 
-  // Store manager pour les KPIs
+  // Utiliser le hook personnalisé pour charger tous les KPIs
   const {
-    caByPeriod,
-    cacheTimestamps,
-    territoryId: storedTerritoryId,
     isLoading,
-    setCa,
-    setLoading,
-    setError,
-    setTerritoryId,
-  } = useManagerDashboardStore();
+    currentCA,
+    currentLPC,
+    currentTauxCouverture,
+    currentHitRate,
+    currentFrequenceVisite,
+    currentVenteParVisite,
+    dropsize,
+    managerTerritories,
+  } = useManagerKpis(selectedPeriod);
 
-  // CA actuel selon la période sélectionnée
-  const currentCA = caByPeriod[selectedPeriod];
-  
-  // Log pour debug - affiche le CA actuel à chaque rendu
-  console.log('[HomeSUP] 📊 Rendu - currentCA:', currentCA);
-  console.log('[HomeSUP] 📊 Rendu - isLoading:', isLoading);
-  console.log('[HomeSUP] 📊 Rendu - caByPeriod:', caByPeriod);
-
-  // Charger les territoires du manager au montage
+  // Charger les performances de l'équipe
   useEffect(() => {
-    const loadManagerTerritories = async () => {
-      if (!managerId) {
-        console.log('[HomeSUP] ❌ Pas de managerId');
-        setLoadingTerritories(false);
-        return;
-      }
+    const loadTeamPerformance = async () => {
+      if (managerTerritories.length === 0) return;
 
       try {
-        console.log('[HomeSUP] 🔄 Chargement des territoires du manager:', managerId);
-        const territories = await territoriesService.getManagerTerritories(managerId);
-        const territoryIds = territories.map(t => t.id);
-        setManagerTerritories(territoryIds);
-        console.log('[HomeSUP] ✅ Territoires chargés:', territoryIds);
-      } catch (error) {
-        console.error('[HomeSUP] ❌ Erreur chargement territoires:', error);
-      } finally {
-        setLoadingTerritories(false);
-      }
-    };
-
-    loadManagerTerritories();
-  }, [managerId]);
-
-  // Charger le CA quand la période change ou les territoires sont chargés
-  useEffect(() => {
-    const loadCA = async () => {
-      if (loadingTerritories) {
-        console.log('[HomeSUP] ⏳ Attente du chargement des territoires...');
-        return;
-      }
-
-      if (managerTerritories.length === 0) {
-        console.log('[HomeSUP] ❌ Aucun territoire assigné au manager');
-        return;
-      }
-
-      console.log('========== [HomeSUP] DÉBUT CHARGEMENT CA ==========');
-      console.log('[HomeSUP] Période sélectionnée:', selectedPeriod);
-      console.log('[HomeSUP] Territoires du manager:', managerTerritories);
-
-      // Vérifier si le cache est valide pour cette période
-      const cacheTimestamp = cacheTimestamps[selectedPeriod];
-      const cacheKey = managerTerritories.join(',');
-      
-      if (isPeriodCacheValid(cacheTimestamp, cacheKey, storedTerritoryId)) {
-        console.log(`[HomeSUP] ✅ Cache valide pour période: ${selectedPeriod}`);
-        return;
-      }
-
-      try {
-        console.log(`[HomeSUP] 🔄 Chargement CA pour ${managerTerritories.length} territoires`);
-        setLoading(true);
-        setTerritoryId(cacheKey);
-
-        // Charger le CA pour chaque territoire en parallèle
-        const caPromises = managerTerritories.map(territoryId =>
-          managerKpiService.getCA(territoryId, selectedPeriod)
+        setLoadingPerformances(true);
+        
+        // Charger les performances pour chaque territoire et agréger
+        const performancePromises = managerTerritories.map(territoryId =>
+          managerKpiService.getTeamPerformance(territoryId, selectedPeriod)
         );
         
-        const caResults = await Promise.all(caPromises);
+        const performanceResults = await Promise.all(performancePromises);
         
-        // Agréger les résultats
-        const totalCA = caResults.reduce((acc, ca) => ({
-          value: acc.value + ca.value,
-          orderCount: acc.orderCount + ca.orderCount,
-          totalHt: acc.totalHt + ca.totalHt,
-          totalTtc: acc.totalTtc + ca.totalTtc,
-          totalTax: acc.totalTax + ca.totalTax,
-          period: ca.period,
-          startDate: ca.startDate,
-          endDate: ca.endDate,
-        }), {
-          value: 0,
-          orderCount: 0,
-          totalHt: 0,
-          totalTtc: 0,
-          totalTax: 0,
-          period: selectedPeriod,
-          startDate: new Date().toISOString(),
-          endDate: new Date().toISOString(),
+        // Agréger les performances de tous les territoires
+        const allVendors = new Map<string, VendorPerformance>();
+        
+        performanceResults.forEach(result => {
+          result.topPerformers?.forEach((vendor: VendorPerformance) => {
+            const existing = allVendors.get(vendor.id);
+            if (existing) {
+              existing.sales += vendor.sales;
+              existing.visits += vendor.visits;
+            } else {
+              allVendors.set(vendor.id, { ...vendor });
+            }
+          });
+          
+          result.lowPerformers?.forEach((vendor: VendorPerformance) => {
+            const existing = allVendors.get(vendor.id);
+            if (existing) {
+              existing.sales += vendor.sales;
+              existing.visits += vendor.visits;
+            } else {
+              allVendors.set(vendor.id, { ...vendor });
+            }
+          });
         });
         
-        console.log('[HomeSUP] ✅ CA total calculé:', totalCA);
-        setCa(selectedPeriod, totalCA);
+        // Convertir en tableau et trier
+        const allPerformances = Array.from(allVendors.values());
+        allPerformances.sort((a, b) => b.sales - a.sales);
+        
+        // Top 3
+        const top = allPerformances.slice(0, 3).map((perf, index) => ({
+          ...perf,
+          rank: index + 1,
+        }));
+        
+        // Bottom 2
+        const low = allPerformances.slice(-2).reverse();
+        
+        setTopPerformers(top);
+        setLowPerformers(low);
       } catch (error) {
-        console.error('[HomeSUP] ❌ Erreur chargement CA:', error);
-        setError(error instanceof Error ? error.message : 'Erreur de chargement');
+        console.error('[HomeSUP] Erreur chargement performances équipe:', error);
       } finally {
-        setLoading(false);
-        console.log('========== [HomeSUP] FIN CHARGEMENT CA ==========');
+        setLoadingPerformances(false);
       }
     };
 
-    loadCA();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPeriod, managerTerritories, loadingTerritories]);
-
-  // Formater les montants
-  const formatCA = (value: number | undefined | null): string => {
-    if (value === undefined || value === null) return '--';
-    if (value >= 1000000) {
-      return (value / 1000000).toFixed(1);
-    }
-    return (value / 1000).toFixed(0);
-  };
-
-  // Unité selon le montant
-  const getCAUnit = (value: number | undefined | null): string => {
-    if (value === undefined || value === null) return '';
-    if (value >= 1000000) return 'M FCFA';
-    return 'K FCFA';
-  };
-
-  // Label du CA selon la période
-  const getCALabel = (): string => {
-    switch (selectedPeriod) {
-      case 'today': return "CA du jour";
-      case 'week': return "CA de la semaine";
-      case 'month': return "CA du mois";
-      case 'quarter': return "CA du trimestre";
-      default: return "Chiffre d'Affaires";
-    }
-  };
-
-  // KPIs mockés pour les autres indicateurs (à implémenter plus tard)
-  const kpis = {
-    coverage: 87.5,
-    strikeRate: 72.3,
-    todayVisits: 127,
-  };
-
-  const topPerformers = [
-    { id: 1, name: 'Jean Kouassi', sales: 450000, visits: 18, rank: 1 },
-    { id: 2, name: 'Marie Diallo', sales: 380000, visits: 15, rank: 2 },
-    { id: 3, name: 'Paul Bamba', sales: 320000, visits: 14, rank: 3 },
-  ];
-
-  const lowPerformers = [
-    { id: 1, name: 'Eric Toure', sales: 45000, visits: 3 },
-    { id: 2, name: 'Sophie Kone', sales: 52000, visits: 4 },
-  ];
+    loadTeamPerformance();
+  }, [selectedPeriod, managerTerritories]);
 
   return (
     <div className="pb-20 px-4 pt-6 bg-gray-50 min-h-screen">
@@ -207,7 +138,7 @@ export default function HomeSUP() {
             onClick={() => setSelectedPeriod(period)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               selectedPeriod === period
-                ? 'bg-primary text-white'
+                ? 'bg-[#38BDF8] text-white shadow-md'
                 : 'bg-white text-gray-700 border border-gray-200'
             }`}
           >
@@ -223,33 +154,52 @@ export default function HomeSUP() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <KPICard
           label="Taux de couverture"
-          value={kpis.coverage}
+          value={isLoading ? '--' : formatTauxCouverture(currentTauxCouverture?.coverageRate)}
           unit="%"
           icon="checkCircle"
           color="green"
-          trend={5.2}
         />
         <KPICard
-          label="Strike Rate"
-          value={kpis.strikeRate}
+          label="Hit Rate"
+          value={isLoading ? '--' : formatHitRate(currentHitRate?.hitRate)}
           unit="%"
           icon="star"
           color="primary"
-          trend={-2.1}
         />
         <KPICard
-          label={getCALabel()}
+          label={getCALabel(selectedPeriod)}
           value={isLoading ? '--' : formatCA(currentCA?.value)}
           unit={isLoading ? '' : getCAUnit(currentCA?.value)}
           icon="cart"
           color="primary"
         />
         <KPICard
-          label="Visites effectuées"
-          value={kpis.todayVisits}
+          label="Dropsize"
+          value={isLoading ? '--' : formatDropsize(dropsize)}
+          unit={isLoading ? '' : getDropsizeUnit(dropsize)}
+          icon="package"
+          color="secondary"
+        />
+        <KPICard
+          label="LPC"
+          value={isLoading ? '--' : formatLPC(currentLPC?.linesPerOrder)}
+          unit="lignes"
+          icon="cube"
+          color="primary"
+        />
+        <KPICard
+          label="Fréquence Visite"
+          value={isLoading ? '--' : formatFrequenceVisite(currentFrequenceVisite?.averageFrequency)}
+          unit="visites/client"
           icon="locationMarker"
           color="yellow"
-          trend={8.3}
+        />
+        <KPICard
+          label="CA/Visite"
+          value={isLoading ? '--' : formatVenteParVisite(currentVenteParVisite?.averageCAPerVisit)}
+          unit={isLoading ? '' : getVenteParVisiteUnit(currentVenteParVisite?.averageCAPerVisit)}
+          icon="cart"
+          color="green"
         />
       </div>
 
