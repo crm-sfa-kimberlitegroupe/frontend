@@ -32,7 +32,6 @@ export default function HomeSUP() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
   const [topPerformers, setTopPerformers] = useState<VendorPerformance[]>([]);
   const [lowPerformers, setLowPerformers] = useState<VendorPerformance[]>([]);
-  const [loadingPerformances, setLoadingPerformances] = useState(false);
 
   // Utiliser le hook personnalisé pour charger tous les KPIs
   const {
@@ -178,7 +177,7 @@ export default function HomeSUP() {
           value={isLoading ? '--' : formatDropsize(dropsize)}
           unit={isLoading ? '' : getDropsizeUnit(dropsize)}
           icon="package"
-          color="secondary"
+          color="green"
         />
         <KPICard
           label="LPC"
